@@ -1,0 +1,55 @@
+{
+  "$schema": ".codebuddy/skills/browser-compat/schema.json",
+  "_comment": "用户 schema 风格 — 推荐 my-project / project-a / user-project 等已有项目沿用。详见 SKILL.md §「配置文件 Schema 兼容」。",
+
+  "_targets_comment": "[必填] 目标浏览器最低主版本号；ios → 自动映射为 safari，android → 自动映射为 chrome（取较小者）。版本号字符串如 '9.1' 会归一化为 9。",
+  "targets": {
+    "chrome": "70",
+    "safari": "9.1",
+    "firefox": "68",
+    "edge": "79",
+    "ios": "9.1",
+    "android": "70"
+  },
+
+  "_rules_comment": "[可选] ESLint 风格规则开关。'off' 翻译为规则豁免（rule-filter 按 fuzzy 双向匹配 rule.id），'warn'/'info' 暂记入 customRules，'error' 是默认（无需写）。用户可写 ESLint 风格的 API 名（如 'structuredClone'），脚本会自动模糊匹配到 rule.id（如 'no-structured-clone'）。",
+  "rules": {
+    "structuredClone": "off",
+    "Object.hasOwn": "off",
+    "Array.prototype.at": "off",
+    "IntersectionObserver": "off",
+    "MutationObserver": "off",
+    "AbortController": "off",
+    "ResizeObserver": "off"
+  },
+
+  "_ignore_comment": "[可选｜多态] 第一个元素是字符串 → 路径 glob 数组（合并到 excludePaths）；是对象 → 规则豁免数组（每项含 rule_id + reason）。本范例用字符串数组（用户 schema 习惯）。",
+  "ignore": [
+    "node_modules/**",
+    "**/*.test.ts",
+    "**/*.test.tsx",
+    "build/**",
+    "dist/**"
+  ],
+
+  "_polyfills_comment": "[可选] 项目已注入的 polyfill 包名列表。命中规则但 polyfill 已注入时 rule-filter 会自动豁免。",
+  "polyfills": [
+    "core-js",
+    "intersection-observer",
+    "whatwg-fetch",
+    "abortcontroller-polyfill"
+  ],
+
+  "_customMessages_comment": "[保留字段｜当前未消费] 自定义违规提示文案。本字段已被读取但目前 finding.message 仍来自规则定义，未来扩展。",
+  "customMessages": {
+    "no-flexbox-gap": "项目目标 Safari 9.1，请用 margin 替代 Flexbox gap"
+  },
+
+  "_reportOptions_comment": "[保留字段｜当前未消费] 报告输出选项。",
+  "reportOptions": {
+    "showLineContent": true,
+    "maxIssuesPerFile": 20,
+    "groupByFile": true,
+    "sortBySeverity": true
+  }
+}

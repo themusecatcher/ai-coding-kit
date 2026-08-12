@@ -1,0 +1,84 @@
+---
+description: ~/.codebuddy/ 下 rules/skills/agents 文件的详细操作范式（备份、原子写入、恢复）。修改这些文件时按需加载此规则。
+alwaysApply: false
+enabled: true
+updatedAt: 2026-04-27T18:40:00.000Z
+provider: 
+---
+
+# Workspace 外文件操作详解
+
+> 核心要点见常驻规则 AI行为规范 的「Workspace 外文件操作策略」章节；本规则提供完整的 bash 范例。
+
+---
+
+## 1. 备份优先（红线）
+
+修改 `~/.codebuddy/` 下任意 rules/skills/agents 文件**之前**，必须先备份：
+
+```bash
+BACKUP_DIR="$HOME/.codebuddy/.backup/$(date +%Y%m%d)"
+mkdir -p "$BACKUP_DIR"
+cp "$TARGET_FILE" "$BACKUP_DIR/$(basename $TARGET_FILE).$(date +%H%M%S)"
+```
+
+- 备份位置：`~/.codebuddy/.backup/{YYYYMMDD}/{原文件名}.{HHMMSS}`
+- 保留策略：用户手动清理（AI 不主动删备份）
+- 建议每周：`find ~/.codebuddy/.backup/ -type d -mtime +7 -exec rm -rf {} +` 清理旧备份
+- ❌ 禁止跳过备份直接修改（红线级别）
+
+## 2. 创建新文件
+
+- 首选 `printf '%s\n'` 分段写入（首段 `>` 覆盖，后续 `>>` 追加，每段 ≤30 行）
+- ❌ 禁止 heredoc / `python3 -c` / `echo -e`（不同 shell 行为不一致）
+
+## 3. 修改已有文件（原子写入四步范式）
+
+```bash
+TARGET="$HOME/.codebuddy/rules/xxx.mdc"
+TMP="${TARGET}.tmp.$$"
+
+# 步骤 1：备份（参考第 1 节）
+cp "$TARGET" "$HOME/.codebuddy/.backup/$(date +%Y%m%d)/$(basename $TARGET).$(date +%H%M%S)"
+
+# 步骤 2：写入临时文件（sed/awk/printf 重写到 $TMP）
+sed 's/old/new/' "$TARGET" > "$TMP"
+
+# 步骤 3：验证临时文件完整性
+wc -l "$TMP" && head -5 "$TMP" && tail -5 "$TMP"
+
+
+# 步骤 4：验证通过才原子替换
+mv -f "$TMP" "$TARGET"
+```
+
+### 禁止项
+
+- ❌ 直接 `sed -i` 修改线上文件（无验证步骤）
+- ❌ 修改已有文件时多次 `>>` 追加同一目标（中间失败会留下半成品）
+- ✅ 小改动（<5 行）允许 `sed -i ''` 精确替换，但必须先完成备份
+
+## 4. 写入后验证（强制）
+
+- `wc -l` 检查行数
+- `head -5` / `tail -5` 检查首尾完整性
+- YAML frontmatter 文件：`head -10` 确认 frontmatter 未被破坏
+
+## 5. 安全前置检查（修改 rules/skills 时强制）
+
+将外部复制文本（网页/文档平台/任务管理平台/文本纪要等）写入 rules/skills 前，扫描 Unicode 隐形字符与已知注入模式。详细规则见按需规则 `文件修改安全规范`。
+
+## 6. 临时文件清理
+
+- 禁止在用户工作目录创建临时文件
+- /tmp/ 临时文件及 TMP 文件操作失败后必须 rm -f 清理
+
+## 7. 误改恢复（从备份恢复）
+
+```bash
+# 从最新备份恢复（手动指定时间戳）
+cp ~/.codebuddy/.backup/YYYYMMDD/文件名.HHMMSS ~/.codebuddy/rules/xxx.mdc
+```
+
+- 找最新备份：ls -t ~/.codebuddy/.backup/$(date +%Y%m%d)/xxx.mdc.*
+- 恢复后验证：wc -l、head -10、grep -n "^## "

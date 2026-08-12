@@ -1,0 +1,184 @@
+# ============================================================================
+#  knowledge-loop State Machine
+#  ----------------------------------------------------------------------------
+#  作用：定义本地知识库（knowledge/{project}/）的生命周期状态、判定条件、
+#        转移规则与副作用。是状态判定的「单一权威源」。
+#  消费方：
+#    - scripts/lib/state.sh         （状态判定、转移）
+#    - scripts/lints/check-state.sh （状态-confidence 一致性检查）
+#    - SKILL.md（仅引用，不复述）
+#  ----------------------------------------------------------------------------
+#  设计原则：确定性用代码——所有 predicates / transitions 的字段都可被脚本直接
+#  解析为判定逻辑，禁止使用模糊描述。
+#  ============================================================================
+
+version: 1
+schema_id: "knowledge-loop.state-machine.v1"
+
+# 五个状态（互斥，任一时刻每个 module/topic 仅处于一个状态）
+states:
+
+  dirty:
+    description: |
+      本地有未沉淀/未验证的代码改动。知识可能不完整、未经验证或刚被自动扫描
+      尚未人工确认。检索时应给最低权重并提示用户验证。
+    predicates:
+      # 命中任一条件即判为 dirty
+      any_of:
+        - field: confidence
+          op: in
+          value: [draft, pending]
+        # frontmatter 缺失/解析失败也归为 dirty（防御性）
+        - field: __meta.frontmatter_valid
+          op: eq
+          value: false
+    transitions:
+      to_clean:
+        trigger: user_verify        # 用户运行 dev:kb verify 或 step-1 仲裁通过
+        precondition: confidence in [draft, pending]
+        action: set confidence=verified, stability.last_verified=now
+      to_dirty_keep:
+        trigger: code_drift         # 漂移检测发现代码与知识不一致
+        action: stability.drift_count++
+      to_deprecated:
+        trigger: user_deprecate     # 用户运行 dev:kb deprecate
+        action: set confidence=deprecated
+    effects:
+      retrieval_weight: 0.3         # 步骤 1 检索时降权
+      ui_banner: "⚠️ 该知识尚未验证，请人工确认后使用"
+
+  clean:
+    description: |
+      本地知识与当前 working tree 对齐：confidence 已被人工或机器验证，
+      代码锚点存在且未漂移。可正常参与检索（高权重）。
+    predicates:
+      all_of:
+        - field: confidence
+          op: in
+          value: [verified, scanned, auto-verified]
+        - field: __meta.frontmatter_valid
+          op: eq
+          value: true
+        - field: __meta.code_anchors_exist
+          op: eq
+          value: true
+    transitions:
+      to_synced:
+        trigger: git_sync_ok        # last_synced_sha 与 base HEAD 一致
+        precondition: __meta.last_synced_sha_matches_base == true
+        action: nop
+      to_stale:
+        trigger: ttl_expired        # auto-verified 超过 ttl_days 未命中
+        precondition: confidence == auto-verified AND last_hit_age > ttl_days
+        action: set confidence=auto-stale
+      to_dirty:
+        trigger: code_drift_detected
+        action: set confidence=pending, stability.drift_count++
+    effects:
+      retrieval_weight: 1.0
+      ui_banner: null
+
+  synced:
+    description: |
+      在 clean 基础上额外满足：last_synced_sha 与 base 分支 HEAD 对齐。
+      表示本地知识库已与远程基线同步，可作为团队共享候选。
+    predicates:
+      all_of:
+        - field: __meta.state_inherits
+          op: eq
+          value: clean
+        - field: __meta.last_synced_sha_matches_base
+          op: eq
+          value: true
+    transitions:
+      to_clean:
+        trigger: base_branch_advanced  # base 分支前进，本地未 sync
+        action: nop
+      to_stale:
+        trigger: ttl_expired
+        action: set confidence=auto-stale
+    effects:
+      retrieval_weight: 1.2         # 加权：synced 知识跨分支可信度更高
+      ui_banner: null
+      eligible_for_export: true     # 可被 dev:kb export 导出共享
+
+  stale:
+    description: |
+      知识已过期或漂移超阈值，需要人工重验或 sync 拉取最新。
+      检索时仅作为「历史参考」展示，不进入主流候选集。
+    predicates:
+      any_of:
+        - field: confidence
+          op: in
+          value: [stale, auto-stale, archived]
+        - field: stability.drift_count
+          op: gte
+          value: 3                  # 阈值由 thresholds.yaml 提供（drift_count_stale_threshold）
+    transitions:
+      to_clean:
+        trigger: user_re_verify
+        action: set confidence=verified, stability.drift_count=0, stability.last_verified=now
+      to_deprecated:
+        trigger: user_deprecate
+        action: set confidence=deprecated
+    effects:
+      retrieval_weight: 0.1
+      ui_banner: "📜 该知识已过期/漂移，仅供参考"
+
+  deprecated:
+    description: |
+      模块已废弃（业务下线、源码删除等）。仅保留历史档案，不再参与任何检索。
+    predicates:
+      any_of:
+        - field: confidence
+          op: eq
+          value: deprecated
+    transitions:
+      # deprecated 是终态，仅允许人工通过 dev:kb revive 转回 dirty 重新验证
+      to_dirty:
+        trigger: user_revive
+        action: set confidence=draft
+    effects:
+      retrieval_weight: 0.0         # 完全不参与检索
+      ui_banner: "🗑 模块已废弃"
+      excluded_from_export: true
+
+# ----------------------------------------------------------------------------
+# 状态判定优先级（脚本按顺序依次尝试，第一个 predicates 通过即采纳）
+# ----------------------------------------------------------------------------
+priority:
+  - deprecated   # 终态优先
+  - stale        # 过期次之
+  - dirty        # 脏态再次
+  - synced       # synced 是 clean 的超集，需先判定
+  - clean        # 兜底默认
+
+# ----------------------------------------------------------------------------
+# confidence ↔ state 默认映射（与 predicates 冗余但便于快速反查）
+# 修改此映射时必须同步更新 predicates 与 frontmatter.schema.json 的 enum
+# ----------------------------------------------------------------------------
+confidence_to_state_default:
+  draft: dirty
+  pending: dirty
+  scanned: clean
+  verified: clean
+  auto-verified: clean        # 是否升级为 synced 由 last_synced_sha 决定
+  stale: stale
+  auto-stale: stale
+  archived: stale
+  deprecated: deprecated
+
+# ----------------------------------------------------------------------------
+# 状态转移图（DOT 风格，仅供可视化/文档生成；脚本以 transitions 字段为准）
+# ----------------------------------------------------------------------------
+transition_graph: |
+  dirty ──user_verify──> clean
+  clean ──git_sync_ok──> synced
+  synced ──base_advanced──> clean
+  clean ──code_drift──> dirty
+  clean ──ttl_expired──> stale
+  synced ──ttl_expired──> stale
+  stale ──user_re_verify──> clean
+  stale ──user_deprecate──> deprecated
+  dirty ──user_deprecate──> deprecated
+  deprecated ──user_revive──> dirty

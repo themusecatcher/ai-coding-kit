@@ -1,0 +1,151 @@
+# ============================================================================
+#  knowledge-loop Thresholds
+#  ----------------------------------------------------------------------------
+#  作用：所有「数值/阈值/权重」的单一权威源。脚本与提示词均通过本文件读取，
+#        严禁在 SKILL.md / references 中重复硬编码数字。
+#  消费方：
+#    - scripts/lib/score.sh           （计算 confidence_score）
+#    - scripts/lib/state.sh           （应用 drift_count_stale_threshold 等）
+#    - scripts/lints/check-health.sh  （已落盘 / 250 行 / 健康度评分：weights/grade/freshness）
+#    - scripts/lints/check-staleness.sh（已落盘 / 168 行 / 调 state.sh 筛 stale|deprecated 集合）
+#    - SKILL.md（仅引用「健康度阈值见 thresholds.yaml」类描述）
+#  ----------------------------------------------------------------------------
+#  数据驱动 + fallback 范式：
+#    - 主路径：脚本通过 yq/python-yaml/ruby-yaml 读取本文件
+#    - 兜底：脚本顶部硬编码同名常量（与本文件保持同步），yaml 解析失败时退化
+#  修改本文件后必须同步更新 scripts/lib/score.sh 顶部的 fallback 常量。
+#  ============================================================================
+
+version: 1
+schema_id: "knowledge-loop.thresholds.v1"
+
+# ============================================================================
+# 1. 生命周期阈值（lifecycle）
+# ============================================================================
+lifecycle:
+  # auto-verified 衰减为 archived 的默认存活天数（被检索命中可重置）
+  auto_verified_ttl_days: 90
+
+  # auto-stale 不自动衰减，但超过此天数会在 audit 中高亮提醒
+  auto_stale_warn_days: 60
+
+  # verified 知识合入 base 分支后，达到此天数视为「已稳定」，confidence_score
+  # 加分；用于 lifecycle.md「自己 pending 升级」路径
+  days_since_merge_stable: 30
+
+  # drift_count 累计达到此值时由 state-machine.yaml 转为 stale
+  drift_count_stale_threshold: 3
+
+  # 单次 sync / scan 操作的最大处理条目（防止超长批处理）
+  max_items_per_sync: 500
+
+# ============================================================================
+# 2. 置信度评分 confidence_score（0-100）
+# ----------------------------------------------------------------------------
+# 公式（见 references/confidence.md §confidence_score 计算约定）：
+#   score = base[level]
+#         + (drift_count == 0 ? bonus.no_drift : penalty.per_drift * drift_count)
+#         + (days_since_merge >= days_since_merge_stable ? bonus.merged_stable : 0)
+#   score = clamp(score, 0, 100)
+# ============================================================================
+confidence_score:
+  base:
+    verified: 95
+    auto-verified: 85       # 比 verified 低 10，体现机器升级 vs 人工验证
+    pending: 70
+    scanned: 60
+    draft: 50
+    auto-stale: 35
+    stale: 30
+    archived: 15
+    deprecated: 0
+
+  bonus:
+    no_drift: 5             # drift_count == 0 加分
+    merged_stable: 3        # days_since_merge >= 30 加分
+
+  penalty:
+    per_drift: 5            # 每次 drift -5（与 confidence.md 公式一致）
+
+  clamp:
+    min: 0
+    max: 100
+
+# ============================================================================
+# 3. 健康度评分（health）— 由 dev:kb health 调用
+# ----------------------------------------------------------------------------
+# 综合分 = w_coverage * coverage% + w_freshness * freshness% + w_drift * (100 - drift%)
+# ============================================================================
+health:
+  weights:
+    coverage: 0.4           # 模块/主题覆盖完整度
+    freshness: 0.3          # 时间新鲜度（距 last_verified 天数）
+    drift: 0.3              # 漂移率（drift_count > 0 占比）
+
+  # 综合分阈值（用于颜色 banner）
+  grade:
+    healthy_min: 80         # >=80 绿色
+    warning_min: 60         # 60-80 黄色
+    # < 60 → 红色
+
+  # 分项触发器
+  freshness:
+    fresh_max_days: 30      # <=30 天视为「新鲜」（满分）
+    decay_max_days: 180     # >180 天视为「过期」（0 分），中间线性衰减
+
+# ============================================================================
+# 4. 复用率指标（reuse）
+# ----------------------------------------------------------------------------
+# 由 step-1 检索命中钩子记录，dev:kb stats 汇总
+# ============================================================================
+reuse:
+  # 单次检索召回上限（防止低相关度知识淹没结果）
+  max_recall_per_query: 8
+
+  # 健康复用率阈值（命中数 / 检索次数）
+  reuse_rate:
+    excellent_min: 0.5      # >=50% 命中视为优秀
+    healthy_min: 0.2        # >=20% 健康
+    warning_min: 0.05       # >=5% 警告，<5% 视为知识库失效
+
+  # 单条知识连续未被命中的最大天数（超过纳入「冷藏候选」）
+  cold_storage_threshold_days: 120
+
+# ============================================================================
+# 5. 腐烂检测（staleness / drift）
+# ============================================================================
+staleness:
+  # 单次 scan --diff 中可标记为漂移的最大文件数（防误报）
+  max_drift_files_per_scan: 50
+
+  # 漂移检测的代码相似度阈值（git diff stat 触发）
+  # 改动行数 >= 此值才标记 anchor 漂移
+  min_diff_lines_to_flag: 5
+
+  # 同一 anchor 在多少次连续扫描漂移后强制降级为 stale（即使未达 drift_count_stale_threshold）
+  consecutive_drift_force_stale: 2
+
+# ============================================================================
+# 6. 导出限制（mcp-export）
+# ----------------------------------------------------------------------------
+# 由 references/mcp-export.md 引用：超出按 confidence_score 倒序裁剪
+# ============================================================================
+export:
+  # design-intent.md 单文件最大条目数（超出按 score 倒序裁剪）
+  max_items_per_design_intent: 50
+
+  # 单次 dev:kb export 的最大模块数
+  max_modules_per_export: 20
+
+  # 仅导出 score >= 此阈值的条目
+  min_score_to_export: 60
+
+# ============================================================================
+# 7. Sync 增量阈值（sync）
+# ============================================================================
+sync:
+  # last_synced_sha 落后 base HEAD 超过此 commit 数 → 强制提示用户全量 sync
+  max_commits_behind_for_diff_sync: 200
+
+  # 增量 sync 单批次最大处理 commit 数
+  max_commits_per_batch: 50

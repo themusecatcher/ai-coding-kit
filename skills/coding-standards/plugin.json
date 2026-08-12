@@ -1,0 +1,16 @@
+{
+  "name": "coding-standards",
+  "version": "1.0.0",
+  "description": "通用编码规范、最佳实践和设计模式，适用于 TypeScript、JavaScript、React 和 Node.js 开发。",
+  "author": {
+    "name": ""
+  },
+  "keywords": [
+    "coding",
+    "standards"
+  ],
+  "category": "productivity",
+  "skills": [
+    "./SKILL.md"
+  ]
+}

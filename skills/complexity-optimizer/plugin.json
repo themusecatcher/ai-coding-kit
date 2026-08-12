@@ -1,0 +1,16 @@
+{
+  "name": "complexity-optimizer",
+  "version": "1.0.0",
+  "description": "检测TypeScript/JavaScript文件中复杂度超过20的函数，基于ESLint complexity规则。",
+  "author": {
+    "name": ""
+  },
+  "keywords": [
+    "complexity",
+    "optimizer"
+  ],
+  "category": "productivity",
+  "skills": [
+    "./SKILL.md"
+  ]
+}

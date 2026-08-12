@@ -1,0 +1,139 @@
+# tech-doc / 文档配置（数据驱动单一权威源）
+#
+# 用途：
+#   - LLM 在执行文档发布模块时按本配置选择目标空间、文件夹、文档标题格式
+#   - 同时支持在线模式（wiki 平台）和本地模式（本地文件目录）
+#
+# 模式切换由 config/org.yaml 的 tech_docs_mode 控制：
+#   auto  - 优先在线，否则降级本地（默认）
+#   local - 始终本地
+#   wiki  - 仅在线
+#
+# 本地模式说明见 references/local-doc-mode.md
+#
+# 维护原则（数据驱动）：
+#   - 改 ID / 改项目映射 / 增减文档类型 → 只改本文件，不侵入模块提示词
+#   - 模块文档用「详见 config/doc-platform-config.yaml」引用本文件，不重复维护
+#
+# ⚠️ 使用前请填写你的文档平台配置（doc IDs 等）
+
+# ========================================
+# 个人空间配置
+# ========================================
+space:
+  id: 0                         # 替换为你的文档平台空间 ID
+  key: "~yourname"              # 替换为你的空间 key
+  homepage_id: 0                # 个人空间首页（顶级目录）
+  content_type: "MD"
+
+# ========================================
+# 文档类型 → 文件夹映射
+# parent_id 即创建文档时传入的父节点 ID
+# ========================================
+doc_types:
+  tech-proposal:
+    name: "技术方案"
+    folder: "技术方案/"
+    parent_id: 0                # 替换为你的文件夹 ID
+    title_format: "【{module_prefix}】{requirement_title}"
+    title_format_note: |
+      新建 tech-proposal 时标题不追加「技术方案」后缀。
+      ⚠️ 前缀 {module_prefix} = 需求所属的「业务模块/页面名」，不是 git 仓库的固定简称。
+    subtypes:
+      feat:
+        name: "需求/新功能"
+        folder: "技术方案/feat/"
+        parent_id: 0
+      fix:
+        name: "Bug 修复"
+        folder: "技术方案/fix/"
+        parent_id: 0
+      opt:
+        name: "优化"
+        folder: "技术方案/opt/"
+        parent_id: 0
+      refactor:
+        name: "重构"
+        folder: "技术方案/refactor/"
+        parent_id: 0
+
+  tech-sharing:
+    name: "技术分享"
+    folder: "技术分享/"
+    parent_id: 0
+    title_format: "{sharing_title}"
+    title_format_note: "tech-sharing 标题为分享主题原文，不加项目前缀"
+
+  release-doc:
+    name: "发布文档"
+    folder: "发布文档/"
+    parent_id: 0
+    title_format: "【{module_prefix}】{version} 发布说明"
+    title_format_note: "release-doc 标题含业务模块前缀 + 版本号 + 「发布说明」后缀"
+
+# ========================================
+# tech-proposal 子类型判断规则
+# ========================================
+subtype_resolution:
+  source_priority:
+    - "工作上下文 YAML signals.requirement_type"
+    - "工作上下文 ## 需求 → 类型 字段"
+    - "用户描述的需求性质 LLM 推断"
+    - "不确定时询问用户"
+  enum_values: ["feat", "fix", "opt", "refactor"]
+
+# ========================================
+# 业务模块 → 文档平台 标题前缀映射（module_prefix）
+#
+# ⚠️ 重要：前缀按「需求所属的业务模块/页面」取，不是按 git 仓库一对一映射。
+#   同一个仓库（如 my-project）会因功能不同出现多种前缀。
+#   以下为从历史技术方案归纳的常见前缀（示例，非穷举），首次遇到新模块由 LLM
+#   按需求性质判断，不确定时询问用户，确认后可追加到本表。
+# ========================================
+module_prefixes:
+  常见前缀示例:
+    - "首页"              # 门户首页相关
+    - "后台管理"           # 后台管理相关
+    - "设置页"            # 设置页相关
+  取值规则: "按需求所属业务模块/页面判断；同一仓库可有多种前缀；不确定时询问用户"
+
+# ========================================
+# 标题前缀取值规则（module_prefix_resolution）
+# tech-proposal / release-doc 的【】前缀统一走此规则
+# ========================================
+module_prefix_resolution:
+  principle: "前缀 = 需求所属的业务模块/页面名，按功能取，不按 git 仓库取"
+  source_priority:
+    - "复用同 folder（feat/fix/opt/refactor）下已有同模块文档的前缀（保持一致）"
+    - "工作上下文 ## 需求 → 标题/摘要 中体现的业务模块/页面"
+    - "需求涉及的核心代码所属页面/模块 LLM 推断"
+    - "不确定时询问用户，确认后追加到 module_prefixes"
+  anti_patterns:
+    - "❌ 按 git 仓库目录名一对一映射固定简称（如 my-project 一律写「首页模块」）"
+    - "❌ 同一仓库的不同业务模块强行用同一个前缀"
+  evidence: "示例：my-project 仓库下既有【首页模块】也有【详情页模块】【设置模块】【找回模块】，前缀随业务模块变化"
+
+# 兼容保留：旧的「仓库→简称」映射（已废弃，仅向后兼容，禁止据此机械取前缀）
+# 新逻辑一律走 module_prefix_resolution + module_prefixes
+project_short_names:
+  # DEPRECATED：请勿再用仓库目录名机械映射前缀，改用 module_prefixes
+  my-project: "（已废弃，按业务模块取前缀，见 module_prefixes）"
+
+# ========================================
+# title 锁定规则（locked_title）
+# ========================================
+title_lock:
+  description: "首次确认或读取的标题立即记录为 locked_title，禁止后续重新推导"
+  rules:
+    - "首次创建：按 title_format 生成 → 与用户确认 → 锁定"
+    - "更新已有文档：读取文档获取的标题 → 立即锁定"
+    - "同一文档任务的后续操作（预览/重写/压缩/补充/发布）一律复用 locked_title"
+    - "用户明确要求改标题或显式给出新标题时才允许更新 locked_title"
+
+# ========================================
+# 配置版本（变更追踪）
+# ========================================
+meta:
+  version: "1.2.0"
+  last_updated: "2026-07-07"
+  source: "抽离自 doc-platform-doc.md L271-323（B2-B1 改造）；v1.1.0 修正标题前缀规则：仓库固定简称 → 业务模块前缀（module_prefix）；v1.2.0 新增「详情页」前缀"

@@ -1,0 +1,16 @@
+{
+  "name": "browser-compat",
+  "version": "1.0.0",
+  "description": "浏览器兼容性检查专家。检测 JS/CSS 代码是否使用了超出项目目标浏览器基线的 API 或属性（如 :has() / container-type / structuredClone / Object.hasOwn 等）， 并提供 Polyfill / 降级方案替代。支持独立使用和被 dev-flow / code-review 按需调用。 触发关键词：检查兼容性、兼容性审查、浏览器兼容、can I use、caniuse、 baseline 检查、browserslist 检查、批量扫描兼容性、升级 browserslist、 这段代码兼容吗、Safari 12 支持吗、检查 diff 兼容性。",
+  "author": {
+    "name": ""
+  },
+  "keywords": [
+    "browser",
+    "compat"
+  ],
+  "category": "productivity",
+  "skills": [
+    "./SKILL.md"
+  ]
+}

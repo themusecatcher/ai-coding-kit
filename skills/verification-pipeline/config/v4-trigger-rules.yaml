@@ -1,0 +1,173 @@
+# v4-trigger-rules.yaml - V4 Browser 验证触发条件配置
+#
+# 设计哲学（半确定性 → YAML + LLM fallback）：
+# - 第一层（确定性）：本文件列出关键字 / 文件类型 / 改动模式触发条件
+# - 第二层（模糊性）：关键字命中后由 LLM 评估改动语义是否真的需要浏览器验证
+#
+# 与 dev-flow step-6-verify.md 的「V4 Browser 触发条件」对齐；
+# 当本配置与 dev-flow step-6 出现差异时，dev-flow step-6 是权威源。
+
+version: 1
+
+# ========================================
+# 触发条件（任一命中即建议触发 V4）
+# ========================================
+triggers:
+  # ---------- 文件类型 ----------
+  - id: t_css_changed
+    description: '改动了样式文件'
+    type: file_pattern
+    patterns:
+      - '**/*.css'
+      - '**/*.scss'
+      - '**/*.less'
+      - '**/*.module.css'
+      - '**/*.module.scss'
+    weight: high
+
+  - id: t_dom_api_changed
+    description: '改动了直接操作 DOM 的代码'
+    type: code_pattern
+    patterns:
+      - 'document\.(getElementById|querySelector|querySelectorAll|createElement)'
+      - '\.(getBoundingClientRect|getComputedStyle|offsetWidth|offsetHeight|clientWidth|clientHeight)'
+      - '\.(innerHTML|outerHTML|textContent|innerText)'
+      - 'window\.(addEventListener|removeEventListener)'
+      - 'ResizeObserver|IntersectionObserver|MutationObserver'
+    weight: high
+
+  - id: t_react_lifecycle_changed
+    description: '改动了 React 生命周期/Hook 中涉及副作用的代码'
+    type: code_pattern
+    patterns:
+      - 'useEffect\s*\('
+      - 'useLayoutEffect\s*\('
+      - 'componentDidMount|componentDidUpdate'
+    weight: medium
+
+  - id: t_animation_changed
+    description: '改动了动画/过渡相关代码'
+    type: code_pattern
+    patterns:
+      - 'transform\s*:'
+      - 'transition\s*:'
+      - 'animation\s*:'
+      - '@keyframes'
+      - 'usePopper|useFloating|@floating-ui'
+      - 'requestAnimationFrame'
+    weight: high
+
+  - id: t_api_call_changed
+    description: '新增/修改了接口调用'
+    type: code_pattern
+    patterns:
+      - '(fetch|axios|request)\s*\('
+      - '\.get\(|\.post\(|\.put\(|\.delete\('
+      - 'useQuery|useMutation|useSWR'
+    weight: medium
+    note: 'API 改动不一定需要浏览器验证；优先级取决于是否影响渲染'
+
+  - id: t_router_changed
+    description: '改动了路由配置或导航逻辑'
+    type: code_pattern
+    patterns:
+      - 'createBrowserRouter|createHashRouter'
+      - 'useNavigate|useRouter'
+      - 'history\.(push|replace)'
+    weight: medium
+
+  - id: t_responsive_layout
+    description: '改动涉及响应式布局/媒体查询'
+    type: code_pattern
+    patterns:
+      - '@media\s*\('
+      - 'matchMedia\s*\('
+      - 'window\.(innerWidth|innerHeight|screen)'
+      - 'AppScreenSize|breakpoint'
+    weight: high
+
+  # ---------- 用户主动信号 ----------
+  - id: t_user_explicit_request
+    description: '用户主动要求浏览器验证'
+    type: user_intent
+    patterns:
+      - '帮我打开页面看看'
+      - '验证一下页面'
+      - '看一下控制台'
+      - '截个图'
+      - '浏览器验证'
+    weight: critical
+
+# ========================================
+# 不触发条件（即使命中上面 trigger，也不建议浏览器验证）
+# ========================================
+exclusions:
+  - id: e_pure_type_definition
+    description: '纯类型定义文件（.d.ts / *.types.ts）'
+    type: file_pattern
+    patterns:
+      - '**/*.d.ts'
+      - '**/types.ts'
+      - '**/*.types.ts'
+
+  - id: e_pure_config
+    description: '纯配置文件'
+    type: file_pattern
+    patterns:
+      - '**/*.config.{js,ts,json}'
+      - '**/tsconfig*.json'
+      - '**/.eslintrc*'
+      - '**/babel.config.*'
+
+  - id: e_pure_text_change
+    description: '纯文案/翻译修改'
+    type: code_pattern
+    detection_hint: 'diff 中只有字符串字面量改动，无 DOM/CSS 结构变化'
+    note: 'LLM 综合判断：i18n 文件改动通常归此类'
+
+  - id: e_pure_refactor_no_behavior
+    description: '纯重构（无行为变更）'
+    type: user_intent
+    detection_hint: '提交说明含 refactor: 且没有逻辑分支变化'
+
+  - id: e_test_file_only
+    description: '只改了测试文件本身'
+    type: file_pattern
+    patterns:
+      - '**/*.test.{ts,tsx,js,jsx}'
+      - '**/*.spec.{ts,tsx,js,jsx}'
+      - '**/__tests__/**'
+
+# ========================================
+# 决策算法（LLM 执行）
+# ========================================
+decision_algorithm: |
+  1. 收集本次改动的文件列表 + diff 内容
+  2. 检查 exclusions：
+     - 全部改动文件都命中某条 exclusion → 不触发 V4
+  3. 检查 triggers：
+     - 任一文件命中 critical 权重 trigger → 强制触发
+     - 命中 ≥1 个 high 权重 trigger → 建议触发
+     - 仅命中 medium/low 权重 → LLM 综合判断
+  4. 命中冲突（同时有 trigger 和 exclusion）：
+     - 用户主动信号（t_user_explicit_request）优先
+     - 否则按改动文件数量决定主导
+
+# ========================================
+# 输出格式（LLM 决策后必须输出）
+# ========================================
+output_format:
+  required_fields:
+    - decision: 'trigger | not_trigger | ask_user'
+    - matched_triggers: 'list of trigger ids'
+    - matched_exclusions: 'list of exclusion ids'
+    - confidence: 'high | medium | low'
+    - reasoning: '一句话理由'
+  example: |
+    {
+      "decision": "trigger",
+      "matched_triggers": ["t_css_changed", "t_animation_changed"],
+      "matched_exclusions": [],
+      "confidence": "high",
+      "reasoning": "改动了样式 + 动画，必须浏览器验证翻转/过渡是否正确"
+    }

@@ -1,0 +1,19 @@
+/* flex-grid-mix.scss: 验证 gap 上下文区分 */
+.flex-list {
+  display: flex;
+  gap: 12px;          /* 期望: CRITICAL */
+}
+
+.grid-list {
+  display: grid;
+  gap: 12px;          /* 期望: 不报 */
+}
+
+.unknown-context {
+  gap: 8px;           /* 期望: WARNING（无 display 声明） */
+}
+
+.inline-flex-list {
+  display: inline-flex;
+  gap: 6px;           /* 期望: CRITICAL */
+}

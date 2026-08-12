@@ -1,0 +1,10 @@
+{
+  "name": "conservative-fixture",
+  "browserslist": [
+    "chrome >= 70",
+    "safari >= 12",
+    "firefox >= 68",
+    "edge >= 79",
+    "not dead"
+  ]
+}

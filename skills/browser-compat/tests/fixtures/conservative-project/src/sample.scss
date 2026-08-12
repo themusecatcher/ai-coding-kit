@@ -1,0 +1,21 @@
+/* Conservative fixture: CSS 违规样例 */
+.card:has(.icon) {              /* CRITICAL no-has-selector */
+  color: red;
+}
+
+.modal {
+  inset: 0;                     /* CRITICAL no-inset-shorthand */
+  aspect-ratio: 16 / 9;         /* CRITICAL no-aspect-ratio */
+  accent-color: blue;           /* CRITICAL no-accent-color */
+  backdrop-filter: blur(4px);   /* WARNING warn-backdrop-filter（缺前缀）*/
+}
+
+.flex-list {
+  display: flex;
+  gap: 12px;                    /* CRITICAL no-flexbox-gap */
+}
+
+.grid-list {
+  display: grid;
+  gap: 12px;                    /* Stage 4 后应不报；当前会误报为 CRITICAL */
+}

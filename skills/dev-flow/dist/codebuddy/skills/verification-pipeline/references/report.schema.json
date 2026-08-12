@@ -1,0 +1,137 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://codebuddy.local/skills/verification-pipeline/report.schema.json",
+  "title": "VerificationPipelineReport",
+  "description": "verification-pipeline scripts/run-verify.sh 输出 JSON 报告的 Schema。可用 ajv-cli 校验：ajv validate -s report.schema.json -d output.json",
+  "type": "object",
+  "required": ["schema_version", "started_at", "finished_at", "preset", "stages", "summary"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "1.0",
+      "description": "本 Schema 版本，向后兼容时递增 minor"
+    },
+    "started_at": {
+      "type": "string",
+      "description": "ISO 8601 时间戳（含时区）",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(Z|[+-][0-9]{4})$"
+    },
+    "finished_at": {
+      "type": "string",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(Z|[+-][0-9]{4})$"
+    },
+    "duration_ms": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "preset": {
+      "type": "string",
+      "enum": ["core", "full", "minimal", "custom"],
+      "description": "执行的预设集合；custom 表示通过 --stages 自定义"
+    },
+    "selected_stages": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "实际执行的阶段 id 列表"
+    },
+    "stages": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/definitions/StageResult" }
+    },
+    "summary": {
+      "type": "object",
+      "required": ["overall", "passed_count", "failed_count", "skipped_count"],
+      "additionalProperties": false,
+      "properties": {
+        "overall": {
+          "type": "string",
+          "enum": ["READY", "WARNING", "BLOCKED"],
+          "description": "READY=全部通过；WARNING=有非必需阶段失败但必需阶段通过；BLOCKED=必需阶段失败"
+        },
+        "passed_count": { "type": "integer", "minimum": 0 },
+        "failed_count": { "type": "integer", "minimum": 0 },
+        "skipped_count": { "type": "integer", "minimum": 0 },
+        "circuit_breaker_triggered": {
+          "type": "boolean",
+          "description": "本次执行是否触发了 3 次失败熔断"
+        },
+        "needs_user_decision": {
+          "type": "boolean",
+          "description": "是否需要用户介入决策（熔断或必需阶段失败）"
+        }
+      }
+    },
+    "context": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "执行上下文（git branch / changed files / cwd 等）",
+      "properties": {
+        "cwd": { "type": "string" },
+        "git_branch": { "type": "string" },
+        "git_head": { "type": "string" },
+        "changed_files": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "StageResult": {
+      "type": "object",
+      "required": ["id", "name", "status", "required"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "enum": ["build", "typecheck", "lint", "security", "diff_review", "browser", "test"]
+        },
+        "name": { "type": "string" },
+        "status": {
+          "type": "string",
+          "enum": ["passed", "failed", "skipped", "not_triggered", "circuit_broken"],
+          "description": "passed=通过；failed=失败；skipped=用户/上层跳过；not_triggered=on_demand 阶段未被触发；circuit_broken=熔断"
+        },
+        "required": { "type": "boolean" },
+        "group": { "type": "integer", "minimum": 1 },
+        "duration_ms": { "type": "integer", "minimum": 0 },
+        "exit_code": { "type": "integer" },
+        "failure_count": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "由 circuit-breaker.sh 维护的累计失败次数"
+        },
+        "stdout_tail": {
+          "type": "string",
+          "description": "失败时保留最后 N 行 stdout 帮助定位"
+        },
+        "stderr_tail": { "type": "string" },
+        "violations": {
+          "type": "array",
+          "description": "lint 类阶段的违规明细",
+          "items": {
+            "type": "object",
+            "required": ["rule"],
+            "additionalProperties": true,
+            "properties": {
+              "rule": { "type": "string" },
+              "file": { "type": "string" },
+              "line": { "type": "integer" },
+              "message": { "type": "string" }
+            }
+          }
+        },
+        "handbook": {
+          "type": "string",
+          "description": "按需阶段（browser/test）对应的 LLM 操作手册路径"
+        },
+        "note": {
+          "type": "string",
+          "description": "其他备注（如熔断触发原因）"
+        }
+      }
+    }
+  }
+}

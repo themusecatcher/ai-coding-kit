@@ -1,0 +1,14 @@
+{
+  "name": "ai-coding-kit",
+  "version": "1.0.0",
+  "description": "个人 CodeBuddy 资源管理仓库 —— 集中管理 Skills、Agents、Rules",
+  "private": true,
+  "scripts": {
+    "sync": "bash scripts/sync.sh",
+    "sync:skills": "bash scripts/sync.sh skills",
+    "sync:agents": "bash scripts/sync.sh agents",
+    "sync:rules": "bash scripts/sync.sh rules",
+    "mp": "python3 scripts/generate_marketplace.py",
+    "config:check": "python3 -c \"import sys; sys.path.insert(0, 'scripts/lib'); lc = __import__('load-config', fromlist=['get_config']); print(f'配置路径: {lc.config_file_path()}')\""
+  }
+}

@@ -1,0 +1,662 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "dev-flow/all-steps.schema.json",
+  "title": "dev-flow 步骤完成标记 JSON Schema（统一定义）",
+  "description": "所有步骤的完成标记 JSON Schema 单一真相源。output-schemas.md 为人类可读版本，本文件为机器可校验版本。",
+
+  "$defs": {
+    "commonEnvelope": {
+      "type": "object",
+      "required": ["step", "name", "status", "outputs", "working_context_updated", "next_step"],
+      "properties": {
+        "step": { "type": ["string", "number"] },
+        "name": { "type": "string", "minLength": 1 },
+        "status": { "enum": ["completed", "partial", "blocked", "skipped"] },
+        "outputs": { "type": "object" },
+        "gate_passed": { "type": "boolean" },
+        "gate_checks": {
+          "type": "object",
+          "properties": {
+            "json_complete": { "type": "boolean" },
+            "outputs_valid": { "type": "boolean" },
+            "context_updated": { "type": "boolean" },
+            "flow_file_synced": { "type": "boolean" }
+          }
+        },
+        "working_context_updated": { "type": "boolean" },
+        "interactive_progression_shown": {
+          "type": "boolean",
+          "description": "2026-07-01 新增：步骤完成后是否已通过 ask_followup_question 弹出推进选项（A/B/C）。Schema 层 optional，语义层由 post-step.sh 机械校验。"
+        },
+        "next_step": { "type": ["string", "number"] }
+      }
+    },
+
+    "nameLint": {
+      "type": "object",
+      "required": ["format_matched", "type_valid", "brief_has_chinese", "no_project_suffix"],
+      "properties": {
+        "format_matched": { "const": true },
+        "type_valid": { "const": true },
+        "brief_has_chinese": { "const": true },
+        "no_project_suffix": { "const": true }
+      }
+    }
+  },
+
+  "oneOf": [
+    { "$ref": "#/properties/step1" },
+    { "$ref": "#/properties/step2" },
+    { "$ref": "#/properties/step3" },
+    { "$ref": "#/properties/step4" },
+    { "$ref": "#/properties/step4_5" },
+    { "$ref": "#/properties/step5" },
+    { "$ref": "#/properties/step5_5" },
+    { "$ref": "#/properties/step5_5_micro_fix" },
+    { "$ref": "#/properties/step6" },
+    { "$ref": "#/properties/step6_micro_fix" },
+    { "$ref": "#/properties/step7_standard" },
+    { "$ref": "#/properties/step7_full" },
+    { "$ref": "#/properties/step7_batch" },
+    { "$ref": "#/properties/step7_micro_fix" },
+    { "$ref": "#/properties/step8" },
+    { "$ref": "#/properties/step9" },
+    { "$ref": "#/properties/step10" }
+  ],
+
+  "properties": {
+    "step1": {
+      "allOf": [
+        { "$ref": "#/$defs/commonEnvelope" },
+        {
+          "properties": {
+            "step": { "const": 1 },
+            "outputs": {
+              "type": "object",
+              "required": ["related_files_count"],
+              "properties": {
+                "related_files_count": { "type": "number", "minimum": 1 },
+                "upstream_deps": { "type": "array" },
+                "downstream_deps": { "type": "array" },
+                "reusable_components": { "type": "array" },
+                "remote_kb_signals_hit": {
+                  "type": "array",
+                  "items": { "enum": ["signal_1", "signal_2", "signal_3", "signal_4", "signal_5"] }
+                },
+                "remote_kb_calls_made": { "type": "integer", "minimum": 0 },
+                "remote_kb_tokens_used": { "type": "integer", "minimum": 0 }
+              }
+            },
+            "sufficiency_check": {
+              "type": "object",
+              "required": [
+                "codebase_queries_count",
+                "search_queries_count",
+                "keyword_variations_tried",
+                "cross_verified",
+                "confidence",
+                "confidence_reason",
+                "call_graph_drawn"
+              ],
+              "properties": {
+                "codebase_queries_count": { "type": "integer", "minimum": 1 },
+                "search_queries_count": { "type": "integer", "minimum": 2 },
+                "keyword_variations_tried": {
+                  "type": "array",
+                  "minItems": 2,
+                  "items": { "type": "string", "minLength": 1 }
+                },
+                "cross_verified": { "const": true },
+                "confidence": { "enum": ["high", "medium"] },
+                "confidence_reason": { "type": "string", "minLength": 1 },
+                "call_graph_drawn": {
+                  "oneOf": [
+                    { "const": true },
+                    { "const": "not_applicable" }
+                  ]
+                }
+              }
+            }
+          },
+          "allOf": [
+            {
+              "if": {
+                "properties": { "outputs": { "properties": { "related_files_count": { "maximum": 2 } } } }
+              },
+              "then": {
+                "properties": { "sufficiency_check": { "properties": { "search_queries_count": { "minimum": 3 } } } }
+              }
+            },
+            {
+              "if": {
+                "properties": { "outputs": { "properties": { "remote_kb_signals_hit": { "type": "array", "maxItems": 0 } } } }
+              },
+              "then": {
+                "properties": {
+                  "outputs": {
+                    "properties": {
+                      "remote_kb_calls_made": { "const": 0 },
+                      "remote_kb_tokens_used": { "const": 0 }
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "if": {
+                "properties": { "outputs": { "properties": { "remote_kb_signals_hit": { "type": "array", "minItems": 1 } } } }
+              },
+              "then": {
+                "properties": {
+                  "outputs": {
+                    "properties": {
+                      "remote_kb_calls_made": { "minimum": 1 }
+                    }
+                  }
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "step2": {
+      "allOf": [
+        { "$ref": "#/$defs/commonEnvelope" },
+        {
+          "properties": {
+            "step": { "const": 2 },
+            "outputs": {
+              "type": "object",
+              "required": ["user_confirmed"],
+              "properties": {
+                "user_confirmed": { "const": true },
+                "modules_count": { "type": "number", "minimum": 0 },
+                "files_count": { "type": "number", "minimum": 0 }
+              }
+            }
+          }
+        }
+      ]
+    },
+
+    "step3": {
+      "allOf": [
+        { "$ref": "#/$defs/commonEnvelope" },
+        {
+          "properties": {
+            "step": { "const": 3 },
+            "outputs": {
+              "type": "object",
+              "required": ["plan_steps_count", "boundary_declared"],
+              "properties": {
+                "plan_steps_count": { "type": "number", "minimum": 1 },
+                "boundary_declared": { "const": true },
+                "risk_level": { "enum": ["low", "medium", "high"] }
+              }
+            }
+          }
+        }
+      ]
+    },
+
+    "step4": {
+      "allOf": [
+        { "$ref": "#/$defs/commonEnvelope" },
+        {
+          "properties": {
+            "step": { "const": 4 },
+            "outputs": {
+              "type": "object",
+              "required": ["user_decision", "execution_depth", "plan_locked", "plan_saved_to_disk", "doc_platform_tech_proposal"],
+              "properties": {
+                "user_decision": {
+                  "enum": ["execute_standard", "execute_micro", "execute_full", "execute_partial", "execute_batched",
+                           "modify", "change_plan", "pause", "cancel"]
+                },
+                "execution_depth": { "enum": ["standard", "micro", "full"] },
+                "plan_locked": { "const": true },
+                "plan_saved_to_context": { "const": true },
+                "plan_saved_to_disk": {
+                  "type": "object",
+                  "required": ["status", "dir_name", "name_lint"],
+                  "properties": {
+                    "status": { "const": true },
+                    "dir_name": {
+                      "type": "string",
+                      "pattern": "^\\d{8}_(feat|fix|opt|refactor)_[^\\s/\\\\]+$"
+                    },
+                    "name_lint": { "$ref": "#/$defs/nameLint" }
+                  }
+                },
+                "doc_platform_tech_proposal": {
+                  "type": "object",
+                  "required": ["decision_made", "action"],
+                  "properties": {
+                    "decision_made": { "const": true },
+                    "action": {
+                      "enum": ["create", "update", "relink", "skip", "auto_inherited_skip"]
+                    },
+                    "doc_platform_lint_passed": {
+                      "type": "boolean",
+                      "description": "action=create/update 时必填，标识 doc-platform-lint.sh 已通过（0 violations + exit 0）。action=skip/relink/auto_inherited_skip 时省略。新增于 2026-06-12 复盘 doc_platform 发布前 lint 跳过事故"
+                    },
+                    "probe_executed": { "type": "boolean" },
+                    "probe_layer": {
+                      "enum": ["layer_0", "layer_1", "layer_1_no_match", "probe_failed", "not_applicable"]
+                    },
+                    "probe_mcp_calls": { "type": "number", "minimum": 0, "maximum": 3 },
+                    "matched_docid": { "type": "string" },
+                    "locked_title": { "type": "string" },
+                    "parent_docid": { "type": "string" },
+                    "trigger_step": {
+                      "enum": ["immediate", "none"],
+                      "description": "标识本轮 文档平台 操作的执行时机（仅记录用，不驱动执行）。immediate=步骤 4 阶段 4 §4.3 已立即执行（action ∈ create/update）；none=本轮无 文档平台 写操作（action ∈ skip/auto_inherited_skip/relink）"
+                    }
+                  }
+                },
+                "branch_recommendation": {
+                  "type": "object",
+                  "properties": {
+                    "branch": {
+                      "type": "string",
+                      "pattern": "^(feature|bugfix|hotfix|test|i18n|private|feature_dev|sub-master|dev)(/[a-z0-9][a-z0-9-]*){1,3}$"
+                    },
+                    "branch_dev": {
+                      "type": "string",
+                      "pattern": "^(feature|bugfix|hotfix|test|i18n|private|feature_dev|sub-master|dev)(/[a-z0-9][a-z0-9-]*){1,3}$"
+                    },
+                    "branch_workspace": {
+                      "type": "string",
+                      "pattern": "^(feature|bugfix|hotfix|test|i18n|private|feature_dev|sub-master|dev)(/[a-z0-9][a-z0-9-]*){1,3}$"
+                    },
+                    "has_dev_branch": { "type": "boolean" },
+                    "branch_status": {
+                      "enum": ["auto_recommended", "user_modified", "user_specified", "iteration_reuse"]
+                    },
+                    "branch_name_lint_passed": {
+                      "oneOf": [
+                        { "const": true },
+                        { "const": "user_specified_skip_lint" }
+                      ]
+                    }
+                  }
+                }
+              },
+              "allOf": [
+                {
+                  "if": {
+                    "properties": {
+                      "user_decision": {
+                        "enum": ["execute_standard", "execute_micro", "execute_full", "execute_partial", "execute_batched"]
+                      }
+                    },
+                    "required": ["user_decision"]
+                  },
+                  "then": {
+                    "required": ["branch_recommendation"],
+                    "properties": {
+                      "branch_recommendation": {
+                        "required": ["branch", "branch_dev", "branch_workspace", "has_dev_branch", "branch_status", "branch_name_lint_passed"]
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+
+    "step4_5": {
+      "allOf": [
+        { "$ref": "#/$defs/commonEnvelope" },
+        {
+          "properties": {
+            "step": { "const": 4.5 },
+            "outputs": {
+              "type": "object",
+              "required": ["env_ready", "branch_ok"],
+              "properties": {
+                "env_ready": { "const": true },
+                "branch_ok": { "const": true },
+                "current_branch": { "type": "string", "minLength": 1 },
+                "branch_expected": { "type": "string", "minLength": 1 },
+                "branch_parent": { "type": "string" },
+                "branch_dev": { "type": "string" },
+                "has_dev_branch": { "type": "boolean" },
+                "matched_as": { "enum": ["exact", "parent_dev_equivalent", "none"] },
+                "interaction_path": { "enum": ["silent", "user_confirmed", "user_skipped"] }
+              }
+            }
+          }
+        }
+      ]
+    },
+
+    "step5": {
+      "allOf": [
+        { "$ref": "#/$defs/commonEnvelope" },
+        {
+          "properties": {
+            "step": { "const": 5 },
+            "outputs": {
+              "type": "object",
+              "required": ["files_modified", "plan_steps_executed", "lint_errors_remaining"],
+              "properties": {
+                "files_modified": { "type": "array", "minItems": 1 },
+                "plan_steps_executed": { "type": "string", "pattern": "^[1-9]\\d*/[1-9]\\d*$" },
+                "lint_errors_remaining": { "type": "number", "maximum": 0 },
+                "unplanned_changes": { "type": "string" }
+              }
+            }
+          }
+        }
+      ]
+    },
+
+    "step5_5": {
+      "allOf": [
+        { "$ref": "#/$defs/commonEnvelope" },
+        {
+          "properties": {
+            "step": { "const": 5.5 },
+            "outputs": {
+              "type": "object",
+              "required": ["l1_review_result", "lint_pre_check"],
+              "properties": {
+                "l1_review_result": { "type": "string", "minLength": 1 },
+                "lint_pre_check": { "enum": ["pass", "has_issues", "skipped_no_changes"] },
+                "pending_lint_issues": { "type": ["number", "string"] },
+                "lint_clean": { "type": "boolean", "description": "DEPRECATED 2026-05-29，向后兼容，新流程使用 lint_pre_check + pending_lint_issues" },
+                "doc_synced": { "type": "boolean" }
+              }
+            }
+          }
+        }
+      ]
+    },
+
+    "step5_5_micro_fix": {
+      "allOf": [
+        { "$ref": "#/$defs/commonEnvelope" },
+        {
+          "properties": {
+            "step": { "const": 5.5 },
+            "outputs": {
+              "type": "object",
+              "required": ["l1_review_result"],
+              "properties": {
+                "l1_review_result": {
+                  "type": "string",
+                  "pattern": "^(passed_micro_light|fixed_[0-9]+_issues_micro_light)$",
+                  "description": "micro-fix 极简 L1 审查结果。仅扫改动行 + 红线 §5/6/7/9。"
+                },
+                "micro_fix_auto_downgraded": {
+                  "type": "boolean",
+                  "description": "是否因 ≥3 个 🔴 触发自动降级到 standard 模式"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+
+    "step6": {
+      "allOf": [
+        { "$ref": "#/$defs/commonEnvelope" },
+        {
+          "properties": {
+            "step": { "const": 6 },
+            "outputs": {
+              "type": "object",
+              "required": ["6a_result", "6b_result", "6c_result"],
+              "properties": {
+                "6a_result": { "type": "object" },
+                "6b_result": { "type": "string", "minLength": 1 },
+                "6c_result": { "type": "string", "minLength": 1 }
+              }
+            }
+          }
+        }
+      ]
+    },
+
+    "step6_micro_fix": {
+      "allOf": [
+        { "$ref": "#/$defs/commonEnvelope" },
+        {
+          "properties": {
+            "step": { "const": 6 },
+            "outputs": {
+              "type": "object",
+              "required": ["6a_result", "read_lints_passed"],
+              "properties": {
+                "6a_result": {
+                  "type": "object",
+                  "description": "micro-fix 最小验证结果（仅 read_lints + 视觉确认）"
+                },
+                "read_lints_passed": {
+                  "const": true,
+                  "description": "read_lints 必须通过"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+
+    "step7_standard": {
+      "allOf": [
+        { "$ref": "#/$defs/commonEnvelope" },
+        {
+          "properties": {
+            "step": { "const": 7 },
+            "outputs": {
+              "type": "object",
+              "required": [
+                "debug_code_cleaned", "l2_review_result", "commit_message",
+                "devlog_generated", "knowledge_updated", "metrics_report_generated", "reflection",
+                "flow_report_generated", "flow_report_file",
+                "doc_platform_sync_result", "last_synced_at", "title_protected", "doc_platform_lint_passed"
+              ],
+              "properties": {
+                "debug_code_cleaned": { "const": true },
+                "l2_review_result": { "type": "string", "minLength": 1 },
+                "commit_message": { "type": "string", "minLength": 1 },
+                "devlog_generated": { "const": true },
+                "knowledge_updated": { "const": true },
+                "metrics_report_generated": { "const": true },
+                "reflection": { "type": "string", "minLength": 1 },
+                "flow_report_generated": { "const": true },
+                "flow_report_file": { "type": "string", "pattern": "^flow-reports/.+\\.html$" },
+                "flow_report_opened": { "type": "boolean" },
+                "doc_platform_sync_result": {
+                  "type": "string",
+                  "enum": ["synced", "relinked", "created", "skipped_no_changes", "skipped_user_opt_out", "skipped_no_docid"],
+                  "description": "文档平台 兜底对账结果。docid 非空时必须为 synced/relinked/created/skipped_no_changes/skipped_user_opt_out 之一；docid 为空时为 skipped_no_docid"
+                },
+                "last_synced_at": {
+                  "type": ["string", "null"],
+                  "description": "本次或上次有效同步的 ISO 8601 时间戳；skipped_no_docid 时可为 null"
+                },
+                "title_protected": {
+                  "type": "boolean",
+                  "description": "文档平台 文档标题是否未被误改（与工作上下文 locked_title 一致）"
+                },
+                "doc_platform_lint_passed": {
+                  "type": "boolean",
+                  "description": "doc-platform-lint.sh 是否通过（退出码 0）"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+
+    "step7_full": {
+      "allOf": [
+        { "$ref": "#/$defs/commonEnvelope" },
+        {
+          "properties": {
+            "step": { "const": 7 },
+            "outputs": {
+              "type": "object",
+              "required": ["debug_code_cleaned", "l2_review_result"],
+              "properties": {
+                "debug_code_cleaned": { "const": true },
+                "l2_review_result": { "type": "string", "minLength": 1 }
+              }
+            }
+          }
+        }
+      ]
+    },
+
+    "step7_batch": {
+      "allOf": [
+        { "$ref": "#/$defs/commonEnvelope" },
+        {
+          "properties": {
+            "step": { "const": 7 },
+            "outputs": {
+              "type": "object",
+              "required": ["debug_code_cleaned", "l2_review_result", "commit_message", "devlog_generated", "batch_info"],
+              "properties": {
+                "debug_code_cleaned": { "const": true },
+                "l2_review_result": { "type": "string", "minLength": 1 },
+                "commit_message": { "type": "string", "minLength": 1 },
+                "devlog_generated": {
+                  "oneOf": [{ "const": true }, { "const": "batch_partial" }]
+                },
+                "batch_info": { "type": "string", "pattern": "^batch \\d+/\\d+$" },
+                "batch_next": { "type": ["string", "number"] }
+              }
+            }
+          }
+        }
+      ]
+    },
+
+    "step7_micro_fix": {
+      "allOf": [
+        { "$ref": "#/$defs/commonEnvelope" },
+        {
+          "properties": {
+            "step": { "const": 7 },
+            "outputs": {
+              "type": "object",
+              "required": [
+                "commit_message",
+                "branch_safe",
+                "read_lints_passed",
+                "diff_stat_checked",
+                "devlog_appended",
+                "knowledge_drift_checked",
+                "experience_check"
+              ],
+              "properties": {
+                "commit_message": { "type": "string", "minLength": 1 },
+                "branch_safe": { "const": true },
+                "read_lints_passed": { "const": true },
+                "debug_code_cleaned": { "oneOf": [{ "const": true }, { "const": "not_applicable" }] },
+                "devlog_generated": { "const": false },
+                "knowledge_updated": { "const": false },
+                "reflection": { "const": false },
+                "metrics_report_generated": { "const": false },
+                "flow_report_generated": { "const": false },
+                "diff_stat_checked": { "const": true },
+                "l1_review_result": {
+                  "type": "string",
+                  "pattern": "^(passed_micro_light|fixed_[0-9]+_issues_micro_light|skipped_no_changes)$"
+                },
+                "devlog_appended": {
+                  "enum": ["round_appended", "monthly_appended"]
+                },
+                "knowledge_drift_checked": {
+                  "enum": ["no_hits", "appended_history", "drift_recorded"]
+                },
+                "experience_check": {
+                  "type": "string",
+                  "pattern": "^(clean|recorded_[0-9]+|alert_.+)$"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+
+    "step8": {
+      "allOf": [
+        { "$ref": "#/$defs/commonEnvelope" },
+        {
+          "properties": {
+            "step": { "const": 8 },
+            "outputs": {
+              "type": "object",
+              "required": ["l3_review_result", "critical_issues"],
+              "properties": {
+                "l3_review_result": { "type": "string", "minLength": 1 },
+                "critical_issues": { "type": "number", "maximum": 0 },
+                "doc_sync_checked": { "type": "boolean" }
+              }
+            }
+          }
+        }
+      ]
+    },
+
+    "step9": {
+      "allOf": [
+        { "$ref": "#/$defs/commonEnvelope" },
+        {
+          "properties": {
+            "step": { "const": 9 },
+            "outputs": {
+              "type": "object",
+              "required": ["metrics_report_generated", "flow_report_generated", "flow_report_file"],
+              "properties": {
+                "metrics_report_generated": { "const": true },
+                "metrics_file": { "type": "string", "pattern": "^reports/.+\\.yaml$" },
+                "flow_report_generated": { "const": true },
+                "flow_report_file": { "type": "string", "pattern": "^flow-reports/.+\\.html$" },
+                "flow_report_opened": { "type": "boolean" },
+                "lessons_learned": { "type": "string" },
+                "flow_reflection": { "type": "string" }
+              }
+            }
+          }
+        }
+      ]
+    },
+
+    "step10": {
+      "allOf": [
+        { "$ref": "#/$defs/commonEnvelope" },
+        {
+          "properties": {
+            "step": { "const": 10 },
+            "outputs": {
+              "type": "object",
+              "required": ["commit_message", "delivery_report", "devlog_generated", "knowledge_updated", "doc_platform_sync_result"],
+              "properties": {
+                "commit_message": { "type": "string", "minLength": 1 },
+                "delivery_report": { "const": true },
+                "devlog_generated": { "const": true },
+                "knowledge_updated": { "const": true },
+                "doc_platform_sync_result": {
+                  "enum": ["synced", "relinked", "created", "skipped_no_changes", "skipped_user_opt_out"]
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

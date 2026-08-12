@@ -1,0 +1,12 @@
+{
+  "name": "issue-trace",
+  "version": "1.1.0",
+  "description": "问题深度根因定位与调用链追溯助手（纯分析场景）",
+  "author": "",
+  "compatibility": {
+    "codebuddy": ">=1.0.0",
+    "platform": ["darwin", "linux"]
+  },
+  "homepage": "",
+  "install_target": "~/.codebuddy/skills/issue-trace"
+}

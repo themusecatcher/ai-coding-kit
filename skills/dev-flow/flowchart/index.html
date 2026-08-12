@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>dev-flow 流程图 · 版本索引</title>
+  <script>
+    (function() {
+      var theme = localStorage.getItem('flowchart-index-theme') || 'dark';
+      document.documentElement.setAttribute('data-theme', theme);
+    })();
+  </script>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='32' y2='32'%3E%3Cstop offset='0' stop-color='%236366f1'/%3E%3Cstop offset='1' stop-color='%238b5cf6'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='32' height='32' rx='7' fill='url(%23g)'/%3E%3Cpath d='M16 27v-9M16 18l-8-8m8 8l8-8' stroke='%23fff' stroke-width='2.3' stroke-linecap='round' stroke-linejoin='round' fill='none'/%3E%3C/svg%3E">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-primary: #09090b; --bg-secondary: #0f0f12; --bg-tertiary: #18181b;
+      --bg-elevated: #1c1c1f; --bg-hover: #27272a;
+      --border-default: #27272a; --border-muted: #1e1e21;
+      --text-primary: #fafafa; --text-secondary: #a1a1aa; --text-tertiary: #71717a;
+      --accent: #818cf8; --accent-hover: #6366f1;
+      --accent-bg: rgba(99,102,241,0.06);
+      --green: #34d399; --green-bg: rgba(52,211,153,0.08);
+      --purple: #c084fc; --purple-bg: rgba(192,132,252,0.08);
+      --orange: #fb923c; --orange-bg: rgba(251,146,60,0.08);
+      --radius-md: 8px; --radius-lg: 12px; --radius-xl: 16px;
+      --shadow-md: 0 4px 16px rgba(0,0,0,0.5);
+    }
+    [data-theme="light"] {
+      --bg-primary: #f8f9fa; --bg-secondary: #ffffff; --bg-tertiary: #f1f3f5;
+      --bg-elevated: #ffffff; --bg-hover: #e9ecef;
+      --border-default: #dee2e6; --border-muted: #e9ecef;
+      --text-primary: #212529; --text-secondary: #495057; --text-tertiary: #868e96;
+      --accent: #6366f1; --accent-hover: #4f46e5;
+      --accent-bg: rgba(99,102,241,0.08);
+      --green: #059669; --green-bg: rgba(5,150,105,0.08);
+      --purple: #7c3aed; --purple-bg: rgba(124,58,237,0.08);
+      --orange: #ea580c; --orange-bg: rgba(234,88,12,0.08);
+      --shadow-md: 0 4px 16px rgba(0,0,0,0.08);
+    }
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg-primary); color: var(--text-primary);
+      -webkit-font-smoothing: antialiased; line-height: 1.5;
+      padding: 32px 48px; min-height: 100vh;
+      position: relative; overflow-x: hidden;
+    }
+    /* 壁纸 blobs（与 dashboard 完全一致） */
+    body::before {
+      content: ''; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+      background:
+        radial-gradient(ellipse 900px 700px at 15% 0%, rgba(99,102,241,0.22) 0%, transparent 55%),
+        radial-gradient(ellipse 700px 600px at 88% 8%, rgba(192,132,252,0.18) 0%, transparent 55%),
+        radial-gradient(ellipse 1100px 800px at 50% 105%, rgba(34,211,238,0.14) 0%, transparent 60%),
+        radial-gradient(ellipse 600px 500px at 75% 50%, rgba(244,114,182,0.08) 0%, transparent 60%);
+    }
+    [data-theme="light"] body::before {
+      background:
+        radial-gradient(ellipse 900px 700px at 15% 0%, rgba(99,102,241,0.14) 0%, transparent 55%),
+        radial-gradient(ellipse 700px 600px at 88% 8%, rgba(244,114,182,0.10) 0%, transparent 55%),
+        radial-gradient(ellipse 1100px 800px at 50% 105%, rgba(251,191,36,0.08) 0%, transparent 60%),
+        radial-gradient(ellipse 600px 500px at 75% 50%, rgba(99,102,241,0.06) 0%, transparent 60%);
+    }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border-default); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--text-tertiary); }
+    ::-webkit-scrollbar-corner { background: transparent; }
+    * { scrollbar-width: thin; scrollbar-color: var(--border-default) transparent; }
+
+    /* === 头部（与 dashboard 一致） === */
+    .header {
+      margin-bottom: 40px; padding-bottom: 24px;
+      border-bottom: 1px solid var(--border-muted);
+      display: flex; align-items: flex-start; justify-content: space-between;
+      gap: 24px;
+    }
+    .header-main { flex: 1; min-width: 0; }
+    .header h1 {
+      font-size: 28px; font-weight: 700; letter-spacing: -0.03em;
+      margin-bottom: 8px; display: flex; align-items: center; gap: 10px;
+    }
+    .header h1 .title-icon {
+      width: 36px; height: 36px;
+      border-radius: 10px;
+      display: inline-flex; align-items: center; justify-content: center;
+      background: linear-gradient(135deg, rgba(129,140,248,0.18) 0%, rgba(99,102,241,0.30) 100%);
+      box-shadow:
+        0 4px 12px rgba(99,102,241,0.18),
+        inset 0 1px 0 rgba(255,255,255,0.10);
+      flex-shrink: 0;
+      color: var(--accent);
+    }
+    .header h1 .title-icon svg { width: 20px; height: 20px; stroke-width: 2; }
+    [data-theme="light"] .header h1 .title-icon {
+      background: linear-gradient(135deg, rgba(99,102,241,0.10) 0%, rgba(79,70,229,0.20) 100%);
+      box-shadow:
+        0 4px 12px rgba(99,102,241,0.12),
+        inset 0 1px 0 rgba(255,255,255,0.5);
+    }
+    .header h1 .title-text {
+      background: linear-gradient(135deg, var(--text-primary) 0%, var(--accent) 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .header .subtitle { font-size: 14px; color: var(--text-tertiary); display: flex; gap: 18px; align-items: center; flex-wrap: wrap; }
+    .header .subtitle span { display: flex; align-items: center; gap: 6px; }
+    .header .subtitle svg { width: 14px; height: 14px; opacity: 0.7; flex-shrink: 0; }
+
+    /* === 主题切换（完整复刻 dashboard） === */
+    .theme-switch {
+      display: inline-flex; align-items: center; flex-shrink: 0;
+      cursor: pointer; background: none; border: none; padding: 0;
+      outline: none; font-family: inherit;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .theme-switch:focus-visible .theme-switch-track {
+      outline: 2px solid var(--accent); outline-offset: 3px;
+    }
+    .theme-switch-track {
+      position: relative;
+      width: 52px; height: 28px; border-radius: 999px;
+      background: rgba(255, 255, 255, 0.08);
+      backdrop-filter: blur(20px) saturate(180%);
+      -webkit-backdrop-filter: blur(20px) saturate(180%);
+      box-shadow:
+        0 4px 14px rgba(0, 0, 0, 0.28),
+        0 12px 28px rgba(0, 0, 0, 0.20);
+      border: none; isolation: isolate; overflow: hidden;
+      transition: background 300ms ease, box-shadow 280ms ease;
+      display: block;
+    }
+    .theme-switch:hover .theme-switch-track {
+      background: rgba(255, 255, 255, 0.12);
+      box-shadow:
+        0 6px 18px rgba(99, 102, 241, 0.25),
+        0 16px 32px rgba(99, 102, 241, 0.18);
+    }
+    [data-theme="light"] .theme-switch-track {
+      background: rgba(255, 255, 255, 0.50);
+      box-shadow:
+        0 4px 14px rgba(0, 0, 0, 0.10),
+        0 12px 28px rgba(0, 0, 0, 0.06);
+    }
+    [data-theme="light"] .theme-switch:hover .theme-switch-track {
+      background: rgba(255, 255, 255, 0.62);
+      box-shadow:
+        0 6px 18px rgba(245, 158, 11, 0.22),
+        0 16px 32px rgba(245, 158, 11, 0.14);
+    }
+    .theme-switch-knob {
+      position: absolute; top: 3px; left: 3px;
+      width: 22px; height: 22px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      background: linear-gradient(135deg, #6366f1 0%, #818cf8 100%);
+      box-shadow: 0 2px 8px rgba(99,102,241,0.4), 0 0 0 1px rgba(99,102,241,0.2);
+      transition: transform 350ms cubic-bezier(0.34, 1.56, 0.64, 1),
+                  background 300ms ease, box-shadow 300ms ease;
+      z-index: 2;
+    }
+    [data-theme="light"] .theme-switch-knob {
+      transform: translateX(0);
+      background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%);
+      box-shadow: 0 2px 8px rgba(245,158,11,0.45), 0 0 0 1px rgba(245,158,11,0.25);
+    }
+    [data-theme="dark"] .theme-switch-knob { transform: translateX(24px); }
+    .theme-switch-icon {
+      position: absolute; width: 14px; height: 14px; color: #fff;
+      transition: opacity 300ms ease, transform 350ms cubic-bezier(0.34, 1.56, 0.64, 1);
+      pointer-events: none;
+    }
+    [data-theme="light"] .theme-switch-icon.icon-sun { opacity: 1; transform: rotate(0deg); }
+    [data-theme="light"] .theme-switch-icon.icon-moon { opacity: 0; transform: rotate(90deg); }
+    [data-theme="dark"] .theme-switch-icon.icon-sun { opacity: 0; transform: rotate(-90deg); }
+    [data-theme="dark"] .theme-switch-icon.icon-moon { opacity: 1; transform: rotate(0deg); }
+    .theme-switch:active .theme-switch-knob { transform: translateX(24px) scale(0.88); }
+    [data-theme="light"] .theme-switch:active .theme-switch-knob { transform: translateX(0) scale(0.88); }
+
+    /* === 导航 === */
+    .section-nav {
+      position: sticky; top: 10px; z-index: 100;
+      display: flex; gap: 4px;
+      width: fit-content; margin: 0 auto 32px;
+      padding: 6px; border-radius: 22px;
+      background: rgba(255, 255, 255, 0.06);
+      backdrop-filter: blur(20px) saturate(180%);
+      -webkit-backdrop-filter: blur(20px) saturate(180%);
+      box-shadow:
+        0 6px 20px rgba(0, 0, 0, 0.25),
+        0 18px 40px rgba(0, 0, 0, 0.18);
+      border: none;
+      transition: background 300ms ease, box-shadow 300ms ease;
+    }
+    .section-nav a {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 8px 16px; border-radius: 16px;
+      font-size: 13px; font-weight: 500;
+      color: rgba(255, 255, 255, 0.90);
+      text-shadow: 0 1px 3px rgba(0, 0, 0, 0.30);
+      text-decoration: none; white-space: nowrap;
+      transition: all 160ms;
+    }
+    .section-nav a:hover {
+      background: linear-gradient(135deg, rgba(129,140,248,0.36) 0%, rgba(99,102,241,0.22) 100%);
+      color: #fff;
+      transform: translateY(-2px);
+      box-shadow: 0 6px 22px rgba(99, 102, 241, 0.45);
+    }
+    .section-nav a.active {
+      background: linear-gradient(135deg, rgba(129,140,248,0.42) 0%, rgba(99,102,241,0.30) 100%);
+      color: #fff; font-weight: 600;
+      box-shadow: 0 4px 18px rgba(99, 102, 241, 0.50);
+    }
+    [data-theme="light"] .section-nav {
+      background: rgba(255, 255, 255, 0.55);
+      box-shadow:
+        0 6px 20px rgba(0, 0, 0, 0.10),
+        0 18px 40px rgba(0, 0, 0, 0.06);
+    }
+    [data-theme="light"] .section-nav a {
+      color: rgba(30, 30, 30, 0.85); text-shadow: none;
+    }
+    [data-theme="light"] .section-nav a:hover {
+      color: rgba(15, 15, 15, 0.95);
+      background: linear-gradient(135deg, rgba(129,140,248,0.26) 0%, rgba(99,102,241,0.16) 100%);
+      box-shadow: 0 4px 18px rgba(99, 102, 241, 0.28);
+    }
+    [data-theme="light"] .section-nav a.active {
+      color: rgba(15, 15, 15, 0.95);
+      background: linear-gradient(135deg, rgba(129,140,248,0.34) 0%, rgba(99,102,241,0.22) 100%);
+      box-shadow: 0 4px 18px rgba(99, 102, 241, 0.35);
+    }
+
+    /* 锚点偏移 */
+    #v4, #v3, #v2, #v1 { scroll-margin-top: 68px; }
+
+    /* === 卡片网格 === */
+    .card-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    /* === 版本卡片 === */
+    .ver-card {
+      background: var(--bg-secondary); border: 1px solid var(--border-muted);
+      border-radius: var(--radius-xl); padding: 24px;
+      transition: border-color 280ms ease, box-shadow 280ms ease, transform 250ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
+      position: relative; overflow: hidden; isolation: isolate;
+      display: flex; flex-direction: column;
+    }
+    /* 悬浮光斑——从左上角投射的暖光 */
+    .ver-card::before {
+      content: ''; position: absolute; top: -50%; left: -30%;
+      width: 160%; height: 200%;
+      background: radial-gradient(ellipse at 30% 30%, rgba(129,140,248,0.10) 0%, transparent 60%);
+      opacity: 0; transition: opacity 350ms ease;
+      pointer-events: none; z-index: 0;
+    }
+    /* 左侧隐形色条——hover/选中时浮现 */
+    .ver-card::after {
+      content: ''; position: absolute; left: 0; top: 30%; bottom: 30%;
+      width: 3px; border-radius: 0 3px 3px 0;
+      background: var(--accent);
+      opacity: 0; transform: scaleY(0.5);
+      transition: opacity 280ms ease, transform 300ms cubic-bezier(0.34, 1.56, 0.64, 1);
+      pointer-events: none; z-index: 2;
+    }
+
+    /* ---- 悬浮态 ---- */
+    .ver-card:hover {
+      border-color: rgba(129,140,248,0.22);
+      transform: translateY(-3px);
+      box-shadow:
+        0 8px 30px rgba(0,0,0,0.30),
+        0 0 0 1px rgba(129,140,248,0.10);
+    }
+    .ver-card:hover::before { opacity: 1; }
+    .ver-card:hover::after { opacity: 1; transform: scaleY(1); }
+    [data-theme="light"] .ver-card:hover {
+      border-color: rgba(99,102,241,0.18);
+      box-shadow:
+        0 8px 30px rgba(0,0,0,0.08),
+        0 0 0 1px rgba(99,102,241,0.08);
+    }
+
+    /* ---- 选中态（导航联动） ---- */
+    .ver-card.selected {
+      border-color: rgba(129,140,248,0.28);
+      box-shadow:
+        0 0 0 2px rgba(129,140,248,0.10),
+        0 8px 28px rgba(129,140,248,0.12);
+      transform: scale(1.01);
+    }
+    .ver-card.selected::after { opacity: 1; transform: scaleY(1); }
+    /* selected + hover 叠加 */
+    .ver-card.selected:hover {
+      border-color: rgba(129,140,248,0.50);
+      box-shadow:
+        0 0 0 3px rgba(129,140,248,0.15),
+        0 12px 36px rgba(129,140,248,0.20);
+      transform: scale(1.02) translateY(-2px);
+    }
+    [data-theme="light"] .ver-card.selected {
+      border-color: rgba(99,102,241,0.22);
+      box-shadow:
+        0 0 0 2px rgba(99,102,241,0.08),
+        0 8px 28px rgba(99,102,241,0.06);
+    }
+    [data-theme="light"] .ver-card.selected:hover {
+      border-color: rgba(99,102,241,0.42);
+      box-shadow:
+        0 0 0 3px rgba(99,102,241,0.12),
+        0 12px 36px rgba(99,102,241,0.10);
+    }
+
+    /* ---- 当前版本（v4 专属） ---- */
+    .ver-card.current {
+      border-color: rgba(129,140,248,0.30);
+      background: linear-gradient(160deg, var(--accent-bg) 0%, rgba(129,140,248,0.02) 40%, var(--bg-secondary) 100%);
+      box-shadow:
+        0 0 0 1px rgba(129,140,248,0.06),
+        0 4px 20px rgba(129,140,248,0.06);
+    }
+    .ver-card.current::after { opacity: 0.4; transform: scaleY(1); background: var(--green); }
+    .ver-card.current:hover {
+      border-color: var(--accent);
+      box-shadow:
+        0 0 0 2px rgba(129,140,248,0.12),
+        0 8px 32px rgba(129,140,248,0.15);
+    }
+    [data-theme="light"] .ver-card.current {
+      border-color: rgba(99,102,241,0.22);
+      box-shadow:
+        0 0 0 1px rgba(99,102,241,0.04),
+        0 4px 20px rgba(99,102,241,0.04);
+    }
+    [data-theme="light"] .ver-card.current:hover {
+      border-color: rgba(99,102,241,0.42);
+      box-shadow:
+        0 0 0 2px rgba(99,102,241,0.08),
+        0 8px 32px rgba(99,102,241,0.10);
+    }
+    /* current + selected 叠加：selected 优先级更高（后者在 CSS 中靠后） */
+    .ver-card.current.selected {
+      box-shadow:
+        0 0 0 2px rgba(129,140,248,0.10),
+        0 8px 28px rgba(129,140,248,0.12);
+    }
+    [data-theme="light"] .ver-card.current.selected {
+      box-shadow:
+        0 0 0 2px rgba(99,102,241,0.08),
+        0 8px 28px rgba(99,102,241,0.06);
+    }
+
+    /* 卡片内容 */
+    .ver-top { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+    .ver-num { font-size: 18px; font-weight: 700; letter-spacing: -0.01em; color: var(--text-primary); }
+    .ver-date { font-size: 12px; color: var(--text-tertiary); }
+    .ver-badge {
+      font-size: 10px; font-weight: 600; letter-spacing: 0.04em;
+      padding: 2px 8px; border-radius: 10px;
+      background: var(--green-bg); color: var(--green);
+      margin-left: auto;
+    }
+    .ver-desc { font-size: 13px; color: var(--text-secondary); line-height: 1.7; margin-bottom: 16px; flex: 1; }
+
+    /* === 格式按钮区 === */
+    .ver-actions {
+      display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+      justify-content: flex-end;
+      padding-top: 16px;
+    }
+    .btn {
+      display: inline-flex; align-items: center; gap: 7px;
+      padding: 9px 18px; border-radius: 999px;
+      font-size: 13px; font-weight: 500; text-decoration: none; cursor: pointer;
+      border: 1px solid transparent;
+      color: var(--text-secondary);
+      transition: border-color 220ms ease, color 220ms ease, background 220ms ease,
+                  transform 200ms cubic-bezier(0.34, 1.56, 0.64, 1),
+                  box-shadow 220ms ease;
+      line-height: 1; white-space: nowrap; font-family: inherit;
+    }
+    .btn svg { width: 15px; height: 15px; flex-shrink: 0; }
+
+    /* 各格式默认态 —— 微弱的色系底色+半透边框 */
+    .btn.html { background: rgba(129,140,248,0.08); border-color: rgba(129,140,248,0.15); color: #c7d2fe; }
+    .btn.md   { background: rgba(52,211,153,0.08); border-color: rgba(52,211,153,0.15); color: #a7f3d0; }
+    .btn.png  { background: rgba(192,132,252,0.08); border-color: rgba(192,132,252,0.15); color: #ddd6fe; }
+    .btn.svg  { background: rgba(251,146,60,0.08); border-color: rgba(251,146,60,0.15); color: #fed7aa; }
+
+    [data-theme="light"] .btn.html { background: rgba(99,102,241,0.05); border-color: rgba(99,102,241,0.12); color: #4338ca; }
+    [data-theme="light"] .btn.md   { background: rgba(5,150,105,0.05); border-color: rgba(5,150,105,0.12); color: #065f46; }
+    [data-theme="light"] .btn.png  { background: rgba(124,58,237,0.05); border-color: rgba(124,58,237,0.12); color: #6d28d9; }
+    [data-theme="light"] .btn.svg  { background: rgba(234,88,12,0.05); border-color: rgba(234,88,12,0.12); color: #9a3412; }
+
+    .btn:hover {
+      color: #fff; transform: translateY(-2px);
+      box-shadow: 0 4px 14px rgba(0,0,0,0.20);
+      border-color: transparent;
+    }
+    .btn:active { transform: translateY(0) scale(0.96); }
+
+    /* hover 纯色填充 */
+    .btn.html:hover { background: linear-gradient(135deg, #6366f1, #818cf8); }
+    .btn.md:hover   { background: linear-gradient(135deg, #059669, #10b981); }
+    .btn.png:hover  { background: linear-gradient(135deg, #7c3aed, #a78bfa); }
+    .btn.svg:hover  { background: linear-gradient(135deg, #ea580c, #fb923c); }
+
+    [data-theme="light"] .btn:hover { color: #fff; box-shadow: 0 4px 14px rgba(0,0,0,0.10); }
+
+    /* === Toast === */
+    .toast {
+      position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%) translateY(100px);
+      background: var(--bg-elevated); border: 1px solid var(--border-default);
+      border-radius: var(--radius-md); padding: 10px 24px;
+      font-size: 13px; color: var(--text-primary);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+      z-index: 999; pointer-events: none;
+      transition: transform 250ms cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .toast.show { transform: translateX(-50%) translateY(0); }
+    .toast code { color: var(--accent); font-family: 'SF Mono', 'Fira Code', monospace; font-size: 11px; }
+
+    /* 响应式 */
+    @media (max-width: 768px) {
+      body { padding: 24px 16px; }
+      .header { flex-direction: column; }
+      .header h1 { font-size: 22px; }
+      .card-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <div class="header-main">
+      <h1>
+        <span class="title-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="6" cy="3" r="2"/><circle cx="6" cy="21" r="2"/><circle cx="18" cy="6" r="2"/>
+            <path d="M18 9v3a2 2 0 0 1-2 2H6"/>
+          </svg>
+        </span>
+        <span class="title-text">dev-flow 流程图 · 版本索引</span>
+      </h1>
+      <div class="subtitle">
+        <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>5 个版本</span>
+        <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg>13 个文件</span>
+        <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"/><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"/><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/></svg>4 种格式</span>
+      </div>
+    </div>
+    <button class="theme-switch" id="themeToggle" type="button" title="切换主题" aria-label="切换主题">
+      <span class="theme-switch-track" aria-hidden="true">
+        <span class="theme-switch-knob" aria-hidden="true">
+          <svg class="theme-switch-icon icon-sun" viewBox="0 0 24 24" fill="none">
+            <circle cx="12" cy="12" r="4" fill="currentColor"/>
+            <g stroke="currentColor" stroke-width="2" stroke-linecap="round">
+              <path d="M12 2v2"/><path d="M12 20v2"/>
+              <path d="M2 12h2"/><path d="M20 12h2"/>
+              <path d="m4.93 4.93 1.41 1.41"/>
+              <path d="m17.66 17.66 1.41 1.41"/>
+              <path d="m4.93 19.07 1.41-1.41"/>
+              <path d="m17.66 6.34 1.41-1.41"/>
+            </g>
+          </svg>
+          <svg class="theme-switch-icon icon-moon" viewBox="0 0 24 24" fill="none">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" fill="currentColor"/>
+          </svg>
+        </span>
+      </span>
+    </button>
+  </div>
+
+  <nav class="section-nav" id="nav">
+    <a href="#v5" class="active">v5</a>
+    <a href="#v4">v4</a>
+    <a href="#v3">v3</a>
+    <a href="#v2">v2</a>
+    <a href="#v1">v1</a>
+  </nav>
+
+  <div class="card-grid" id="versions">
+
+    <!-- v5 -->
+    <div class="ver-card current" id="v5">
+      <div class="ver-top">
+        <span class="ver-num">v5</span>
+        <span class="ver-date">2026-07-22</span>
+        <span class="ver-badge">当前</span>
+      </div>
+      <div class="ver-desc">交互体验与自检体系完善：新增 dev:ask/dev:guide 交互式菜单、dev:help --check 帮助一致性检查，源文件索引补全遗漏项。</div>
+      <div class="ver-actions">
+        <a href="versions/v5_2026-07-22/flowchart.html" class="btn html" target="_blank"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>HTML</a>
+        <a href="#" class="btn md" onclick="copyP('versions/v5_2026-07-22/flowchart.md');return false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg>MD</a>
+        <a href="versions/v5_2026-07-22/flowchart.png" class="btn png" target="_blank"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>PNG</a>
+      </div>
+    </div>
+
+    <!-- v4 -->
+    <div class="ver-card" id="v4">
+      <div class="ver-top">
+        <span class="ver-num">v4</span>
+        <span class="ver-date">2026-07-14</span>
+      </div>
+      <div class="ver-desc">交互与执行层持续硬化：口语意图消歧规则、文档平台×模式策略矩阵、micro-fix 多文件对称升级、6→7 回归修复规则、热启动 24h 跨天对账及命令扩展。</div>
+      <div class="ver-actions">
+        <a href="versions/v4_2026-07-14/flowchart.html" class="btn html" target="_blank"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>HTML</a>
+        <a href="#" class="btn md" onclick="copyP('versions/v4_2026-07-14/flowchart.md');return false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg>MD</a>
+        <a href="versions/v4_2026-07-14/flowchart.png" class="btn png" target="_blank"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>PNG</a>
+      </div>
+    </div>
+
+    <!-- v3 -->
+    <div class="ver-card" id="v3">
+      <div class="ver-top">
+        <span class="ver-num">v3</span>
+        <span class="ver-date">2026-07-06</span>
+      </div>
+      <div class="ver-desc">程序化执行层重构：物理检查点、状态机、6 模式分发、micro-fix、分批执行及漂移检测。</div>
+      <div class="ver-actions">
+        <a href="versions/v3_2026-07-06/flowchart.html" class="btn html" target="_blank"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>HTML</a>
+        <a href="#" class="btn md" onclick="copyP('versions/v3_2026-07-06/flowchart.md');return false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg>MD</a>
+        <a href="versions/v3_2026-07-06/flowchart.png" class="btn png" target="_blank"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>PNG</a>
+      </div>
+    </div>
+
+    <!-- v2 -->
+    <div class="ver-card" id="v2">
+      <div class="ver-top">
+        <span class="ver-num">v2</span>
+        <span class="ver-date">2026-04-10</span>
+      </div>
+      <div class="ver-desc">统一流程设计：单一流程配合智能评估执行深度，精简为一条可适应多种场景的工作流路径。</div>
+      <div class="ver-actions">
+        <a href="versions/v2_2026-04-10/flowchart.html" class="btn html" target="_blank"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>HTML</a>
+        <a href="#" class="btn md" onclick="copyP('versions/v2_2026-04-10/flowchart.md');return false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg>MD</a>
+        <a href="versions/v2_2026-04-10/flowchart.png" class="btn png" target="_blank"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>PNG</a>
+      </div>
+    </div>
+
+    <!-- v1 -->
+    <div class="ver-card" id="v1">
+      <div class="ver-top">
+        <span class="ver-num">v1</span>
+        <span class="ver-date">2026-04-03</span>
+      </div>
+      <div class="ver-desc">初始版本，dev-flow 重构后的首个完整流程图。</div>
+      <div class="ver-actions">
+        <a href="versions/v1_2026-04-03/flowchart.html" class="btn html" target="_blank"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>HTML</a>
+        <a href="#" class="btn md" onclick="copyP('versions/v1_2026-04-03/flowchart.md');return false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg>MD</a>
+        <a href="versions/v1_2026-04-03/flowchart.png" class="btn png" target="_blank"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>PNG</a>
+        <a href="versions/v1_2026-04-03/flowchart.svg" class="btn svg" target="_blank"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 2-9 5v10l9 5 9-5V7Z"/><path d="m12 2 9 5-9 5-9-5Z"/><path d="m12 2v10"/><path d="m12 12 9-5"/><path d="m12 12-9-5"/></svg>SVG</a>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="toast" id="toast">📋 已复制: <code id="toastPath"></code></div>
+
+  <script>
+    // 主题
+    document.getElementById('themeToggle').addEventListener('click', function() {
+      var r = document.documentElement;
+      var n = r.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+      r.setAttribute('data-theme', n);
+      localStorage.setItem('flowchart-index-theme', n);
+    });
+
+    // 导航
+    var links = document.querySelectorAll('#nav a');
+    var cards = document.querySelectorAll('.ver-card');
+    var clicked = false;
+    function setOn(id) {
+      if (!id) return;
+      links.forEach(function(a) { a.classList.toggle('active', a.getAttribute('href') === '#' + id); });
+      cards.forEach(function(c) { c.classList.toggle('selected', c.id === id); });
+    }
+    // 点击：立即高亮 + 500ms 内屏蔽 observer 覆盖
+    links.forEach(function(a) {
+      a.addEventListener('click', function() {
+        var id = a.getAttribute('href').slice(1);
+        setOn(id);
+        clicked = true;
+        clearTimeout(clicked._t);
+        clicked._t = setTimeout(function() { clicked = false; }, 500);
+      });
+    });
+    // 滚动监听：放宽检测区到中间 50% 视口
+    var obs = new IntersectionObserver(function(es) {
+      if (clicked) return;  // 点击后 500ms 内信任用户选择
+      es.forEach(function(e) { if (e.isIntersecting) setOn(e.target.id); });
+    }, { rootMargin: '-25% 0px -25% 0px' });
+    document.querySelectorAll('#v4,#v3,#v2,#v1').forEach(function(el) { obs.observe(el); });
+    // 页面加载时处理 URL hash 或默认 v4
+    setOn(window.location.hash.slice(1) || 'v4');
+
+    // 复制
+    function copyP(path) {
+      navigator.clipboard.writeText(path).then(function() {
+        var t = document.getElementById('toast');
+        document.getElementById('toastPath').textContent = path;
+        t.classList.add('show');
+        setTimeout(function() { t.classList.remove('show'); }, 2000);
+      });
+    }
+  </script>
+</body>
+</html>

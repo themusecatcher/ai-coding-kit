@@ -1,0 +1,17 @@
+{
+  "name": "self-improving-agent",
+  "version": "1.0.0",
+  "description": "经验回顾与规则质量管理。提供三大能力：(1) 任务前经验回顾——从 .learnings/ 和规则文件中检索相关经验；(2) 规则质量审计——检测规则冲突/过时/重复；(3) 学习记录管理——查询/清理/promote .learnings/ 条目到规则。适用于 dev-flow 步骤 9 调用、用户主动请求回顾/审计、日常对话中检测到可改进模式。",
+  "author": {
+    "name": ""
+  },
+  "keywords": [
+    "self",
+    "improving",
+    "agent"
+  ],
+  "category": "productivity",
+  "skills": [
+    "./SKILL.md"
+  ]
+}

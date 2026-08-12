@@ -1,0 +1,24 @@
+{
+  "$schema": "../../../schema.json",
+  "_comment": "fixture: 集中式 projects 配置（脱敏自 my-website/.browser-compat.json）",
+  "_docs": "脚本通过 package.json 的 name 字段自动匹配项目子配置",
+
+  "projects": {
+    "central-config-project": {
+      "targets": {
+        "chrome": "64",
+        "firefox": "67",
+        "safari": "12",
+        "edge": "79"
+      },
+      "polyfills": ["react-app-polyfill/stable"]
+    },
+
+    "another-project": {
+      "targets": {
+        "chrome": "80",
+        "safari": "13"
+      }
+    }
+  }
+}

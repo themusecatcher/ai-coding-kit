@@ -1,0 +1,922 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>dev-flow 完整流程图</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='32' y2='32'%3E%3Cstop offset='0' stop-color='%236366f1'/%3E%3Cstop offset='1' stop-color='%238b5cf6'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='32' height='32' rx='7' fill='url(%23g)'/%3E%3Cpath d='M16 27v-9M16 18l-8-8m8 8l8-8' stroke='%23fff' stroke-width='2.3' stroke-linecap='round' stroke-linejoin='round' fill='none'/%3E%3C/svg%3E">
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+    :root {
+      --bg-primary: #09090b; --bg-secondary: #0f0f12; --bg-tertiary: #18181b;
+      --bg-elevated: #1c1c1f; --bg-hover: #27272a;
+      --border-default: #27272a; --border-muted: #1e1e21;
+      --text-primary: #fafafa; --text-secondary: #a1a1aa; --text-tertiary: #71717a;
+      --accent: #818cf8; --accent-hover: #6366f1;
+      --accent-bg: rgba(99,102,241,0.06); --accent-bg-hover: rgba(99,102,241,0.12);
+      --green: #34d399; --green-bg: rgba(52,211,153,0.08);
+      --red: #f87171; --red-bg: rgba(248,113,113,0.08);
+      --yellow: #fbbf24; --yellow-bg: rgba(251,191,36,0.06);
+      --purple: #c084fc; --purple-bg: rgba(192,132,252,0.08);
+      --orange: #fb923c; --orange-bg: rgba(251,146,60,0.08);
+      --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px;
+      --space-5: 20px; --space-6: 24px; --space-8: 32px; --space-10: 40px; --space-12: 48px;
+      --radius-sm: 6px; --radius-md: 8px; --radius-lg: 12px; --radius-xl: 16px;
+      --shadow-md: 0 4px 16px rgba(0,0,0,0.5);
+      --nav-width: 280px;
+      --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+      --transition-normal: 250ms cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg-primary); color: var(--text-primary);
+      display: flex; height: 100vh; overflow: hidden;
+      -webkit-font-smoothing: antialiased; line-height: 1.5;
+    }
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border-default); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--text-tertiary); }
+
+    /* 导航栏 */
+    nav {
+      width: var(--nav-width); min-width: var(--nav-width);
+      background: var(--bg-secondary); border-right: 1px solid var(--border-muted);
+      overflow-y: auto; overflow-x: hidden; padding: 0;
+      display: flex; flex-direction: column; position: relative; z-index: 10;
+    }
+    .nav-header {
+      padding: var(--space-5) var(--space-4); border-bottom: 1px solid var(--border-muted);
+      position: sticky; top: 0; background: var(--bg-secondary); z-index: 2;
+      backdrop-filter: blur(12px);
+    }
+    .nav-header h1 {
+      font-size: 14px; font-weight: 700; color: var(--text-primary);
+      display: flex; align-items: center; gap: var(--space-2); letter-spacing: -0.02em;
+    }
+    .nav-header .logo {
+      width: 26px; height: 26px;
+      background: linear-gradient(135deg, var(--accent), var(--purple));
+      border-radius: var(--radius-sm);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px; box-shadow: 0 2px 8px rgba(99,102,241,0.3);
+    }
+    .nav-header .version {
+      font-size: 11px; color: var(--text-tertiary); margin-top: 2px;
+      padding-left: 34px; font-weight: 400;
+    }
+    .nav-body { padding: var(--space-3); flex: 1; }
+    .nav-group { margin-bottom: var(--space-2); }
+    .nav-group-title {
+      font-size: 11px; font-weight: 600; color: var(--text-tertiary);
+      text-transform: uppercase; letter-spacing: 0.08em;
+      padding: var(--space-3) var(--space-3) var(--space-2);
+      display: flex; align-items: center; gap: var(--space-2); user-select: none;
+    }
+    .nav-group-title::before { content: ''; flex: 0 0 2px; height: 12px; border-radius: 1px; }
+    .nav-group:nth-child(1) .nav-group-title::before { background: var(--accent); }
+    .nav-group:nth-child(2) .nav-group-title::before { background: var(--purple); }
+    .nav-group:nth-child(3) .nav-group-title::before { background: var(--orange); }
+    nav a {
+      display: flex; align-items: center; gap: var(--space-2);
+      padding: 7px var(--space-3); color: var(--text-secondary);
+      text-decoration: none; font-size: 13px; font-weight: 450;
+      border-radius: var(--radius-md); margin: 1px 0;
+      transition: all var(--transition-fast); position: relative;
+    }
+    nav a .nav-icon { font-size: 14px; width: 20px; text-align: center; flex-shrink: 0; }
+    nav a:hover { background: var(--bg-hover); color: var(--text-primary); }
+    nav a.active { background: var(--accent-bg-hover); color: var(--accent); font-weight: 500; }
+    nav a.active::before {
+      content: ''; position: absolute; left: 0; top: 50%; transform: translateY(-50%);
+      width: 3px; height: 16px; background: var(--accent); border-radius: 0 2px 2px 0;
+    }
+    .badge {
+      display: inline-flex; align-items: center; font-size: 10px; font-weight: 600;
+      padding: 1px 6px; border-radius: 10px; margin-left: auto;
+      letter-spacing: 0.02em; line-height: 16px;
+    }
+    .badge-full { background: var(--purple-bg); color: var(--purple); }
+    .badge-quick { background: var(--green-bg); color: var(--green); }
+    .badge-wrap { background: var(--yellow-bg); color: var(--yellow); }
+    .badge-ultra { background: var(--orange-bg); color: var(--orange); }
+    .badge-shared { background: var(--accent-bg); color: var(--accent); }
+
+    /* 主内容区 */
+    main {
+      flex: 1; overflow-y: auto; overflow-x: hidden;
+      padding: var(--space-8) var(--space-10); scroll-behavior: smooth;
+    }
+    .hero {
+      margin-bottom: var(--space-12); padding-bottom: var(--space-8);
+      border-bottom: 1px solid var(--border-muted);
+    }
+    .hero h1 {
+      font-size: 28px; font-weight: 700; letter-spacing: -0.03em;
+      background: linear-gradient(135deg, var(--text-primary) 0%, var(--accent) 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text; margin-bottom: var(--space-3);
+    }
+    .hero p { font-size: 15px; color: var(--text-secondary); max-width: 640px; line-height: 1.6; }
+    .hero-stats { display: flex; gap: var(--space-6); margin-top: var(--space-6); }
+    .hero-stat { display: flex; flex-direction: column; gap: 2px; }
+    .hero-stat .value { font-size: 22px; font-weight: 700; color: var(--text-primary); }
+    .hero-stat .label { font-size: 12px; color: var(--text-tertiary); font-weight: 500; }
+
+    .chart-section { margin-bottom: var(--space-10); scroll-margin-top: var(--space-6); }
+    .section-header {
+      display: flex; align-items: center; gap: var(--space-3); margin-bottom: var(--space-4);
+    }
+    .section-header .section-icon {
+      width: 36px; height: 36px; border-radius: var(--radius-md);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px; flex-shrink: 0;
+    }
+    .section-header h2 {
+      font-size: 18px; font-weight: 650; letter-spacing: -0.02em; color: var(--text-primary);
+    }
+    .section-header .section-desc {
+      font-size: 13px; color: var(--text-tertiary); margin-left: auto; font-weight: 450;
+    }
+    .chart-card {
+      background: var(--bg-secondary); border: 1px solid var(--border-muted);
+      border-radius: var(--radius-xl); overflow: hidden;
+      transition: border-color var(--transition-normal), box-shadow var(--transition-normal);
+    }
+    .chart-card:hover { border-color: var(--border-default); box-shadow: var(--shadow-md); }
+    .mermaid { padding: var(--space-6); background: transparent; }
+    .mermaid svg { max-width: 100%; height: auto; }
+    .card-footer {
+      padding: var(--space-3) var(--space-5); border-top: 1px solid var(--border-muted);
+      display: flex; align-items: center; justify-content: space-between;
+      background: var(--bg-tertiary);
+    }
+    .file-link {
+      font-size: 12px; color: var(--text-tertiary);
+      display: flex; align-items: center; gap: var(--space-2);
+    }
+    .file-link a {
+      color: var(--accent); text-decoration: none; font-weight: 500;
+      transition: color var(--transition-fast);
+    }
+    .file-link a:hover { color: var(--accent-hover); text-decoration: underline; }
+    .legend {
+      display: flex; gap: var(--space-4); flex-wrap: wrap;
+      padding: var(--space-3) var(--space-5);
+      border-bottom: 1px solid var(--border-muted); background: var(--bg-tertiary);
+    }
+    .legend-item {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 12px; color: var(--text-secondary); font-weight: 450;
+    }
+    .legend-color { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; }
+    .note {
+      display: flex; align-items: flex-start; gap: var(--space-3);
+      background: var(--yellow-bg); border: 1px solid rgba(251,191,36,0.15);
+      border-radius: var(--radius-lg); padding: var(--space-3) var(--space-4);
+      margin-top: var(--space-3); font-size: 13px; color: var(--yellow); line-height: 1.6;
+    }
+    .note::before { content: '\1F4A1'; font-size: 14px; flex-shrink: 0; margin-top: 1px; }
+    .note.note-info {
+      background: var(--accent-bg); border-color: rgba(99,102,241,0.15); color: var(--accent);
+    }
+    .note.note-info::before { content: '\2139\FE0F'; }
+    .table-wrapper {
+      overflow-x: auto; border-radius: var(--radius-lg);
+      border: 1px solid var(--border-muted); background: var(--bg-secondary);
+    }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    thead { background: var(--bg-tertiary); }
+    th {
+      padding: var(--space-3) var(--space-4); text-align: left; font-weight: 600;
+      color: var(--text-secondary); font-size: 12px; text-transform: uppercase;
+      letter-spacing: 0.04em; border-bottom: 1px solid var(--border-default);
+    }
+    td {
+      padding: var(--space-3) var(--space-4); color: var(--text-secondary);
+      border-bottom: 1px solid var(--border-muted);
+    }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: var(--bg-hover); color: var(--text-primary); }
+    td:first-child { font-weight: 500; color: var(--text-primary); }
+    .back-to-top {
+      position: fixed; bottom: var(--space-6); right: var(--space-6);
+      width: 40px; height: 40px; border-radius: 50%;
+      background: var(--bg-elevated); border: 1px solid var(--border-default);
+      color: var(--text-secondary); display: flex; align-items: center; justify-content: center;
+      cursor: pointer; opacity: 0; transform: translateY(10px);
+      transition: all var(--transition-normal); z-index: 100;
+      font-size: 16px; box-shadow: var(--shadow-md);
+    }
+    .back-to-top.visible { opacity: 1; transform: translateY(0); }
+    .back-to-top:hover { background: var(--accent); color: white; border-color: var(--accent); }
+    .section-divider {
+      height: 1px; background: linear-gradient(90deg, transparent, var(--border-default), transparent);
+      margin: var(--space-6) 0;
+    }
+    @media (max-width: 1024px) { main { padding: var(--space-6) var(--space-5); } }
+    @media (max-width: 768px) {
+      nav { display: none; } main { padding: var(--space-5) var(--space-4); }
+      .hero h1 { font-size: 22px; }
+      .hero-stats { gap: var(--space-4); } .hero-stat .value { font-size: 18px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- 左侧导航 -->
+<nav>
+  <div class="nav-header">
+    <h1><span class="logo">🔀</span> dev-flow</h1>
+    <p class="version">流程可视化文档 v3.0</p>
+  </div>
+  <div class="nav-body">
+    <div class="nav-group">
+      <div class="nav-group-title">概览</div>
+      <a href="#entry"><span class="nav-icon">🚪</span>入口触发与模式路由</a>
+      <a href="#full-mode"><span class="nav-icon">📋</span>完整模式 <span class="badge badge-full">Full</span></a>
+      <a href="#quick-mode"><span class="nav-icon">⚡</span>快速模式 <span class="badge badge-quick">Quick</span></a>
+      <a href="#ultra-quick-mode"><span class="nav-icon">🚀</span>极速模式 <span class="badge badge-ultra">Ultra</span></a>
+      <a href="#wrapup-mode"><span class="nav-icon">📦</span>收尾模式 <span class="badge badge-wrap">Wrap</span></a>
+      <a href="#wrapup-flow"><span class="nav-icon">🔄</span>统一收尾流程 <span class="badge badge-shared">Shared</span></a>
+    </div>
+    <div class="nav-group">
+      <div class="nav-group-title">完整模式步骤</div>
+      <a href="#phase0"><span class="nav-icon">🎯</span>阶段0：需求理解 <span class="badge badge-full">Full</span></a>
+      <a href="#step1"><span class="nav-icon">🔍</span>步骤1：研究与定位 <span class="badge badge-shared">1~7</span></a>
+      <a href="#step2"><span class="nav-icon">📐</span>步骤2：确认范围</a>
+      <a href="#step3"><span class="nav-icon">📝</span>步骤3：制定方案</a>
+      <a href="#step4"><span class="nav-icon">🤝</span>步骤4：用户决策</a>
+      <a href="#step45"><span class="nav-icon">🔧</span>步骤4.5：环境检查</a>
+      <a href="#step5"><span class="nav-icon">⚙️</span>步骤5：执行修改</a>
+      <a href="#step55"><span class="nav-icon">🔬</span>步骤5.5：编码后置钩子</a>
+      <a href="#step6"><span class="nav-icon">✅</span>步骤6：质量验证</a>
+      <a href="#step7"><span class="nav-icon">🧹</span>步骤7：清理+Commit</a>
+      <a href="#step8"><span class="nav-icon">🔎</span>步骤8：L3审查 <span class="badge badge-full">Full</span></a>
+      <a href="#step9"><span class="nav-icon">💡</span>步骤9：反思与学习 <span class="badge badge-full">Full</span></a>
+      <a href="#step10"><span class="nav-icon">📦</span>步骤10：归档与交付 <span class="badge badge-full">Full</span></a>
+    </div>
+    <div class="nav-group">
+      <div class="nav-group-title">特殊流程</div>
+      <a href="#iteration"><span class="nav-icon">🔄</span>迭代修复机制</a>
+      <a href="#rollback"><span class="nav-icon">↩️</span>回退机制</a>
+      <a href="#gate"><span class="nav-icon">🚧</span>门控与钩子</a>
+    </div>
+  </div>
+</nav>
+
+<!-- 主内容区 -->
+<main id="main-content">
+
+<div class="hero">
+  <h1>dev-flow 完整流程图</h1>
+  <p>面向 AI 辅助编程的系统化开发工作流。覆盖从需求输入到代码交付的完整生命周期，支持极速、快速、完整和收尾四种模式。</p>
+  <div class="hero-stats">
+    <div class="hero-stat"><span class="value">4</span><span class="label">运行模式</span></div>
+    <div class="hero-stat"><span class="value">10+</span><span class="label">流程步骤</span></div>
+    <div class="hero-stat"><span class="value">9</span><span class="label">收尾环节</span></div>
+    <div class="hero-stat"><span class="value">14</span><span class="label">回退规则</span></div>
+  </div>
+</div>
+
+<!-- 1. 入口触发与模式路由 -->
+<div class="chart-section" id="entry">
+  <div class="section-header">
+    <div class="section-icon" style="background:var(--accent-bg)">🚪</div>
+    <h2>入口触发与模式路由</h2>
+  </div>
+  <div class="chart-card">
+    <div class="legend">
+      <span class="legend-item"><span class="legend-color" style="background:var(--purple)"></span>完整模式</span>
+      <span class="legend-item"><span class="legend-color" style="background:var(--green)"></span>快速模式</span>
+      <span class="legend-item"><span class="legend-color" style="background:var(--orange)"></span>极速模式</span>
+      <span class="legend-item"><span class="legend-color" style="background:var(--yellow)"></span>收尾模式</span>
+    </div>
+    <div class="mermaid">
+flowchart TD
+    A["🗣️ 用户消息"] --> B{"关键词匹配?"}
+    B -->|"dev:full / 任务平台 / Figma / 新需求"| C["📋 完整模式"]
+    B -->|"dev:quick / 修复 / 优化 / 调整"| D["⚡ 快速模式"]
+    B -->|"dev:ultra / 直接改就行"| UQ["🚀 极速模式"]
+    B -->|"dev:wrap / 收尾 / 生成commit"| E["📦 收尾模式"]
+    B -->|"dev:specs"| F["📐 规范管理"]
+    B -->|"dev:status"| G["📊 状态查看"]
+    B -->|"未匹配"| H{"检查 .active-flows/"}
+    H -->|"0个活跃"| I["💬 普通对话"]
+    H -->|"1个活跃"| J["🔄 自动恢复"]
+    H -->|"≥2个活跃"| K["📋 展示清单让用户选"]
+    C --> N{"迭代修复信号?"}
+    D --> N
+    N -->|"是"| O["匹配已有工作上下文"] --> Q{"匹配到?"}
+    N -->|"否"| P["创建/读取工作上下文"]
+    Q -->|"是"| R{"复杂度评估"}
+    Q -->|"否"| P
+    R -->|"简单/中等"| D2["⚡ 快速模式（增量）"]
+    R -->|"重大"| C2["📋 完整模式（增量）"]
+    UQ --> UQ1["U1定位→U2修改→U3收尾"]
+    UQ1 -.->|"降级"| D
+    </div>
+    <div class="card-footer">
+      <div class="file-link">📄 <a href="../SKILL.md">SKILL.md</a></div>
+      <span style="font-size:11px;color:var(--yellow)">⚡ 优先级：显式指定 > 收尾 > 完整 > 快速 > 极速 > 默认快速</span>
+    </div>
+  </div>
+</div>
+
+<!-- 2. 完整模式总览 -->
+<div class="chart-section" id="full-mode">
+  <div class="section-header">
+    <div class="section-icon" style="background:var(--purple-bg)">📋</div>
+    <h2>完整模式总览</h2>
+    <span class="section-desc">阶段0 + 步骤1~10</span>
+  </div>
+  <div class="chart-card">
+    <div class="mermaid">
+flowchart TD
+    S0["🎯 阶段0：需求理解 ★"] --> S1["🔍 步骤1：研究与定位"]
+    S1 --> S2["📐 步骤2：确认范围"] --> S3["📝 步骤3：制定方案"]
+    S3 --> S4["🤝 步骤4：用户决策"] --> S45["🔧 步骤4.5：环境检查"]
+    S45 --> S5["⚙️ 步骤5：执行修改"] --> S55["🔬 步骤5.5：编码后置钩子"]
+    S55 --> S6["✅ 步骤6：质量验证"] --> S7["🧹 步骤7：清理+L2审查"]
+    S7 --> S8["🔎 步骤8：L3代码审查 ★"] --> S9["💡 步骤9：反思与学习 ★"]
+    S9 --> S10["📦 步骤10：归档与交付 ★"] --> DONE["🏁 完成"]
+    S4 -.->|"换方案"| S3
+    S6 -.->|"验证失败"| S5
+    S8 -.->|"严重问题"| S5
+    </div>
+    <div class="card-footer">
+      <div class="file-link">📄 <a href="../full-mode.md">full-mode.md</a></div>
+      <span style="font-size:11px;color:var(--purple)">★ = 完整模式独有步骤</span>
+    </div>
+  </div>
+  <div class="note">步骤1~7为快速模式共享。步骤7裁剪了 commit/devlog/反思，推迟到步骤10。</div>
+</div>
+
+<!-- 3. 快速模式总览 -->
+<div class="chart-section" id="quick-mode">
+  <div class="section-header">
+    <div class="section-icon" style="background:var(--green-bg)">⚡</div>
+    <h2>快速模式总览</h2>
+    <span class="section-desc">步骤1~7</span>
+  </div>
+  <div class="chart-card">
+    <div class="mermaid">
+flowchart TD
+    Q1["🔍 步骤1：研究与定位"] --> Q2["📐 步骤2：确认范围"]
+    Q2 --> Q3["📝 步骤3：制定方案"] --> Q4["🤝 步骤4：用户决策"]
+    Q4 -->|"✅ 执行"| Q45["🔧 步骤4.5：环境检查"]
+    Q45 --> Q5["⚙️ 步骤5：执行修改"] --> Q55["🔬 步骤5.5：编码后置钩子"]
+    Q55 --> Q6["✅ 步骤6：质量验证"] --> Q7["🧹 步骤7：清理+Commit"]
+    Q7 --> QDONE["🏁 完成"]
+    Q4 -.->|"✏️ 修改"| Q4
+    Q4 -.->|"🔄 换方案"| Q3
+    Q4 -.->|"⏸️ 暂存"| QPAUSE["⏸️ 暂存"]
+    Q4 -.->|"❌ 取消"| QCANCEL["❌ 终止"]
+    Q6 -.->|"6A失败"| Q5
+    Q6 -.->|"6B不通过"| Q3
+    </div>
+    <div class="card-footer">
+      <div class="file-link">📄 <a href="../quick-mode.md">quick-mode.md</a></div>
+    </div>
+  </div>
+</div>
+
+<!-- 4. 极速模式总览 -->
+<div class="chart-section" id="ultra-quick-mode">
+  <div class="section-header">
+    <div class="section-icon" style="background:var(--orange-bg)">🚀</div>
+    <h2>极速模式总览</h2>
+    <span class="section-desc">3步完成</span>
+  </div>
+  <div class="chart-card">
+    <div class="mermaid">
+flowchart TD
+    U1["📍 U1：精准定位"] --> SAFE{"安全护栏检查"}
+    SAFE -->|"通过"| U2["⚙️ U2：直接修改+即时验证"]
+    SAFE -->|"降级"| DOWNGRADE["⚠️ 降级为快速模式"]
+    U2 --> UC{"用户确认"}
+    UC -->|"✅ 确认"| U3["📝 U3：轻量收尾"] --> UDONE["🏁 完成"]
+    UC -->|"✏️ 调整"| U2
+    UC -->|"🔄 撤销"| UNDO["回退修改"]
+    </div>
+    <div class="card-footer">
+      <div class="file-link">📄 <a href="../ultra-quick-mode.md">ultra-quick-mode.md</a></div>
+    </div>
+  </div>
+  <div class="note">触发条件：≤1文件 + ≤20行 + 定位明确 + 无需方案设计（需同时满足≥2个）<br/>降级条件：涉及>1文件、>20行、上下游依赖、状态管理/异步/竞态、公共组件、需求歧义</div>
+</div>
+
+<!-- 5. 收尾模式 -->
+<div class="chart-section" id="wrapup-mode">
+  <div class="section-header">
+    <div class="section-icon" style="background:var(--yellow-bg)">📦</div>
+    <h2>收尾模式</h2>
+    <span class="section-desc">环节制 A→B→F→G→H</span>
+  </div>
+  <div class="chart-card">
+    <div class="mermaid">
+flowchart TD
+    WA["📊 环节A：Diff分析"] --> WAD{"预期外变更?"}
+    WAD -->|"无"| WB["🧹 环节B：清理调试代码"]
+    WAD -->|"有"| WAC{"用户选择"}
+    WAC -->|"🧹 全部回退"| WACR["git checkout"] --> WB
+    WAC -->|"✏️ 部分回退"| WACP["选择性回退"] --> WB
+    WAC -->|"⏭️ 保留全部"| WB
+    WB --> WF["📋 环节F：改动汇总"] --> WG["🔎 环节G：L2完整审查"]
+    WG --> WGR{"审查结果"}
+    WGR -->|"🔴 必须修复"| WGFIX["修复"] --> WG
+    WGR -->|"🟡 建议修复"| WGD{"用户决策"}
+    WGD -->|"修复"| WGFIX
+    WGD -->|"跳过"| WH["📝 环节H：Commit+Devlog+Specs"]
+    WGR -->|"通过"| WH
+    WH --> WDONE["🏁 完成"]
+    </div>
+    <div class="card-footer">
+      <div class="file-link">📄 <a href="../wrapup-mode.md">wrapup-mode.md</a> → <a href="../references/wrapup-flow.md">wrapup-flow.md</a></div>
+    </div>
+  </div>
+  <div class="note">灵活用法：「收尾」=完整流程 | 「不用检查」=跳过环节B | 「汇总改动」=A+F | 「只要commit」=环节H | 「帮我提交」=H+git commit</div>
+</div>
+
+<!-- 6. 统一收尾流程矩阵 -->
+<div class="chart-section" id="wrapup-flow">
+  <div class="section-header">
+    <div class="section-icon" style="background:var(--accent-bg)">🔄</div>
+    <h2>统一收尾流程</h2>
+    <span class="section-desc">调用方×环节矩阵</span>
+  </div>
+  <div class="chart-card">
+    <div class="mermaid">
+flowchart TD
+    subgraph MATRIX["调用方 × 环节矩阵"]
+        direction TB
+        MA["A. Diff分析 — quick-7 ✅ | full-7 ✅ | wrapup ✅"]
+        MB["B. 清理调试代码 — quick-7 ✅ | full-7 ✅ | wrapup ✅"]
+        MC["C. 可选链检查 — quick-7 ✅ | full-7 ✅ | wrapup ❌"]
+        MD["D. 即时验证 — quick-7 ✅ | full-7 ✅ | wrapup ❌"]
+        ME["E. TODO检查 — quick-7 ✅ | full-7 ✅ | wrapup ❌"]
+        MF["F. 改动汇总 — quick-7 ❌ | full-7 ❌ | wrapup ✅"]
+        MG["G. L2审查 — quick-7 ✅ | full-7 ✅到此结束 | wrapup ✅"]
+        MH["H. Commit+Devlog+Specs — quick-7 ✅ | full-7 ❌推迟 | wrapup ✅"]
+        MI["I. 轻量反思 — quick-7 ✅可选 | full-7 ❌ | wrapup ❌"]
+        MA --> MB --> MC --> MD --> ME --> MF --> MG --> MH --> MI
+    end
+    </div>
+    <div class="card-footer">
+      <div class="file-link">📄 <a href="../references/wrapup-flow.md">references/wrapup-flow.md</a></div>
+    </div>
+  </div>
+</div>
+
+<div class="section-divider"></div>
+
+<!-- 7. 阶段0 -->
+<div class="chart-section" id="phase0">
+  <div class="section-header">
+    <div class="section-icon" style="background:var(--purple-bg)">🎯</div>
+    <h2>阶段0：需求理解</h2>
+    <span class="section-desc">完整模式独有</span>
+  </div>
+  <div class="chart-card">
+    <div class="mermaid">
+flowchart TD
+    RI["调用 requirement-intake"] --> RIA{"输入方式?"}
+    RIA -->|"无信息"| RIQ["交互式提问"]
+    RIA -->|"带信息"| RID["直接分析"]
+    RIQ --> RID
+    RID --> SRC{"需求来源?"}
+    SRC -->|"任务平台"| 任务平台["MCP查询单据"]
+    SRC -->|"Figma"| FIG["MCP获取设计稿"]
+    SRC -->|"口头/截图"| ANA["直接分析"]
+    任务平台 --> ANA
+    FIG --> ANA
+    ANA --> OUT["输出需求分析"]
+    OUT --> QA{"有疑问?"} -->|"是"| ASK["汇总提问"] --> ANS["用户回答"] --> QA
+    QA -->|"否"| CONF["输出最终确认"]
+    CONF --> UC{"用户确认"}
+    UC -->|"✅ 正确"| BR["分支命名建议 → 步骤1"]
+    UC -->|"✏️ 纠正"| OUT
+    UC -->|"❓ 疑问"| ASK
+    </div>
+    <div class="card-footer">
+      <div class="file-link">📄 <a href="../full-mode.md">full-mode.md</a></div>
+    </div>
+  </div>
+</div>
+
+<!-- 8~14. 步骤1~7 -->
+<div class="chart-section" id="step1">
+  <div class="section-header">
+    <div class="section-icon" style="background:var(--accent-bg)">🔍</div>
+    <h2>步骤1：研究与定位</h2>
+  </div>
+  <div class="chart-card">
+    <div class="mermaid">
+flowchart TD
+    S1["步骤1开始"] --> SPEC{"项目规范存在?"}
+    SPEC -->|"是"| SPECL["加载模块规范"]
+    SPEC -->|"否"| SEARCH["搜索相关文件+上下游链路"]
+    SPECL --> SEARCH
+    SEARCH --> FIGMA{"有Figma?"} -->|"是"| FIGP["处理设计稿"] --> DOMAIN
+    FIGMA -->|"否"| DOMAIN{"不熟悉领域?"}
+    DOMAIN -->|"是"| DK["领域知识补充+确认"] --> OUTPUT
+    DOMAIN -->|"否"| OUTPUT["输出相关文件表格"]
+    </div>
+    <div class="card-footer"><div class="file-link">📄 <a href="../steps/step-1-research.md">steps/step-1-research.md</a></div></div>
+  </div>
+</div>
+
+<div class="chart-section" id="step2">
+  <div class="section-header">
+    <div class="section-icon" style="background:var(--accent-bg)">📐</div>
+    <h2>步骤2：确认范围</h2>
+  </div>
+  <div class="chart-card">
+    <div class="mermaid">
+flowchart TD
+    S2["步骤2开始"] --> RPT["输出影响范围报告"] --> BRANCH["分支建议"]
+    BRANCH --> UC{"用户确认"}
+    UC -->|"✅ 确认"| LOCK["锁定范围"]
+    UC -->|"✏️ 补充"| RPT
+    UC -->|"🔄 重新分析"| BACK["回退步骤1"]
+    </div>
+    <div class="card-footer"><div class="file-link">📄 <a href="../steps/step-2-scope.md">steps/step-2-scope.md</a></div></div>
+  </div>
+</div>
+
+<div class="chart-section" id="step3">
+  <div class="section-header">
+    <div class="section-icon" style="background:var(--accent-bg)">📝</div>
+    <h2>步骤3：制定方案</h2>
+  </div>
+  <div class="chart-card">
+    <div class="mermaid">
+flowchart TD
+    S3["步骤3开始"] --> DA["调用 design-advisor"]
+    DA --> GRADE{"复杂度?"}
+    GRADE -->|"低"| STD["标准模式计划"]
+    GRADE -->|"高"| DTL["详细模式计划"]
+    STD --> PLAN["输出执行计划"]
+    DTL --> PLAN
+    </div>
+    <div class="card-footer"><div class="file-link">📄 <a href="../steps/step-3-plan.md">steps/step-3-plan.md</a></div></div>
+  </div>
+</div>
+
+<div class="chart-section" id="step4">
+  <div class="section-header">
+    <div class="section-icon" style="background:var(--accent-bg)">🤝</div>
+    <h2>步骤4：用户决策（门控）</h2>
+  </div>
+  <div class="chart-card">
+    <div class="mermaid">
+flowchart TD
+    S4["汇报方案"] --> UC{"用户决策"}
+    UC -->|"✅ 执行"| LOCK["锁定计划"]
+    UC -->|"✏️ 修改"| S4
+    UC -->|"🔄 换方案"| BACK3["回退步骤3"]
+    UC -->|"⏸️ 暂存"| PAUSE["暂存"]
+    UC -->|"❌ 取消"| CANCEL["终止"]
+    </div>
+    <div class="card-footer"><div class="file-link">📄 <a href="../steps/step-4-decision.md">steps/step-4-decision.md</a></div></div>
+  </div>
+</div>
+
+<div class="chart-section" id="step45">
+  <div class="section-header">
+    <div class="section-icon" style="background:var(--accent-bg)">🔧</div>
+    <h2>步骤4.5：环境检查</h2>
+  </div>
+  <div class="chart-card">
+    <div class="mermaid">
+flowchart TD
+    GIT["git branch --show-current"] --> CHK{"分支检查"}
+    CHK -->|"主干分支"| WARN["⚠️ 警告+推荐分支"]
+    CHK -->|"开发分支"| OK["✅ 无需切换"]
+    CHK -->|"其他分支"| WARN2["⚠️ 可能错误分支"]
+    WARN --> UC{"确认"} -->|"就绪"| NEXT["→ 步骤5"]
+    OK --> UC
+    WARN2 --> UC
+    </div>
+    <div class="card-footer"><div class="file-link">📄 <a href="../steps/step-4.5-env-check.md">steps/step-4.5-env-check.md</a></div></div>
+  </div>
+</div>
+
+<div class="chart-section" id="step5">
+  <div class="section-header">
+    <div class="section-icon" style="background:var(--accent-bg)">⚙️</div>
+    <h2>步骤5：执行修改</h2>
+  </div>
+  <div class="chart-card">
+    <div class="mermaid">
+flowchart TD
+    S5["步骤5开始"] --> TDD{"TDD评估"}
+    TDD -->|"适合"| TDDS["建议TDD"]
+    TDD -->|"不适合"| EXEC["按锁定计划执行"]
+    TDDS --> EXEC
+    EXEC --> CODE["编码实现"] --> LINT["read_lints"]
+    LINT --> ERR{"lint错误?"}
+    ERR -->|"是"| FIX["修复"] --> LINT
+    ERR -->|"否"| NEXT{"还有步骤?"}
+    NEXT -->|"是"| CODE
+    NEXT -->|"否"| DONE5["→ 步骤5.5"]
+    EXEC -.->|"无法执行"| BLOCK["回退步骤4"]
+    </div>
+    <div class="card-footer"><div class="file-link">📄 <a href="../steps/step-5-execute.md">steps/step-5-execute.md</a></div></div>
+  </div>
+</div>
+
+<div class="chart-section" id="step55">
+  <div class="section-header">
+    <div class="section-icon" style="background:var(--accent-bg)">🔬</div>
+    <h2>步骤5.5：编码后置钩子</h2>
+  </div>
+  <div class="chart-card">
+    <div class="mermaid">
+flowchart TD
+    A["5.5a L1基础审查"] --> SEV{"严重度?"}
+    SEV -->|"🔴"| RFIX["立即修复"] --> A
+    SEV -->|"🟡"| YD{"用户决策"} -->|"修复"| YFIX["修复"]
+    YD -->|"跳过"| B
+    SEV -->|"🟢"| B["5.5b 文档同步"]
+    YFIX --> B
+    B --> C["5.5c 快速自检 read_lints"]
+    C --> CERR{"有错误?"} -->|"是"| CFIX["修复→回5.5a"]
+    CERR -->|"否"| PASS["→ 步骤6"]
+    </div>
+    <div class="card-footer"><div class="file-link">📄 <a href="../steps/step-5.5-post-coding.md">steps/step-5.5-post-coding.md</a></div></div>
+  </div>
+</div>
+
+<div class="chart-section" id="step6">
+  <div class="section-header">
+    <div class="section-icon" style="background:var(--green-bg)">✅</div>
+    <h2>步骤6：质量验证</h2>
+    <span class="section-desc">6A + 6B + 6C</span>
+  </div>
+  <div class="chart-card">
+    <div class="mermaid">
+flowchart TD
+    subgraph A6["6A 自动化验证"]
+      V1["V1 Build"] --> V2["V2 TypeCheck"] --> V3["V3 Lint"]
+      V3 --> V4["V4 Browser（条件触发）"] --> V5["V5 Test"]
+      V5 --> V6["V6 Security"] --> V7["V7 Diff Review"]
+    end
+    subgraph B6["6B 用户验收（可选）"]
+      VB{"验收?"} -->|"验收"| VBA["验收流程"]
+      VB -->|"跳过"| VBP["跳过"]
+      VBA --> VBR{"结果"} -->|"通过"| VBP
+      VBR -->|"部分问题"| VBF1["→步骤5"]
+      VBR -->|"不通过"| VBF2["→步骤3"]
+    end
+    subgraph C6["6C 联调（条件触发）"]
+      VC{"联调?"} -->|"联调"| VCA["联调流程"]
+      VC -->|"跳过"| VCP["→步骤7"]
+      VC -->|"暂存"| VCS["暂存等联调"]
+      VCA --> VCR{"结果"} -->|"通过"| VCP
+      VCR -->|"前端问题"| VCF["→步骤5"]
+      VCR -->|"后端问题"| VCW["暂存"]
+    end
+    A6 --> FUSE{"3次失败?"} -->|"是"| FUSED["熔断→回退/跳过"]
+    FUSE -->|"否"| B6 --> C6
+    </div>
+    <div class="card-footer"><div class="file-link">📄 <a href="../steps/step-6-verify.md">steps/step-6-verify.md</a></div></div>
+  </div>
+</div>
+
+<div class="chart-section" id="step7">
+  <div class="section-header">
+    <div class="section-icon" style="background:var(--accent-bg)">🧹</div>
+    <h2>步骤7：清理+Commit</h2>
+    <span class="section-desc">统一收尾流程</span>
+  </div>
+  <div class="chart-card">
+    <div class="mermaid">
+flowchart TD
+    subgraph Q7["快速模式步骤7 caller=quick-7"]
+        direction TB
+        QA["A.Diff分析"] --> QB["B.清理调试代码"]
+        QB --> QC["C.可选链检查"] --> QD["D.即时验证"]
+        QD --> QE["E.TODO检查"] --> QG["G.L2审查"]
+        QG --> QH["H.Commit+Devlog+Specs"]
+        QH --> QI["I.轻量反思"]
+    end
+    subgraph F7["完整模式步骤7 caller=full-7"]
+        direction TB
+        FA["A.Diff分析"] --> FB["B.清理调试代码"]
+        FB --> FC["C.可选链检查"] --> FD["D.即时验证"]
+        FD --> FE["E.TODO检查"] --> FG["G.L2审查"]
+        FG --> FEND["到此结束→步骤8"]
+    end
+    </div>
+    <div class="card-footer"><div class="file-link">📄 <a href="../steps/step-7-commit.md">steps/step-7-commit.md</a> → <a href="../references/wrapup-flow.md">wrapup-flow.md</a></div></div>
+  </div>
+  <div class="note">快速模式步骤7执行全部环节（A→B→C→D→E→G→H→I），完整模式步骤7仅到G结束，H/I推迟到步骤10。</div>
+</div>
+
+<!-- 步骤8~10 -->
+<div class="chart-section" id="step8">
+  <div class="section-header">
+    <div class="section-icon" style="background:var(--purple-bg)">🔎</div>
+    <h2>步骤8：L3代码审查</h2>
+    <span class="section-desc">完整模式独有</span>
+  </div>
+  <div class="chart-card">
+    <div class="mermaid">
+flowchart TD
+    L3["L3多视角深度审查<br/>安全+性能+可维护性+测试点位"]
+    L3 --> DOC["文档同步兜底"]
+    DOC --> SEV{"严重度?"}
+    SEV -->|"🔴"| BACK5["→步骤5修复"]
+    SEV -->|"🟡"| UD["用户决策"]
+    SEV -->|"🟢"| NEXT9["→ 步骤9"]
+    UD --> NEXT9
+    BACK5 -.-> L3
+    </div>
+    <div class="card-footer"><div class="file-link">📄 <a href="../full-mode.md">full-mode.md</a></div></div>
+  </div>
+</div>
+
+<div class="chart-section" id="step9">
+  <div class="section-header">
+    <div class="section-icon" style="background:var(--purple-bg)">💡</div>
+    <h2>步骤9：反思与学习</h2>
+    <span class="section-desc">数据驱动，4个子步骤</span>
+  </div>
+  <div class="chart-card">
+    <div class="mermaid">
+flowchart TD
+    S9A["9a 度量数据采集与报告<br/>提取步骤耗时/回退次数/git diff统计"]
+    S9A --> S9B["9b 代码经验提炼"]
+    S9B --> EXP{"高价值经验?"}
+    EXP -->|"是"| RULE["写入规则"]
+    EXP -->|"否"| S9C
+    RULE --> S9C["9c 流程自我反思<br/>最耗时步骤/回退规律/历史对比"]
+    S9C --> OPT{"有优化建议?"}
+    OPT -->|"是"| SUGGEST["输出建议清单"]
+    OPT -->|"否"| SMOOTH["流程顺畅"]
+    SUGGEST --> S9D["9d L1即时反思输出"]
+    SMOOTH --> S9D
+    S9D --> NEXT10["→ 步骤10"]
+    </div>
+    <div class="card-footer"><div class="file-link">📄 <a href="../full-mode.md">full-mode.md</a> + <a href="../references/metrics-rules.md">metrics-rules.md</a></div></div>
+  </div>
+  <div class="note">跳过条件：全程无回退、无卡顿、无用户纠正，且指标在历史平均±30%范围内时精简输出。</div>
+</div>
+
+<div class="chart-section" id="step10">
+  <div class="section-header">
+    <div class="section-icon" style="background:var(--purple-bg)">📦</div>
+    <h2>步骤10：归档与交付</h2>
+    <span class="section-desc">6个子步骤</span>
+  </div>
+  <div class="chart-card">
+    <div class="mermaid">
+flowchart TD
+    T1["10.1 规则归档"] --> T2["10.2 规范沉淀（必须）"]
+    T2 --> T3["10.3 生成Commit Message"]
+    T3 --> UC{"用户确认"}
+    UC -->|"✅ 确认"| T4["10.4 生成/追加开发日志"]
+    UC -->|"📦 确认并提交"| GITCMT["git add+commit"] --> T4
+    UC -->|"✏️ 修改"| T3
+    T4 --> T5["10.5 输出交付报告"] --> T6["10.6 完成性校验"]
+    T6 --> CHK{"5项全部✅?"}
+    CHK -->|"是"| DEL["删除.flow文件 → 🏁 完成"]
+    CHK -->|"否"| FIX["补齐缺失项"] --> T6
+    </div>
+    <div class="card-footer"><div class="file-link">📄 <a href="../full-mode.md">full-mode.md</a></div></div>
+  </div>
+  <div class="note note-info">10.6 校验项：①Commit已确认 ②devlog已生成 ③specs已沉淀 ④交付报告已输出 ⑤规则归档已处理</div>
+</div>
+
+<div class="section-divider"></div>
+
+<!-- 特殊流程 -->
+<div class="chart-section" id="iteration">
+  <div class="section-header">
+    <div class="section-icon" style="background:var(--orange-bg)">🔄</div>
+    <h2>迭代修复机制</h2>
+  </div>
+  <div class="chart-card">
+    <div class="mermaid">
+flowchart TD
+    TRIG["触发信号：提测反馈/测试bug/继续需求"]
+    TRIG --> MATCH["匹配已有工作上下文"]
+    MATCH --> MR{"匹配到?"}
+    MR -->|"否"| NORMAL["正常流程"]
+    MR -->|"是"| READ["读取上下文"]
+    READ --> EVAL["复杂度评估"]
+    EVAL --> UC{"用户确认"}
+    UC -->|"按建议"| MODE{"复杂度?"}
+    UC -->|"调整"| EVAL
+    UC -->|"取消"| CANCEL["终止"]
+    MODE -->|"简单/中等"| QUICK["快速模式（增量）"]
+    MODE -->|"重大"| FULL["完整模式（增量）"]
+    QUICK --> DEVLOG["devlog追加 Round N"]
+    FULL --> DEVLOG
+    </div>
+    <div class="card-footer"><div class="file-link">📄 <a href="../references/iteration-fix.md">references/iteration-fix.md</a></div></div>
+  </div>
+  <div class="note">步骤简化：步骤1增量研究、步骤2增量范围、步骤3增量调整，步骤4~7/10无变化</div>
+</div>
+
+<div class="chart-section" id="gate">
+  <div class="section-header">
+    <div class="section-icon" style="background:var(--red-bg)">🚧</div>
+    <h2>门控与钩子</h2>
+  </div>
+  <div class="chart-card">
+    <div class="mermaid">
+flowchart TD
+    STEP["步骤N完毕"] --> H1["动作1：输出完成标记JSON"]
+    H1 --> H2["动作2：更新工作上下文"]
+    H2 --> H25["动作2.5：更新.flow文件"]
+    H25 --> H3["动作3：门控验证"]
+    H3 --> GATE{"5项全部通过?"}
+    GATE -->|"是"| NEXT["加载步骤N+1"]
+    GATE -->|"否"| FIX["立即补齐"] --> GATE
+    </div>
+    <div class="card-footer"><div class="file-link">📄 <a href="../steps/step-router.md">steps/step-router.md</a></div></div>
+  </div>
+  <div class="note note-info">门控5项：JSON完整 + status非blocked + 步骤清单已更新 + 恢复指令已刷新 + .flow已更新</div>
+</div>
+
+<div class="chart-section" id="rollback">
+  <div class="section-header">
+    <div class="section-icon" style="background:var(--red-bg)">↩️</div>
+    <h2>回退机制</h2>
+  </div>
+  <div class="table-wrapper">
+    <table>
+      <thead><tr><th>当前步骤</th><th>问题</th><th>回退到</th></tr></thead>
+      <tbody>
+        <tr><td>步骤4</td><td>修改</td><td>步骤4（更新后重新选择）</td></tr>
+        <tr><td>步骤4</td><td>换方案</td><td>步骤3</td></tr>
+        <tr><td>步骤5</td><td>计划无法执行</td><td>步骤4</td></tr>
+        <tr><td>步骤5.5a</td><td>🔴 修复</td><td>步骤5.5a（重新审查）</td></tr>
+        <tr><td>步骤5.5c</td><td>lint错误</td><td>步骤5.5a</td></tr>
+        <tr><td>步骤6A V1-V3</td><td>编译/类型/lint</td><td>步骤5.5a</td></tr>
+        <tr><td>步骤6A V4</td><td>Browser失败</td><td>步骤5</td></tr>
+        <tr><td>步骤6A V5</td><td>测试失败</td><td>步骤3</td></tr>
+        <tr><td>步骤6B</td><td>部分问题</td><td>步骤5</td></tr>
+        <tr><td>步骤6B</td><td>不通过</td><td>步骤3</td></tr>
+        <tr><td>步骤6C</td><td>前端问题</td><td>步骤5</td></tr>
+        <tr><td>步骤6C</td><td>协议不一致</td><td>步骤3</td></tr>
+        <tr><td>步骤7 L2</td><td>🔴 修复后</td><td>步骤5.5a</td></tr>
+        <tr><td>步骤8（完整）</td><td>CRITICAL</td><td>步骤5</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div style="margin-top:var(--space-2)">
+    <div class="file-link" style="padding-left:var(--space-2)">📄 <a href="../references/quick-mode-rollback.md">references/quick-mode-rollback.md</a></div>
+  </div>
+</div>
+
+</main>
+
+<button class="back-to-top" id="backToTop" onclick="document.getElementById('main-content').scrollTo({top:0,behavior:'smooth'})">↑</button>
+
+<script>
+  mermaid.initialize({
+    startOnLoad: true, theme: 'dark', securityLevel: 'strict',
+    themeVariables: {
+      primaryColor: '#1e1b4b', primaryTextColor: '#e0e7ff', primaryBorderColor: '#4338ca',
+      lineColor: '#6366f1', secondaryColor: '#1c1917', tertiaryColor: '#18181b',
+      fontFamily: 'Inter, -apple-system, sans-serif', fontSize: '13px',
+      nodeBorder: '#4338ca', mainBkg: '#1e1b4b',
+      clusterBkg: 'rgba(99,102,241,0.06)', clusterBorder: '#312e81',
+      edgeLabelBackground: '#18181b', nodeTextColor: '#e0e7ff'
+    },
+    flowchart: { useMaxWidth: true, htmlLabels: false, curve: 'basis', padding: 12, nodeSpacing: 30, rankSpacing: 40 }
+  });
+
+  const sections = document.querySelectorAll('.chart-section');
+  const navLinks = document.querySelectorAll('nav a[href^="#"]');
+  const mainEl = document.getElementById('main-content');
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        navLinks.forEach(link => link.classList.remove('active'));
+        const id = entry.target.id;
+        const activeLink = document.querySelector('nav a[href="#' + id + '"]');
+        if (activeLink) {
+          activeLink.classList.add('active');
+          activeLink.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+        }
+      }
+    });
+  }, { root: mainEl, rootMargin: '-10% 0px -80% 0px' });
+
+  sections.forEach(section => observer.observe(section));
+
+  const backBtn = document.getElementById('backToTop');
+  mainEl.addEventListener('scroll', () => {
+    backBtn.classList.toggle('visible', mainEl.scrollTop > 400);
+  });
+</script>
+</body>
+</html>

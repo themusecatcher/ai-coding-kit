@@ -1,0 +1,16 @@
+{
+  "name": "smart-commit",
+  "version": "1.0.0",
+  "description": "智能 Commit Message 生成器。基于代码 Diff 自动生成符合 Conventional Commits 规范的 commit message，包含精简版和标准版两套 body。支持剪贴板复制、可选自动提交。可被 dev-flow 按需调用，也可在任何 Git 仓库中独立使用。触发关键词：commit message、提交信息、生成提交、smart commit、帮我提交、针对当前 diff 生成 commit。",
+  "author": {
+    "name": ""
+  },
+  "keywords": [
+    "smart",
+    "commit"
+  ],
+  "category": "productivity",
+  "skills": [
+    "./SKILL.md"
+  ]
+}

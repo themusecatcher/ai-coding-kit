@@ -1,0 +1,73 @@
+version: "1.0"
+description: "步骤间门禁恢复策略配置"
+
+gates:
+  "4-to-5":
+    checks:
+      working_context_exists:
+        recovery: none
+        reason: "工作上下文必须存在，无法自动创建"
+      flow_file_exists:
+        recovery: none
+        reason: ".flow 文件必须存在"
+      user_decision_confirmed:
+        recovery: none
+        reason: "用户决策不可自动替代"
+      branch_not_main:
+        recovery: prompt
+        max_retry: 0
+        reason: "需用户确认分支策略"
+
+  "5-to-6":
+    checks:
+      eslint:
+        recovery: auto_fix
+        fix_cmd: "npx eslint {files} --fix --quiet"
+        max_retry: 2
+      typescript:
+        recovery: none
+        max_retry: 0
+        reason: "TS 错误需分析后手动修复"
+      git_clean:
+        recovery: prompt
+        max_retry: 0
+        reason: "需用户决定是否暂存/提交"
+      debug_code:
+        recovery: auto_fix
+        fix_cmd: "sed -i '' '/^\\s*console\\./d' {files}"
+        max_retry: 1
+        severity: P1
+
+  "6-to-7":
+    checks:
+      verification_passed:
+        recovery: retry
+        max_retry: 1
+        reason: "重新执行验证"
+      no_blocking_lint:
+        recovery: auto_fix
+        fix_cmd: "npx eslint {files} --fix"
+        max_retry: 1
+
+  "7-to-8":
+    checks:
+      commit_exists:
+        recovery: none
+        reason: "需用户确认 commit"
+      devlog_exists:
+        recovery: none
+        reason: "devlog 由步骤 7 自动生成"
+
+recovery_types:
+  auto_fix:
+    description: "执行 fix_cmd 后重新检查"
+    max_retry_default: 2
+  retry:
+    description: "直接重新执行检查命令"
+    max_retry_default: 1
+  prompt:
+    description: "输出修复建议，等待用户下次操作"
+    max_retry_default: 0
+  none:
+    description: "不可自动恢复，直接报告失败"
+    max_retry_default: 0

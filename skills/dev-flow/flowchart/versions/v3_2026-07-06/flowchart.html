@@ -1,0 +1,1485 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>dev-flow v3 完整流程图</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='32' y2='32'%3E%3Cstop offset='0' stop-color='%236366f1'/%3E%3Cstop offset='1' stop-color='%238b5cf6'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='32' height='32' rx='7' fill='url(%23g)'/%3E%3Cpath d='M16 27v-9M16 18l-8-8m8 8l8-8' stroke='%23fff' stroke-width='2.3' stroke-linecap='round' stroke-linejoin='round' fill='none'/%3E%3C/svg%3E">
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-primary: #09090b;
+      --bg-secondary: #0f0f12;
+      --bg-tertiary: #18181b;
+      --bg-elevated: #1c1c1f;
+      --bg-hover: #27272a;
+      --border-default: #27272a;
+      --border-muted: #1e1e21;
+      --text-primary: #fafafa;
+      --text-secondary: #a1a1aa;
+      --text-tertiary: #71717a;
+      --accent: #818cf8;
+      --accent-hover: #6366f1;
+      --accent-bg: rgba(99,102,241,0.06);
+      --accent-bg-hover: rgba(99,102,241,0.12);
+      --green: #34d399;
+      --green-bg: rgba(52,211,153,0.08);
+      --red: #f87171;
+      --red-bg: rgba(248,113,113,0.08);
+      --yellow: #fbbf24;
+      --yellow-bg: rgba(251,191,36,0.06);
+      --purple: #c084fc;
+      --purple-bg: rgba(192,132,252,0.08);
+      --orange: #fb923c;
+      --orange-bg: rgba(251,146,60,0.08);
+      --space-1: 4px;
+      --space-2: 8px;
+      --space-3: 12px;
+      --space-4: 16px;
+      --space-5: 20px;
+      --space-6: 24px;
+      --space-8: 32px;
+      --space-10: 40px;
+      --space-12: 48px;
+      --radius-sm: 6px;
+      --radius-md: 8px;
+      --radius-lg: 12px;
+      --radius-xl: 16px;
+      --nav-width: 280px;
+      --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+      --transition-normal: 250ms cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Inter', -apple-system, sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      line-height: 1.6;
+      display: flex;
+      min-height: 100vh;
+    }
+
+    /* Left Navigation */
+    nav {
+      width: var(--nav-width);
+      background: var(--bg-secondary);
+      border-right: 1px solid var(--border-default);
+      position: fixed;
+      top: 0;
+      left: 0;
+      height: 100vh;
+      overflow-y: auto;
+      padding: var(--space-6);
+      z-index: 100;
+      transition: transform var(--transition-normal);
+    }
+
+    .nav-header {
+      margin-bottom: var(--space-8);
+      padding-bottom: var(--space-4);
+      border-bottom: 1px solid var(--border-default);
+    }
+
+    .nav-logo {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--text-primary);
+      text-decoration: none;
+      margin-bottom: var(--space-1);
+    }
+
+    .nav-logo .icon { font-size: 22px; }
+
+    .nav-version {
+      font-size: 12px;
+      color: var(--text-tertiary);
+      margin-top: var(--space-1);
+    }
+
+    .nav-group {
+      margin-bottom: var(--space-5);
+    }
+
+    .nav-group-title {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-tertiary);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: var(--space-2);
+      padding-left: var(--space-2);
+    }
+
+    .nav-group a {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      padding: var(--space-2) var(--space-3);
+      border-radius: var(--radius-sm);
+      color: var(--text-secondary);
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 500;
+      transition: all var(--transition-fast);
+      margin-bottom: 1px;
+    }
+
+    .nav-group a:hover {
+      background: var(--bg-hover);
+      color: var(--text-primary);
+    }
+
+    .nav-group a.active {
+      background: var(--accent-bg);
+      color: var(--accent);
+      font-weight: 600;
+    }
+
+    .nav-icon {
+      font-size: 14px;
+      width: 20px;
+      text-align: center;
+      flex-shrink: 0;
+    }
+
+    .badge {
+      font-size: 10px;
+      padding: 1px 6px;
+      border-radius: 10px;
+      font-weight: 600;
+      margin-left: auto;
+      flex-shrink: 0;
+    }
+
+    .badge-new { background: var(--green-bg); color: var(--green); }
+    .badge-core { background: var(--accent-bg); color: var(--accent); }
+    .badge-full { background: var(--purple-bg); color: var(--purple); }
+    .badge-shared { background: var(--yellow-bg); color: var(--yellow); }
+
+    /* Main Content */
+    main {
+      margin-left: var(--nav-width);
+      flex: 1;
+      padding: var(--space-12) var(--space-12);
+      max-width: calc(100% - var(--nav-width));
+    }
+
+    /* Hero */
+    .hero {
+      text-align: center;
+      padding: var(--space-12) 0 var(--space-10);
+    }
+
+    .hero h1 {
+      font-size: 36px;
+      font-weight: 700;
+      background: linear-gradient(135deg, var(--accent), var(--purple));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: var(--space-4);
+    }
+
+    .hero p {
+      font-size: 16px;
+      color: var(--text-secondary);
+      max-width: 640px;
+      margin: 0 auto var(--space-6);
+      line-height: 1.7;
+    }
+
+    .hero-stats {
+      display: flex;
+      justify-content: center;
+      gap: var(--space-8);
+      flex-wrap: wrap;
+    }
+
+    .hero-stat {
+      text-align: center;
+      padding: var(--space-4) var(--space-6);
+      background: var(--bg-elevated);
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--border-default);
+      min-width: 100px;
+    }
+
+    .hero-stat .number {
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--accent);
+    }
+
+    .hero-stat .label {
+      font-size: 12px;
+      color: var(--text-tertiary);
+      margin-top: var(--space-1);
+    }
+
+    /* Chart Sections */
+    .chart-section {
+      margin-bottom: var(--space-12);
+      scroll-margin-top: var(--space-10);
+    }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      margin-bottom: var(--space-6);
+    }
+
+    .section-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+    }
+
+    .section-header h2 {
+      font-size: 20px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .section-intro {
+      color: var(--text-secondary);
+      font-size: 14px;
+      margin-bottom: var(--space-5);
+      padding: var(--space-4);
+      background: var(--bg-secondary);
+      border-radius: var(--radius-md);
+      border-left: 3px solid var(--accent);
+    }
+
+    .chart-card {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-default);
+      border-radius: var(--radius-lg);
+      padding: var(--space-6);
+      overflow-x: auto;
+    }
+
+    .chart-card .mermaid {
+      display: flex;
+      justify-content: center;
+    }
+
+    .chart-note {
+      margin-top: var(--space-4);
+      padding: var(--space-3) var(--space-4);
+      background: var(--bg-tertiary);
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      color: var(--text-secondary);
+      border-left: 2px solid var(--border-default);
+    }
+
+    .chart-note table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: var(--space-2);
+    }
+
+    .chart-note th, .chart-note td {
+      text-align: left;
+      padding: var(--space-2) var(--space-3);
+      border-bottom: 1px solid var(--border-muted);
+      font-size: 13px;
+    }
+
+    .chart-note th {
+      color: var(--text-tertiary);
+      font-weight: 600;
+    }
+
+    .legend {
+      display: flex;
+      gap: var(--space-4);
+      margin-bottom: var(--space-4);
+      flex-wrap: wrap;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      font-size: 12px;
+      color: var(--text-tertiary);
+    }
+
+    .legend-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 3px;
+    }
+
+    .legend-dot.shared { background: var(--accent); }
+    .legend-dot.full { background: var(--purple); }
+    .legend-dot.done { background: var(--green); }
+    .legend-dot.phase { background: var(--text-tertiary); }
+    .legend-dot.micro { background: var(--green); }
+
+    .section-divider {
+      border-top: 1px solid var(--border-muted);
+      margin: var(--space-8) 0;
+    }
+
+    /* Back to top */
+    #backToTop {
+      position: fixed;
+      bottom: var(--space-8);
+      right: var(--space-8);
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      font-size: 18px;
+      cursor: pointer;
+      opacity: 0;
+      transform: translateY(10px);
+      transition: all var(--transition-normal);
+      box-shadow: 0 4px 12px rgba(99,102,241,0.3);
+      z-index: 200;
+    }
+
+    #backToTop.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    #backToTop:hover {
+      background: var(--accent-hover);
+      transform: translateY(-2px);
+    }
+
+    /* Version badge */
+    .version-badge {
+      display: inline-block;
+      background: var(--green-bg);
+      color: var(--green);
+      font-size: 11px;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 10px;
+      margin-left: var(--space-2);
+      vertical-align: middle;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      nav { display: none; }
+      main { margin-left: 0; padding: var(--space-6); }
+      .hero h1 { font-size: 24px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Left Navigation -->
+<nav>
+  <div class="nav-header">
+    <a href="#" class="nav-logo">
+      <span class="icon">🔀</span> dev-flow
+      <span class="version-badge">v3</span>
+    </a>
+    <div class="nav-version">2026-07-06 · 程序化执行层重构</div>
+  </div>
+
+  <div class="nav-group">
+    <div class="nav-group-title">概览</div>
+    <a href="#ch1"><span class="nav-icon">🚪</span>入口触发与模式路由 <span class="badge badge-core">核心</span></a>
+    <a href="#ch2"><span class="nav-icon">🗺️</span>统一流程总览 <span class="badge badge-shared">全景</span></a>
+    <a href="#ch3"><span class="nav-icon">📊</span>模式矩阵 <span class="badge badge-new">v3</span></a>
+  </div>
+
+  <div class="nav-group">
+    <div class="nav-group-title">核心步骤（按执行顺序）</div>
+    <a href="#ch6"><span class="nav-icon">🎯</span>阶段0：需求理解</a>
+    <a href="#ch7"><span class="nav-icon">📐</span>阶段0.5 + 步骤1~4.5</a>
+    <a href="#ch4"><span class="nav-icon">🤝</span>步骤4：方案决策 <span class="badge badge-core">核心</span></a>
+    <a href="#ch8"><span class="nav-icon">⚙️</span>步骤5~6 <span class="badge badge-new">v3</span></a>
+    <a href="#ch5"><span class="nav-icon">🧹</span>步骤7：收尾流程 <span class="badge badge-core">核心</span></a>
+    <a href="#ch9"><span class="nav-icon">📦</span>步骤8~10 <span class="badge badge-full">完整</span></a>
+  </div>
+
+  <div class="nav-group">
+    <div class="nav-group-title">特殊流程</div>
+    <a href="#ch10"><span class="nav-icon">🔄</span>特殊流程 <span class="badge badge-new">v3</span></a>
+    <a href="#ch11"><span class="nav-icon">📄</span>文档同步体系 <span class="badge badge-new">v3</span></a>
+    <a href="#ch12"><span class="nav-icon">🎛️</span>交互模式</a>
+    <a href="#ch13"><span class="nav-icon">⚡</span>架构与执行层 <span class="badge badge-new">v3</span></a>
+    <a href="#ch14"><span class="nav-icon">📋</span>源文件索引</a>
+  </div>
+</nav>
+
+<!-- Main Content -->
+<main id="main-content">
+
+<!-- Hero -->
+<div class="hero" id="hero">
+  <h1>dev-flow v3 完整流程图</h1>
+  <p>面向 AI 辅助编程的系统化开发工作流。v3 引入程序化执行层（物理检查点/状态机/Hooks/Lint），将门控规则从提示词下沉为脚本，以文件系统事实替代 AI 记忆信任。</p>
+  <div class="hero-stats">
+    <div class="hero-stat"><div class="number">6</div><div class="label">基础模式</div></div>
+    <div class="hero-stat"><div class="number">13</div><div class="label">流程步骤</div></div>
+    <div class="hero-stat"><div class="number">11</div><div class="label">收尾环节</div></div>
+    <div class="hero-stat"><div class="number">63</div><div class="label">程序化脚本</div></div>
+    <div class="hero-stat"><div class="number">8</div><div class="label">Lint规则套</div></div>
+  </div>
+</div>
+
+<!-- Chapter 1: Entry Trigger & Mode Routing -->
+<div class="chart-section" id="ch1">
+  <div class="section-header">
+    <div class="section-icon" style="background:var(--accent-bg)">🚪</div>
+    <h2>1. 入口触发与模式路由 <span class="version-badge">v3 改版</span></h2>
+  </div>
+  <div class="section-intro">
+    <strong>v3 核心变更</strong>：v2 中用户说"修复/优化"等关键词会自动触发 dev-flow。v3 改为<strong>仅显式命令触发</strong>（dev-flow / dev: / --micro 等），AI 检测到开发意图时只在回复中<strong>建议</strong>使用，不自动触发。新增跨项目预检和活跃流程智能恢复网关。
+  </div>
+  <div class="chart-card">
+    <div class="mermaid">
+flowchart TD
+    A["🗣️ 用户消息"] --> B{"显式命令?"}
+    B -->|"dev-flow / dev: / /dev-flow"| C["🔄 统一流程入口"]
+    B -->|"dev:wrap / dev:w"| E["📦 独立收尾入口"]
+    B -->|"dev:sync / dev:s2"| SYNC["📄 流程内文档同步"]
+    B -->|"--micro"| MICRO["⚡ micro-fix 快速修复"]
+    B -->|"dev:status / dev:kb / dev:metrics / dev:onboard"| SUB["📊 子命令"]
+    B -->|"未匹配显式命令"| H{"检查 .active-flows/"}
+    H -->|"0个活跃"| I["💬 普通对话"]
+    H -->|"1个活跃 + 消息相关"| J["🔄 智能恢复（L1极速回忆杀）"]
+    H -->|"≥2个活跃 / 1个但不相关"| K["📋 展示清单让用户选"]
+    B -->|"开发意图关键词（建议不触发）"| SUG["💡 AI建议使用 dev-flow"]
+    C --> N{"迭代修复信号?"}
+    N -->|"是"| O["匹配已有工作上下文"]
+    O --> Q{"匹配到?"}
+    N -->|"否"| CP{"跨项目预检"}
+    Q -->|"是"| R["迭代修复评估 → 增量执行"]
+    Q -->|"否"| CP
+    CP -->|"命中跨项目未完成"| CROSS{"复用/新建?"}
+    CROSS -->|"复用"| CR["跨项目衔接 → 继续未完成"]
+    CROSS -->|"新建"| P["创建新工作上下文"]
+    CP -->|"无跨项目"| P
+    R --> RM{"复杂度?"}
+    RM -->|"简单/中等"| STD["standard 标准执行"]
+    RM -->|"重大"| FULL["full 完整执行"]
+    P --> FLOW["进入统一流程<br/>阶段0 → 阶段0.5 → 步骤1~4"]
+
+    classDef unified fill:#1e1b4b,stroke:#4338ca,color:#e0e7ff
+    classDef wrapup fill:#1c1917,stroke:#78716c,color:#e7e5e4
+    classDef micro fill:#1a2e05,stroke:#4d7c0f,color:#d9f99d
+    classDef cmd fill:#0f172a,stroke:#334155,color:#94a3b8
+    classDef iter fill:#312e81,stroke:#6366f1,color:#c7d2fe
+    class C,FLOW unified
+    class E,CR,CROSS wrapup
+    class MICRO micro
+    class SYNC,SUB cmd
+    class R,RD,RM,STD,FULL iter
+    </div>
+  </div>
+  <div class="chart-note">
+    <strong>命令速查（v3 当前有效）</strong>：<code>dev-flow</code> / <code>dev:</code>（统一流程）、<code>dev:wrap</code>（独立收尾）、<code>dev:sync</code>（流程内同步）、<code>dev:status</code>（状态查看）、<code>dev:kb</code>（知识库）、<code>dev:metrics</code>（度量）、<code>dev:onboard</code>（profile）、<code>--fast</code>（精简交互）、<code>--micro</code>（快速修复）。已移除：<code>dev:specs</code>。
+  </div>
+
+  <div style="margin-top:var(--space-5)">
+    <h3 style="font-size:16px;margin-bottom:12px;color:var(--text-secondary)">冷启动 vs 热启动 vs 多活跃流程恢复</h3>
+    <div class="mermaid">
+flowchart TD
+    subgraph COLD["冷启动（首次进入 dev-flow）"]
+      C1["用户输入 dev-flow"] --> C2["创建新工作上下文"] --> C3["阶段0 → 0.5 → 步骤1"]
+    end
+    subgraph HOT["热启动（活跃流程恢复）"]
+      H1[".active-flows/ 存在 .flow + 用户消息相关"] --> H2["v3 智能恢复网关<br/>提取 match_keywords → 计算命中数"]
+      H2 --> H3{"命中数?"}
+      H3 -->|"1个唯一命中"| H4["L1 极速恢复<br/>3句话回忆杀<br/>（昨天做了/今天要做/待确认）"]
+      H3 -->|"多个/0个"| H5["展示清单让用户选<br/>（按命中数↘status↘时间排序）"]
+      H4 --> H6{"用户确认"} -->|"确认"| H7["跳到 current_step 继续"]
+      H6 -->|"放弃"| H8["删除 .flow → 新需求"]
+    end
+    subgraph CONCURRENT["并发抢占检测"]
+      CONC1{"last_active<30min<br/>+ session_id≠当前?"}
+      CONC1 -->|"是"| CONC2["额外询问是否抢占"]
+      CONC1 -->|"否"| CONC3["正常恢复"]
+    end
+
+    style COLD fill:var(--bg-secondary),stroke:var(--accent)
+    style HOT fill:var(--bg-secondary),stroke:var(--green)
+    style CONCURRENT fill:var(--bg-secondary),stroke:var(--yellow)
+    </div>
+  </div>
+
+  <div style="margin-top:var(--space-4);background:var(--bg-tertiary);border-radius:var(--radius-sm);padding:var(--space-3) var(--space-4);font-size:13px;color:var(--text-secondary);border-left:2px solid var(--border-default)">
+    <strong>24h+ 跨天对账</strong>：last_active > 24h 时，执行 <code>git rev-parse --short HEAD</code> 对比 .flow.last_commit_hash，不一致则提示用户确认。<br>
+    <strong>L1 极速恢复输出模板</strong>：🔄 已恢复需求：<strong>brief</strong>（步骤N · phase）<br>
+    上次做了什么 / 今天准备做什么 / 待确认（如有）
+  </div>
+</div>
+
+<div class="section-divider"></div>
+
+<!-- Chapter 2: Unified Flow Overview -->
+<div class="chart-section" id="ch2">
+  <div class="section-header">
+    <div class="section-icon" style="background:var(--green-bg)">🗺️</div>
+    <h2>2. 统一流程总览（阶段 0 + 0.5 + 步骤 1~10）</h2>
+  </div>
+  <div class="section-intro">
+    所有需求走同一条流程。v3 新增阶段 0.5（项目画像轻量注入）和分批执行、跨项目等模式扩展。执行深度在步骤 4 由 AI 基于步骤 1~3 研究成果智能评估推荐，用户可自由覆盖。
+  </div>
+  <div class="chart-card">
+    <div class="legend">
+      <div class="legend-item"><div class="legend-dot shared"></div>所有需求共享</div>
+      <div class="legend-item"><div class="legend-dot full"></div>仅完整执行</div>
+      <div class="legend-item"><div class="legend-dot done"></div>流程结束</div>
+      <div class="legend-item"><div class="legend-dot phase"></div>默认跳过</div>
+    </div>
+    <div class="mermaid">
+flowchart TD
+    S0["🎯 阶段0：需求理解"]
+    S05["📋 阶段0.5：项目画像注入<br/>（本地profile存在时）"]
+    S1["🔍 步骤1：研究与定位"]
+    S2["📐 步骤2：确认范围"]
+    S3["📝 步骤3：制定方案"]
+    S4["🤝 步骤4：方案汇报与用户决策<br/>（智能评估+执行深度+文档平台+分支定稿）"]
+    S45["🔧 步骤4.5：环境检查<br/>（主干分支拦截）"]
+    S5["⚙️ 步骤5：执行修改<br/>（编码前置硬卡点 → 按锁定计划编码）"]
+    S55["🔬 步骤5.5：编码后置钩子<br/>（L1审查+文档同步+ESLint）"]
+    S6["✅ 步骤6：质量验证<br/>（6A自动化+6B验收+6C联调）"]
+    S7["🧹 步骤7：清理+Commit"]
+    S8["🔎 步骤8：L3代码审查 ★"]
+    S9["💡 步骤9：反思与学习 ★"]
+    S10["📦 步骤10：归档与交付 ★"]
+    DONE["🏁 完成"]
+
+    S0 --> S05 --> S1 --> S2 --> S3 --> S4
+    S4 -->|"智能评估推荐执行深度"| S45
+    S45 --> S5
+    S5 --> S55 --> S6
+    S6 --> S7
+    S7 -->|"标准执行：A~K全部11环节"| DONE
+    S7 -->|"完整执行：A~G仅清理+L2"| S8 --> S9 --> S10 --> DONE
+
+    S4 -.->|"换方案"| S3
+    S6 -.->|"6A 3次熔断 / 6B不通过"| S3
+    S6 -.->|"6B部分问题 / 6A V4失败"| S5
+    S8 -.->|"🔴 严重问题"| S5
+    S5 -.->|"计划无法执行"| S4
+
+    classDef shared fill:#1e1b4b,stroke:#4338ca,color:#e0e7ff
+    classDef fullOnly fill:#312e81,stroke:#6366f1,color:#c7d2fe
+    classDef done fill:#064e3b,stroke:#10b981,color:#d1fae5
+    classDef phase fill:#1c1917,stroke:#78716c,color:#e7e5e4
+    class S0,S05,S1,S2,S3,S4,S45,S5,S55,S6,S7 shared
+    class S8,S9,S10 fullOnly
+    class DONE done
+    class S05 phase
+    </div>
+  </div>
+  <div class="chart-note">
+    ★ = 仅完整执行。步骤 0~7 所有需求共享。<br>
+    <strong>标准执行</strong>（5→7）：步骤7 执行全部 A~K 11 环 → 流程结束。<br>
+    <strong>完整执行</strong>（5→10）：步骤7 仅 A~G，Commit/Devlog/Knowledge 推迟到步骤 10。<br>
+    <strong>分批执行</strong>（4.5→7 循环）：每批独立走，最后一批完整收尾。
+  </div>
+</div>
+
+<div class="section-divider"></div>
+
+<!-- Chapter 3: Mode Matrix -->
+<div class="chart-section" id="ch3">
+  <div class="section-header">
+    <div class="section-icon" style="background:var(--purple-bg)">📊</div>
+    <h2>3. 模式矩阵（6 种基础模式 + 1 种修饰层）<span class="version-badge">v3 扩展</span></h2>
+  </div>
+  <div class="section-intro">
+    基础模式（互斥单选）和交互修饰层（正交叠加）是两个<strong>独立维度</strong>。micro-fix 含三道防线自动降级机制（>15行 / ≥2文件 / 主干分支 → 自动降级 standard）。
+  </div>
+  <div class="chart-card">
+    <div class="mermaid">
+flowchart TD
+    A[已触发 dev-flow] --> B2{"用户命令含 --micro?"}
+    B2 -->|"是 + 满足阈值"| B3["⚡ micro-fix 模式<br/>（单文件≤10行快速修复）"]
+    B2 -->|"否"| D{".active-flows/ 下<br/>存在相关 .flow?"}
+    D -->|"是 + status=batch_in_progress"| F["📦 batch 继续批次"]
+    D -->|"是 + 迭代意图"| H["🔄 iteration-fix<br/>（增量执行）"]
+    D -->|"是 + 其他状态"| I["恢复到当前步骤继续"]
+    D -->|"否"| L{"步骤2检测到<br/>workspace外修改?"}
+    L -->|"是"| M["🔗 cross-project"]
+    L -->|"否"| N["standard 默认 → 步骤4智能推荐"]
+    N --> O{"步骤4 user_decision"}
+    O -->|"execute_standard"| P["standard"]
+    O -->|"execute_full"| Q["full"]
+    O -->|"execute_batched"| R["batch"]
+
+    B3 -->|"命中降级条件<br/>(>15行/≥2文件/主干)"| N
+
+    K["修饰层 streamlined<br/>（独立维度，可叠加在任一基础模式之上）"]
+    P -.叠加.-> K
+    Q -.叠加.-> K
+    R -.叠加.-> K
+    F -.叠加.-> K
+    H -.叠加.-> K
+    M -.叠加.-> K
+
+    style B3 fill:#ffe4b5
+    style F fill:#c3e6ff
+    style H fill:#ffcccc
+    style M fill:#f0d9ff
+    style P fill:#fff
+    style Q fill:#fff
+    style R fill:#c3e6ff
+    style K fill:#d4f1d4,stroke:#5a9,stroke-dasharray:5 5
+    </div>
+  </div>
+  <div class="chart-note">
+    <strong>基础模式全景</strong>：standard（默认）、full（完整）、micro-fix（极简，≤10行+单文件）、iteration-fix（提测反馈）、batch（分批执行）、cross-project（跨仓库协作）。<br>
+    <strong>修饰层 streamlined</strong>：用户说"少问我"/--fast 时启用，仅豁免 4 处流转弹窗（0.5→1 / 4.5→5 / 5→5.5 / 5.5→6），关键决策点🔴任何模式不豁免。
+  </div>
+</div>
+
+<div class="section-divider"></div>
+
+<!-- Chapter 6: Phase 0 -->
+<div class="chart-section" id="ch6">
+  <div class="section-header">
+    <div class="section-icon" style="background:var(--orange-bg)">🎯</div>
+    <h2>4. 阶段 0：需求理解</h2>
+  </div>
+  <div class="section-intro">
+    所有需求（无论大小）都必须经过阶段 0。分支推荐不再在阶段 0 输出，仅在用户主动告知时记录，最终在步骤 4 §4.1 唯一定稿。
+  </div>
+  <div class="chart-card">
+    <div class="mermaid">
+flowchart TD
+    RI["调用 requirement-intake"] --> RIA{"输入方式?"}
+    RIA -->|"无信息"| RIQ["交互式提问"]
+    RIA -->|"带信息"| RID["直接分析"]
+    RIQ --> RID
+    RID --> SRC{"需求来源?"}
+    SRC -->|"任务平台"| 任务平台["MCP查询单据"]
+    SRC -->|"Figma"| FIG["加载 figma-flow（两级策略）"]
+    SRC -->|"口头/截图"| ANA["直接分析"]
+    任务平台 --> ANA
+    FIG --> ANA
+    ANA --> OUT["输出需求分析"]
+    OUT --> QA{"有疑问?"} -->|"是"| ASK["汇总提问"] --> ANS["用户回答"] --> QA
+    QA -->|"否"| CONF["输出最终确认"]
+    CONF --> BR{"用户告知分支名?"}
+    BR -->|"是"| BREC["记录 branch_status: user_specified"]
+    BR -->|"否"| BRP["记录 branch_status: pending_step_4"]
+    BREC --> UC
+    BRP --> UC{"用户确认"}
+    UC -->|"✅ 正确"| NEXT["→ 阶段 0.5"]
+    UC -->|"✏️ 纠正"| OUT
+    UC -->|"❓ 疑问"| ASK
+    </div>
+  </div>
+</div>
+
+<div class="section-divider"></div>
+
+<!-- Chapter 7: Steps 1-4.5 -->
+<div class="chart-section" id="ch7">
+  <div class="section-header">
+    <div class="section-icon" style="background:var(--accent-bg)">📐</div>
+    <h2>5. 阶段 0.5 + 步骤 1~4.5 子流程<span class="version-badge">v3</span></h2>
+  </div>
+  <div class="section-intro">
+    阶段 0.5 为 v3 新增（默认沉默，0 MCP 调用）。步骤 4.5 主干分支拦截为硬性规则，不可跳过。
+  </div>
+  <div class="chart-card">
+    <h3 style="font-size:16px;margin-bottom:12px;color:var(--text-secondary)">阶段 0.5：项目画像轻量注入</h3>
+    <div class="mermaid">
+flowchart TD
+    CHECK{"本地 _profile.md 存在?"}
+    CHECK -->|"不存在"| SKIP["skipped_no_profile<br/>→ 步骤1"]
+    CHECK -->|"存在"| FRESH{"新鲜度?"}
+    FRESH -->|"<14天 fresh"| LOAD["完整注入 → 步骤1"]
+    FRESH -->|"14-45天 soft_expired"| WARN["注入 + 弱提醒 → 步骤1"]
+    FRESH -->|">45天 hard_expired"| STRONG["注入 + 强提醒 dev:ob -r → 步骤1"]
+    </div>
+
+    <h3 style="font-size:16px;margin:20px 0 12px;color:var(--text-secondary)">步骤 1：研究与定位</h3>
+    <div class="mermaid">
+flowchart TD
+    S1["步骤1开始"] --> SPEC{"项目规范存在?"}
+    SPEC -->|"是"| SPECL["加载模块规范"]
+    SPEC -->|"否"| SEARCH["搜索相关文件+上下游链路"]
+    SPECL --> SEARCH
+    SEARCH --> FIGMA{"有Figma?"} -->|"是"| FIGP["处理设计稿"] --> DOMAIN
+    FIGMA -->|"否"| DOMAIN{"不熟悉领域?"}
+    DOMAIN -->|"是"| DK["领域知识补充+确认"] --> OUTPUT
+    DOMAIN -->|"否"| OUTPUT["输出相关文件表格 + 信号写入"]
+    </div>
+
+    <h3 style="font-size:16px;margin:20px 0 12px;color:var(--text-secondary)">步骤 2：确认范围</h3>
+    <div class="mermaid">
+flowchart TD
+    S2["步骤2开始"] --> RPT["输出影响范围报告"]
+    RPT --> CROSS{"workspace外修改?"}
+    CROSS -->|"是"| CFLOW["加载 cross-project-flow"]
+    CROSS -->|"否"| UC{"用户确认"}
+    CFLOW --> UC
+    UC -->|"✅ 确认"| LOCK["锁定范围"]
+    UC -->|"✏️ 补充"| RPT
+    UC -->|"🔄 重新分析"| BACK["回退步骤1"]
+    </div>
+
+    <h3 style="font-size:16px;margin:20px 0 12px;color:var(--text-secondary)">步骤 3：制定方案</h3>
+    <div class="mermaid">
+flowchart TD
+    S3["步骤3开始"] --> DA["调用 design-advisor"]
+    DA --> ADMIT{"极简模式准入?"}
+    ADMIT -->|"满足（≤1文件+≤5行+纯函数）"| MINI["极简方案（1句话）"]
+    ADMIT -->|"不满足"| PLAN["输出完整执行计划表格"]
+    MINI --> DONE3["→ 步骤4"]
+    PLAN --> DONE3
+    </div>
+
+    <h3 style="font-size:16px;margin:20px 0 12px;color:var(--text-secondary)">步骤 4.5：环境检查</h3>
+    <div class="mermaid">
+flowchart TD
+    GIT["git branch --show-current"] --> CHK{"分支检查"}
+    CHK -->|"主干分支（main/master）"| BLOCK["🔴 拦截：禁止在主干进入步骤5"]
+    CHK -->|"开发分支"| OK["✅ 分支正确"]
+    CHK -->|"其他/未知分支"| WARN["⚠️ 疑似错误分支"]
+    BLOCK --> UC{"用户选择"}
+    WARN --> UC
+    OK --> UC
+    UC -->|"就绪"| NEXT["→ 步骤5（须通过编码前置硬卡点）"]
+    UC -->|"切换分支"| SWITCH["git checkout → 重新检查"]
+    </div>
+  </div>
+  <div class="chart-note">
+    <strong>硬性规则</strong>：主干分支下不可进入步骤 5，交互选项不允许"跳过检查"。
+  </div>
+</div>
+
+<div class="section-divider"></div>
+
+<!-- Chapter 4: Step 4 Decision -->
+<div class="chart-section" id="ch4">
+  <div class="section-header">
+    <div class="section-icon" style="background:var(--red-bg)">🤝</div>
+    <h2>6. 步骤 4：方案汇报与用户决策（4 个环节）<span class="badge badge-core">核心</span><span class="version-badge">v3 增强</span></h2>
+  </div>
+  <div class="section-intro">
+    编码前最后一道门控。v3 新增 文档平台 技术方案决策（硬性必走）、dev-logs 目录命名 lint、分支名唯一定稿点。4 个环节严格串行执行。
+  </div>
+  <div class="chart-card">
+    <div class="mermaid">
+flowchart TB
+    S1["环节 1 · 评估输出<br/>📊 5维评估卡片<br/>（改动范围/复杂度/风险/明确度/外部依赖）"]
+    S1 --> S2["环节 2 · 执行深度决策"]
+
+    S2 -->|"✅ 标准执行"| S3_1
+    S2 -->|"📋 完整执行"| S3_1
+    S2 -->|"📦 分批执行"| BYPASS_BATCH["旁路：分批执行流程"]
+    S2 -->|"✏️ 修改"| S2_2["修改循环"] --> S2
+    S2 -->|"🔄 换方案"| BACK3["回退步骤 3"]
+    S2 -->|"⏸️ 暂存"| PAUSE["暂存处理 .flow→paused"]
+    S2 -->|"❌ 取消"| CANCEL["流程终止"]
+    BYPASS_BATCH --> S3_1
+
+    S3_1["环节 3 · 文档平台 决策<br/>🔍 空间探测 → 决策选项<br/>（create/update/relink/skip）"]
+    S3_1 --> S4_1["环节 4 · 决策落地<br/>§4.1 分支名最终推荐（唯一定稿点）"]
+    S4_1 --> S4_2["§4.2 plan.md 写盘<br/>（含 dev-logs 目录 4项命名 lint）"]
+    S4_2 --> S4_3["§4.3 文档平台 执行<br/>（仅 create/update 加载 tech-proposal-flow）"]
+    S4_3 --> NEXT["→ 步骤 4.5 环境检查"]
+
+    style BACK3 fill:#ffcccc
+    style PAUSE fill:#fff3cd
+    style CANCEL fill:#f8d7da
+    </div>
+  </div>
+  <div class="chart-note">
+    <strong>环节 4 顺序锚点</strong>：§4.1 分支定稿 → §4.2 plan.md 写盘 → §4.3 文档平台 执行（严格串行）。<br>
+    <strong>文档平台 决策必走</strong>：除 user_decision 为 modify/change_plan/pause/cancel 外，必须执行空间探测并输出决策。<br>
+    <strong>dev-logs 命名 lint</strong>：4 项（format_matched / type_valid / brief_has_chinese / no_project_suffix）必须全 true。
+  </div>
+</div>
+
+<div class="section-divider"></div>
+
+<!-- Chapter 8: Steps 5-6 -->
+<div class="chart-section" id="ch8">
+  <div class="section-header">
+    <div class="section-icon" style="background:var(--yellow-bg)">⚙️</div>
+    <h2>7. 步骤 5~6 子流程<span class="version-badge">v3 增强</span></h2>
+  </div>
+
+  <div class="chart-card">
+    <h3 style="font-size:16px;margin-bottom:12px;color:var(--text-secondary)">步骤 5：执行修改（编码前置硬卡点）</h3>
+    <div class="mermaid">
+flowchart TD
+    PRECHECK["🔒 编码前置硬卡点<br/>step5-precheck.sh（4项校验）"]
+    PRECHECK -->|"通过"| TDD{"TDD评估"}
+    PRECHECK -->|"失败"| BACK4["🔴 红牌R4：回退补齐缺失步骤"]
+    TDD -->|"适合"| TDDS["建议TDD → 加载 tdd-mode.md"]
+    TDD -->|"不适合"| EXEC["按锁定计划逐项执行"]
+    TDDS --> EXEC
+    EXEC --> CODE["编码实现"] --> LINT["read_lints"]
+    LINT --> ERR{"lint错误?"}
+    ERR -->|"是"| FIX["修复"] --> LINT
+    ERR -->|"否"| NEXT{"还有步骤?"}
+    NEXT -->|"是"| CODE
+    NEXT -->|"否"| DONE5["→ 步骤5.5"]
+    EXEC -.->|"计划无法执行"| BLOCK5["暂停 + ask_followup_question<br/>（调整计划/我来处理/终止）"]
+    </div>
+
+    <h3 style="font-size:16px;margin:20px 0 12px;color:var(--text-secondary)">步骤 5.5：编码后置钩子</h3>
+    <div class="mermaid">
+flowchart TD
+    A["5.5a L1 审查（8项检查）<br/>ESLint/可选链/兼容性/React/CSS/异步/边界/通用"]
+    A --> SEV{"严重度?"}
+    SEV -->|"🔴"| RFIX["立即修复"] --> A
+    SEV -->|"🟡"| YD{"用户决策"} -->|"修复"| YFIX["修复"]
+    YD -->|"跳过"| B
+    SEV -->|"🟢"| B["5.5b 文档同步<br/>更新工作上下文（进度+编码进度细节）"]
+    YFIX --> B
+    B --> C["5.5c ESLint 命令行自检<br/>（npx eslint 改动文件）"]
+    C --> CERR{"有错误?"} -->|"是"| CFIX["修复→回5.5a"]
+    CERR -->|"否"| PASS["→ 步骤6"]
+    </div>
+
+    <h3 style="font-size:16px;margin:20px 0 12px;color:var(--text-secondary)">步骤 6：质量验证（6A + 6B + 6C）</h3>
+    <div class="mermaid">
+flowchart TD
+    subgraph A6["6A 自动化验证（7阶段管线）"]
+      PAR1["并行组1：V1 Build ‖ V2 TypeCheck"]
+      PAR2["并行组2：V3 Lint ‖ V6 Security"]
+      PAR1 --> PAR2
+      PAR2 --> V4["V4 Browser（条件触发）"]
+      V4 --> V5["V5 Test"] --> V7["V7 Diff Review + 回归风险评估"]
+    end
+    subgraph B6["6B 用户验收（条件触发）"]
+      VB{"验收?"} -->|"验收"| VBA["验收流程"]
+      VB -->|"跳过"| VBP["跳过"]
+      VBA --> VBR{"结果"} -->|"通过"| VBP
+      VBR -->|"部分问题"| VBF1["→步骤5"]
+      VBR -->|"不通过"| VBF2["→步骤3"]
+    end
+    subgraph C6["6C 联调（条件触发）"]
+      VC{"联调?"} -->|"联调"| VCA["联调流程"]
+      VC -->|"跳过"| VCP["→步骤7"]
+      VC -->|"暂存"| VCS["暂存等联调 (.flow→blocked-by-backend)"]
+      VCA --> VCR{"结果"} -->|"通过"| VCP
+      VCR -->|"前端问题"| VCF["→步骤5"]
+      VCR -->|"后端/协议问题"| VCW["暂存 (.flow→blocked-by-backend)"]
+    end
+    A6 --> FUSE{"3次失败?"} -->|"是"| FUSED["熔断→ask_followup_question<br/>（回退/我来修/跳过/终止）"]
+    FUSE -->|"否"| B6 --> C6
+    </div>
+  </div>
+  <div class="chart-note">
+    <strong>编码前置硬卡点 4 项</strong>：工作上下文存在 / .flow current_step≥4.5 / 步骤4 user_decision 非空 / 交互记录存在。不受精简模式影响。<br>
+    <strong>5.5 不可跳过</strong>：每轮编码（含迭代修复）必须执行 5.5a+5.5b+5.5c。read_lints ≠ ESLint，两者都必须。<br>
+    <strong>6A 中修复代码后</strong>：必须重走 5.5a L1 审查。步骤6→7之间修复 → 重走 5.5→6→7 完整链路。
+  </div>
+</div>
+
+<div class="section-divider"></div>
+
+<!-- Chapter 5: Step 7 Closeout -->
+<div class="chart-section" id="ch5">
+  <div class="section-header">
+    <div class="section-icon" style="background:var(--yellow-bg)">🧹</div>
+    <h2>8. 步骤 7：收尾流程（closeout-flow.md）— 调用方 × 环节矩阵<span class="badge badge-core">核心</span><span class="version-badge">v3</span></h2>
+  </div>
+  <div class="section-intro">
+    v2 的 wrapup-flow.md 已于 2026-06-03 重命名为 <strong>closeout-flow.md</strong>。v3 新增 caller=micro-fix-7（轻量版）和环节 K（dev-logs 完整性自检）。
+  </div>
+  <div class="chart-card">
+    <div class="mermaid">
+flowchart TD
+    subgraph MATRIX["步骤 7 调用方 × 环节矩阵（v3 新增 micro-fix-7）"]
+        direction TB
+        MA["A. Diff分析"]
+        MB["B. 清理调试代码"]
+        MC["C. 可选链检查"]
+        MD["D. 即时验证"]
+        ME["E. TODO检查"]
+        MF["F. 改动汇总<br/>（仅 wrap-standalone）"]
+        MG["G. L2审查<br/>（full-7 到此结束 → 步骤8）"]
+        MH["H. Commit+Devlog+Knowledge<br/>（H.1 commit + H.2 devlog + H.3 knowledge + H.3+ 文档平台对账）"]
+        MI["I. 数据驱动反思<br/>（Token>50轮精简为一行）"]
+        MJ["J. 经验快检<br/>（3问：用户纠正/已知坑/新模式，全否则零开销）"]
+        MK["K. dev-logs 完整性自检<br/>（devlog-integrity-lint --quiet）"]
+        MA --> MB --> MC --> MD --> ME --> MF --> MG --> MH --> MI --> MJ --> MK
+    end
+
+    classDef standard fill:#1e1b4b,stroke:#4338ca,color:#e0e7ff
+    class MA,MB,MC,MD,ME,MG,MH,MI,MJ,MK standard
+    class MF fullOnly
+    </div>
+  </div>
+  <div class="chart-note">
+    <strong>四种调用方</strong>：<br>
+    • <code>caller=standard-7</code>：A~K 全部 11 环 → 流程结束<br>
+    • <code>caller=full-7</code>：仅 A~G（到 G 结束），H~K 推迟到步骤 10<br>
+    • <code>caller=micro-fix-7</code>：极简版（A diff stat + B 限改动行 + H 极简 + J 静默，跳过 C/D/E/G/I/K）<br>
+    • <code>caller=wrap-standalone</code>：独立收尾入口（dev:wrap），A~K 全部<br>
+    <strong>环节 H 子步骤</strong>：H.1 Commit（→smart-commit）→ H.2 Devlog（→tech-doc）→ H.3 Knowledge（→knowledge-loop）→ H.3+ 文档平台 兜底对账。
+  </div>
+</div>
+
+<div class="section-divider"></div>
+
+<!-- Chapter 9: Steps 8-10 Full -->
+<div class="chart-section" id="ch9">
+  <div class="section-header">
+    <div class="section-icon" style="background:var(--purple-bg)">📦</div>
+    <h2>9. 完整执行独有步骤（8~10）<span class="badge badge-full">仅完整</span></h2>
+  </div>
+  <div class="chart-card">
+    <h3 style="font-size:16px;margin-bottom:12px;color:var(--text-secondary)">步骤 8：L3 代码审查</h3>
+    <div class="mermaid">
+flowchart TD
+    L3["L3 多视角深度审查<br/>安全审计 + 性能工程 + 可维护性 + 测试点位建议"]
+    L3 --> DOC["文档同步兜底"]
+    DOC --> SEV{"严重度?"}
+    SEV -->|"🔴"| BACK5["→步骤5修复 → 5.5 → 6 → 7"]
+    SEV -->|"🟡"| UD["用户决策"]
+    SEV -->|"🟢"| NEXT9["→ 步骤9"]
+    UD --> NEXT9
+    </div>
+
+    <h3 style="font-size:16px;margin:20px 0 12px;color:var(--text-secondary)">步骤 9：反思与学习（4 个子步骤）</h3>
+    <div class="mermaid">
+flowchart TD
+    S9A["9a 度量数据采集与报告<br/>提取步骤耗时/回退次数/git diff统计"]
+    S9A --> S9B["9b 代码经验提炼（数据辅助）"]
+    S9B --> EXP{"高价值经验?"}
+    EXP -->|"是"| RULE["写入规则/learnings"]
+    EXP -->|"否"| S9C
+    RULE --> S9C["9c 流程自我反思（度量驱动）<br/>最耗时步骤/回退规律/历史对比"]
+    S9C --> OPT{"有优化建议?"}
+    OPT -->|"是"| SUGGEST["输出建议清单"]
+    OPT -->|"否"| SMOOTH["流程顺畅"]
+    SUGGEST --> S9D["9d L1即时反思输出"]
+    SMOOTH --> S9D
+    S9D --> NEXT10["→ 步骤10"]
+    </div>
+
+    <h3 style="font-size:16px;margin:20px 0 12px;color:var(--text-secondary)">步骤 10：归档与交付</h3>
+    <div class="mermaid">
+flowchart TD
+    T1["10.1 规则归档"]
+    T2["10.2 knowledge 沉淀（必须，调用 knowledge-loop）"]
+    T3["10.3 生成 Commit Message（调用 smart-commit）"]
+    T35["10.3.5 文档平台 技术方案归档同步<br/>（完整执行必走，action≠skip时）"]
+    T4["10.4 生成/追加开发日志（必须）"]
+    T5["10.5 输出交付报告"]
+    T6["10.6 完成性校验"]
+    T1 --> T2 --> T3
+    T3 --> UC{"用户确认"}
+    UC -->|"✅ 确认"| T35
+    UC -->|"📦 确认并提交"| GITCMT["git add+commit"] --> T35
+    UC -->|"✏️ 修改"| T3
+    T35 --> T4 --> T5 --> T6
+    T6 --> CHK{"5项全部✅?"}
+    CHK -->|"是"| DEL["删除.flow文件 → 🏁 完成"]
+    CHK -->|"否"| FIX["补齐缺失项"] --> T6
+    </div>
+  </div>
+  <div class="chart-note">
+    <strong>10.6 校验项</strong>：① Commit已确认 ② devlog已生成 ③ knowledge已沉淀 ④ 交付报告已输出 ⑤ 规则归档已处理。<br>
+    <strong>10.3.5</strong>：文档平台 归档同步前必须通过 doc-platform-doc-lint（6 项文档质量检查），失败则阻断。
+  </div>
+</div>
+
+<div class="section-divider"></div>
+
+<!-- Chapter 10: Special Flows -->
+<div class="chart-section" id="ch10">
+  <div class="section-header">
+    <div class="section-icon" style="background:var(--accent-bg)">🔄</div>
+    <h2>10. 特殊流程<span class="version-badge">v3 新增</span></h2>
+  </div>
+  <div class="chart-card">
+    <h3 style="font-size:16px;margin-bottom:12px;color:var(--text-secondary)">迭代修复（v3 智能恢复网关 + L1 极速恢复）</h3>
+    <div class="mermaid">
+flowchart TD
+    TRIG["触发信号：提测反馈/测试bug/继续需求"]
+    TRIG --> MATCH["智能恢复网关<br/>提取 match_keywords → 对用户消息计算命中数"]
+    MATCH --> MR{"匹配到?"}
+    MR -->|"否"| NORMAL["正常统一流程"]
+    MR -->|"是 + 唯一命中"| RECOVER["L1 极速恢复<br/>3句话回忆杀（昨天做了什么/今天准备做什么/待确认）"]
+    RECOVER --> RC{"用户确认"}
+    RC -->|"确认继续"| READ["读取工作上下文"]
+    RC -->|"放弃"| CANCEL["删除.flow → 新需求"]
+    READ --> ITER["更新YAML轮次 iteration+1"]
+    ITER --> EVAL["复杂度评估"]
+    EVAL --> UC{"用户确认"}
+    UC -->|"✅ 按建议"| MODE{"复杂度?"}
+    UC -->|"✏️ 调整范围"| EVAL
+    UC -->|"❌ 取消"| CANCEL
+    MODE -->|"简单/中等"| STD["standard（增量：步骤1~3简化）"]
+    MODE -->|"重大"| FULL["full（增量：阶段0简化）"]
+    STD --> DEVLOG["devlog追加 Round N"]
+    FULL --> DEVLOG
+    </div>
+
+    <h3 style="font-size:16px;margin:20px 0 12px;color:var(--text-secondary)">分批执行（v3 新增）</h3>
+    <div class="mermaid">
+flowchart TD
+    S4DEC["步骤4选择 execute_batched"] --> BATCH_PLAN["制定批次划分计划"]
+    BATCH_PLAN --> B1["批次1：4.5→5→5.5→6→7（精简版A~H.1）"]
+    B1 --> B1DONE{"还有批次?"}
+    B1DONE -->|"是"| B2["批次2：4.5→5→5.5→6→7（精简版）"]
+    B2 --> B2DONE{"还有批次?"}
+    B2DONE -->|"是"| B3["批次N..."]
+    B3 --> LAST["最后一批：4.5→5→5.5→6→7（完整版A~K或→步骤8~10）"]
+    LAST --> DONE["🏁 完成"]
+    B1DONE -->|"否（单批）"| DONE
+    </div>
+
+    <h3 style="font-size:16px;margin:20px 0 12px;color:var(--text-secondary)">跨项目协作（v3 预检 + 单.flow）</h3>
+    <div class="mermaid">
+flowchart TD
+    S2CROSS["步骤2检测到 workspace外修改"] --> TRIG["加载 cross-project-flow.md"]
+    TRIG --> HANDOFF["A项目：生成衔接 prompt<br/>（含改动人/文件清单/上下文摘要）"]
+    HANDOFF --> BENTER["B项目：识别衔接 prompt"]
+    BENTER --> BPROF{"B项目 profile?"}
+    BPROF -->|"缺失/过期"| ONBOARD["建议 dev:onboard"]
+    BPROF -->|"存在且新鲜"| BEXEC["B项目执行修改"]
+    ONBOARD --> BEXEC
+    BEXEC --> VERIFY["跨项目验证衔接<br/>（A项目回流验证）"]
+    VERIFY --> DONE["→ 继续A项目步骤6C"]
+    </div>
+
+    <h3 style="font-size:16px;margin:20px 0 12px;color:var(--text-secondary)">需求漂移子流程（v3 新增）</h3>
+    <div class="mermaid">
+flowchart TD
+    DRIFT["触发信号：产品说/需求变了/刚和XX对齐"]
+    DRIFT --> CLASS["需求变更分类<br/>（沟通回流/方案否定/澄清调整）"]
+    CLASS --> STEP3_5["三步固定动作<br/>①归档旧方案 ②CR登记 ③更新上下文"]
+    STEP3_5 --> RESUME["回到当前步骤继续<br/>或回退必要步骤"]
+    </div>
+  </div>
+
+  <h3 style="font-size:16px;margin:20px 0 12px;color:var(--text-secondary)">回退路径总览</h3>
+  <table style="width:100%;border-collapse:collapse;margin-bottom:16px;font-size:13px">
+    <thead><tr style="border-bottom:2px solid var(--border-default)"><th style="text-align:left;padding:6px 8px;color:var(--text-tertiary)">当前步骤</th><th style="text-align:left;padding:6px 8px;color:var(--text-tertiary)">触发条件</th><th style="text-align:left;padding:6px 8px;color:var(--text-tertiary)">回退到</th></tr></thead>
+    <tbody>
+      <tr><td style="padding:5px 8px">步骤4</td><td style="padding:5px 8px;color:var(--text-secondary)">换方案</td><td style="padding:5px 8px;font-weight:600;color:var(--accent)">步骤3</td></tr>
+      <tr><td style="padding:5px 8px">步骤5</td><td style="padding:5px 8px;color:var(--text-secondary)">计划无法执行</td><td style="padding:5px 8px;font-weight:600;color:var(--accent)">步骤4</td></tr>
+      <tr><td style="padding:5px 8px">步骤5.5</td><td style="padding:5px 8px;color:var(--text-secondary)">🔴 严重问题</td><td style="padding:5px 8px;font-weight:600;color:var(--accent)">步骤5.5（重新审查）</td></tr>
+      <tr><td style="padding:5px 8px">步骤6A V1-V3</td><td style="padding:5px 8px;color:var(--text-secondary)">编译/类型/lint</td><td style="padding:5px 8px;font-weight:600;color:var(--accent)">步骤5.5</td></tr>
+      <tr><td style="padding:5px 8px">步骤6A V4</td><td style="padding:5px 8px;color:var(--text-secondary)">Browser 验证失败</td><td style="padding:5px 8px;font-weight:600;color:var(--accent)">步骤5</td></tr>
+      <tr><td style="padding:5px 8px">步骤6A V5</td><td style="padding:5px 8px;color:var(--text-secondary)">测试失败</td><td style="padding:5px 8px;font-weight:600;color:var(--red)">步骤3</td></tr>
+      <tr><td style="padding:5px 8px">步骤6B</td><td style="padding:5px 8px;color:var(--text-secondary)">验收部分问题 / 不通过</td><td style="padding:5px 8px;font-weight:600;color:var(--accent)">步骤5 / 步骤3</td></tr>
+      <tr><td style="padding:5px 8px">步骤6C</td><td style="padding:5px 8px;color:var(--text-secondary)">前端问题 / 协议不一致</td><td style="padding:5px 8px;font-weight:600;color:var(--accent)">步骤5 / 步骤3</td></tr>
+      <tr><td style="padding:5px 8px">步骤7 L2</td><td style="padding:5px 8px;color:var(--text-secondary)">🔴 修复后</td><td style="padding:5px 8px;font-weight:600;color:var(--accent)">步骤5.5</td></tr>
+      <tr><td style="padding:5px 8px">步骤8（完整）</td><td style="padding:5px 8px;color:var(--text-secondary)">CRITICAL</td><td style="padding:5px 8px;font-weight:600;color:var(--accent)">步骤5</td></tr>
+    </tbody>
+  </table>
+
+  <h3 style="font-size:16px;margin:20px 0 12px;color:var(--text-secondary)">.flow 文件生命周期 + 5.5 静默计数器</h3>
+  <div class="mermaid">
+flowchart TD
+    subgraph LIFECYCLE[".flow 生命周期"]
+      CREATE["阶段0：创建 .flow 文件<br/>current_step=0, status=active"]
+      CREATE --> ACTIVE["每步骤完成：刷新 .flow<br/>current_step 递增 + phase + recovery + last_commit_hash"]
+      ACTIVE --> BRANCH{"状态变化"}
+      BRANCH -->|"等后端接口"| BLOCKED["status ← blocked-by-backend"]
+      BRANCH -->|"等代码评审"| REVIEW["status ← blocked-by-review"]
+      BRANCH -->|"用户暂停"| PAUSED["status ← paused"]
+      BRANCH -->|"dev:sync 期间"| SYNCING["status ← paused_for_sync<br/>恢复后回 active"]
+      BLOCKED --> ACTIVE
+      REVIEW --> ACTIVE
+      PAUSED --> ACTIVE
+      SYNCING --> ACTIVE
+      ACTIVE -->|"步骤7（标准）或步骤10（完整）完成后"| DELETE["删除 .flow<br/>+ 清理 .step-*.validated*"]
+    end
+
+    subgraph COUNTER["5.5 静默计数器（silent_55_count）"]
+      INC["post-step.sh 收到 STEP_ID=5.5<br/>且 validate-output.sh 未生成 .step-5_5.validated.json<br/>（即 iteration-fix / step-5 §2.5 静默路径）"]
+      INC --> ADD["silent_55_count += 1"]
+      ADD --> CHECK{"≥3?"}
+      CHECK -->|"是"| POPUP["ask_followup_question 弹框<br/>（立即同步/选择性同步/跳过/永久跳过）"]
+      CHECK -->|"否"| SILENT["继续"]
+      POPUP --> RESET{"用户选择"}
+      RESET -->|"完成同步"| ZERO["归零"]
+      RESET -->|"跳过本次"| KEEP["不归零，下次到3仍弹"]
+      RESET -->|"永久跳过"| DISABLED["sync_reminder_disabled=true"]
+    end
+
+    style CREATE fill:#064e3b,stroke:#10b981,color:#d1fae5
+    style DELETE fill:#7f1d1d,stroke:#ef4444,color:#fecaca
+    style POPUP fill:#fff3cd
+  </div>
+
+  <div class="chart-note">
+    <strong>.flow 核心字段</strong>（v3）：current_step / mode / status / last_active / brief / phase / recovery / last_commit_hash / match_keywords / session_id / silent_55_count<br>
+    <strong>计数器重置时机</strong>：① 用户完成 dev:sync → 归零 ② 流程进入步骤7 H 环节 → 归零<br>
+    <strong>计数器归零不在此列</strong>：用户选"⏭️ 跳过本次"不归零（下一轮静默到 3 仍弹）；用户选"❌ 永久跳过"不归零但不再弹
+  </div>
+</div>
+
+<div class="section-divider"></div>
+
+<!-- Chapter 11: Doc Sync (dev:sync / dev:wrap) -->
+<div class="chart-section" id="ch11">
+  <div class="section-header">
+    <div class="section-icon" style="background:var(--green-bg)">📄</div>
+    <h2>11. 文档同步体系（dev:sync / dev:wrap）<span class="version-badge">v3</span></h2>
+  </div>
+  <div class="section-intro">
+    dev-flow 有两套正交互补的文档同步入口：<strong>dev:sync</strong>（流程内，任意步骤可召唤，完成后回原步骤）和 <strong>dev:wrap</strong>（流程后独立收尾，跳过步骤 0~6）。两者复用同一套 H.0~H.3+ 环节，通过 caller 标识控制差异。
+  </div>
+  <div class="chart-card">
+    <h3 style="font-size:16px;margin-bottom:12px;color:var(--text-secondary)">dev:sync — 流程内文档同步（caller=in-flow-sync）</h3>
+    <div class="mermaid">
+flowchart TD
+    SYNC_TRIG["用户输入 dev:sync / dev:s2<br/>或 AI 主动弹框（场景A/B）"]
+    SYNC_TRIG --> CHECK{"检查 .flow 文件"}
+    CHECK -->|"不存在"| HINT["提示改用 dev:wrap"]
+    CHECK -->|"存在"| PAUSE["暂存状态<br/>sync_from_step ← current_step<br/>status ← paused_for_sync"]
+    PAUSE --> EXEC["加载 closeout-flow.md<br/>caller=in-flow-sync"]
+    EXEC --> H0["H.0 CR 同步与登记<br/>（扫描 git diff，自动创建/更新 CR）"]
+    H0 --> H2["H.2 devlog 增量追加<br/>（写入 Sync-N 小节）"]
+    H2 --> H3["H.3 knowledge 漂移检测<br/>（grep 反查 + 模块变更历史追加）"]
+    H3 --> H3P["H.3+ 文档平台 兜底对账<br/>（docid 非空时三方对账）"]
+    H3P --> PLAN["plan.md 增量追加<br/>（CR≥3 时触发）"]
+    PLAN --> CTX["工作上下文一致性校验<br/>（validate-working-context.sh）"]
+    CTX --> RESTORE["恢复 .flow<br/>current_step ← sync_from_step<br/>silent_55_count ← 0<br/>status ← active"]
+    RESTORE --> DONE["回到原步骤继续"]
+
+    ❌["❌ 跳过的环节<br/>H.1 commit（仍由步骤7生成）<br/>G L2/L3 审查<br/>I 度量采集<br/>K dev-logs 自检"]
+
+    style PAUSE fill:#fff3cd
+    </div>
+  </div>
+
+  <div class="chart-card" style="margin-top:var(--space-6)">
+    <h3 style="font-size:16px;margin-bottom:12px;color:var(--text-secondary)">dev:wrap — 独立收尾入口（caller=wrap-standalone）</h3>
+    <div class="mermaid">
+flowchart TD
+    WRAP_TRIG["用户输入 dev:wrap / dev:w"]
+    WRAP_TRIG --> SCAN["扫描 working-context/<br/>按优先级匹配<br/>① 当前分支 ② 项目目录"]
+    SCAN --> MATCH{"匹配到?"}
+    MATCH -->|"匹配到（1个）"| SINGLE{"execution_depth?"}
+    SINGLE -->|"standard"| STD["标准收尾<br/>步骤 7 A~K<br/>caller=wrap-standalone"]
+    SINGLE -->|"full + --full 修饰"| FULL["完整收尾<br/>步骤 7 A~G → 8 → 9 → 10"]
+    MATCH -->|"匹配到多个"| MULTI["弹出选择列表<br/>（按 end_time 降序）"]
+    MULTI --> DECD
+    MATCH -->|"无匹配"| LIGHT["轻量收尾<br/>基于 git diff<br/>执行步骤 7 A~K"]
+    DECD{"用户选择"} --> STD
+    DECD --> FULL
+    STD --> DONE2["🏁 next_step=done_wrap<br/>不操作 .flow 文件"]
+    FULL --> DONE2
+    LIGHT --> DONE2
+    </div>
+  </div>
+
+  <div class="chart-card" style="margin-top:var(--space-6)">
+    <h3 style="font-size:16px;margin-bottom:12px;color:var(--text-secondary)">AI 主动弹框提醒（2 个场景）</h3>
+    <div class="mermaid">
+flowchart TD
+    A["场景 A · 5.5 静默累计 ≥3 次"]
+    A_D["触发：post-step.sh 检测 silent_55_count≥3"]
+    A_D --> A_POPUP["ask_followup_question 弹框"]
+    A_POPUP --> A_OPT{"用户选择"}
+    A_OPT -->|"✅ 立即同步"| A_SYNC["执行 dev:sync → 归零"]
+    A_OPT -->|"⏭️ 跳过"| A_SKIP["计数器不归零<br/>下次到3仍弹"]
+    A_OPT -->|"❌ 永久跳过"| A_DISABLE["sync_reminder_disabled=true"]
+
+    B["场景 B · 完整模式真空期追加改动"]
+    B_D["触发：caller=full-7完成<br/>步骤8/9/10入口 git diff≠last_sync_diff_sha"]
+    B_D --> B_POPUP["ask_followup_question 弹框"]
+    B_POPUP --> B_OPT{"用户选择"}
+    B_OPT -->|"✅ 立即同步"| B_SYNC["执行 dev:sync → 更新 sha"]
+    B_OPT -->|"⏭️ 跳过"| B_SKIP["静默，步骤10兜底"]
+
+    style A fill:#fff3cd
+    style B fill:#fff3cd
+    </div>
+  </div>
+
+  <div class="chart-note">
+    <strong>dev:sync vs dev:wrap 差异</strong>：<br>
+    • dev:sync（流程内）：不生成 commit 不跑 L2/L3/度量/K，操作 .flow（暂存→恢复），完成后回原步骤<br>
+    • dev:wrap（流程后）：标准收尾 A~K 完整或 --full 执行 7~10，不操作 .flow，流程结束<br>
+    • dev:sync ≠ 5.5b 替代品：5.5b 是日常必做（freshness-lint 物理硬阻断），dev:sync 是累计静默 ≥3 后的兜底<br>
+    <strong>计数器规则</strong>：silent_55_count 由 post-step.sh 物理层维护，≥3 必弹（用户选"跳过本次"不归零），dev:sync 完成后 / 进入步骤7 H环节 → 归零。
+  </div>
+</div>
+
+<div class="section-divider"></div>
+
+<!-- Chapter 12: Interaction Mode -->
+<div class="chart-section" id="ch12">
+  <div class="section-header">
+    <div class="section-icon" style="background:var(--green-bg)">🎛️</div>
+    <h2>12. 交互模式（精简交互 + 步骤流转）</h2>
+  </div>
+  <div class="chart-card">
+    <h3 style="font-size:16px;margin-bottom:12px;color:var(--text-secondary)">交互模式风险分级</h3>
+    <div class="mermaid">
+flowchart TD
+    MODE{"交互模式?"}
+    MODE -->|"standard"| STD["所有交互点正常暂停<br/>4~7次交互"]
+    MODE -->|"streamlined（精简）"| SIM["按风险分级处理<br/>2~3次交互"]
+    SIM --> RED["🔴 关键决策点<br/>步骤4决策 / 步骤7 commit / 验证熔断<br/>→ 任何模式必须暂停"]
+    SIM --> YELLOW["🟡 质量决策点<br/>L1/L2审查🟡项 / 验收结果<br/>→ 智能默认，异常才打断"]
+    SIM --> GREEN["🟢 流程决策点<br/>研究结果 / 环境检查（正常）<br/>→ 一行摘要继续"]
+    </div>
+
+    <h3 style="font-size:16px;margin:20px 0 12px;color:var(--text-secondary)">步骤流转推进规则</h3>
+    <div class="mermaid">
+flowchart TD
+    DONE["步骤N完成标记JSON"] --> STREAM{"interaction_mode?"}
+    STREAM -->|"standard"| POPUP["弹出推进选项<br/>A.继续 B.暂停 C.回退"]
+    STREAM -->|"streamlined"| EXEMPT{"豁免流转?"}
+    EXEMPT -->|"0.5→1 / 4.5→5 / 5→5.5 / 5.5→6"| SILENT["静默推进"]
+    EXEMPT -->|"其他流转 + 关键节点"| POPUP
+    POPUP --> AF{"用户选择"}
+    AF -->|"A"| NEXT["→ 步骤N+1"]
+    AF -->|"B"| PAUSE["⏸️ 暂停（.flow→idle）"]
+    AF -->|"C"| ROLLBACK["🔄 回退到步骤N"]
+    </div>
+  </div>
+  <div class="chart-note">
+    <strong>精简模式仅豁免 4 处流转</strong>：0.5→1 / 4.5→5 / 5→5.5 / 5.5→6。其他所有流转任何模式不可豁免。<br>
+    <strong>双重展示强制</strong>：每个决策点必须先输出文本选项表格，再调用 ask_followup_question，两者缺一视为红牌 R3。
+  </div>
+</div>
+
+<div class="section-divider"></div>
+
+<!-- Chapter 13: Architecture -->
+<div class="chart-section" id="ch13">
+  <div class="section-header">
+    <div class="section-icon" style="background:var(--green-bg)">⚡</div>
+    <h2>13. Prompt Chaining 架构 + 程序化执行层<span class="version-badge">v3 核心</span></h2>
+  </div>
+  <div class="section-intro">
+    v3 新增程序化执行层（状态机/Hooks/Lint/预检），将门控规则从提示词下沉为脚本，以物理文件事实替代 AI 记忆。
+  </div>
+  <div class="chart-card">
+    <div class="mermaid">
+flowchart TD
+    ENTRY["触发 dev-flow"] --> LOAD_L0["加载 flow.md（L0 路由层）"]
+    LOAD_L0 --> ROUTER["加载 step-router.md（步骤路由器）"]
+    ROUTER --> S0["阶段0：use_skill requirement-intake"]
+    S0 --> JSON0["输出完成标记 JSON"]
+    JSON0 --> HOOK0["post-step.sh<br/>Schema校验 + .step-0.validated"]
+    HOOK0 --> GATE0{"通过?"}
+    GATE0 -->|"是"| PRE_NEXT["pre-step.sh（物理检查点白名单）"]
+    GATE0 -->|"否"| FIX0["补齐 → 重试"]
+    PRE_NEXT --> STEP["read_file steps/step-N-xxx.md"]
+    STEP --> EXEC["按步骤规范执行<br/>（工具门禁约束）"]
+    EXEC --> JSONN["输出完成标记 JSON"]
+    JSONN --> HOOKN["post-step.sh<br/>Schema + lint（doc_platform/新鲜度/漂移/YAML）"]
+    HOOKN --> GATEN{"通过?"}
+    GATEN -->|"是 + .step-N.validated已创建"| QUERY["state-machine.sh --query-next<br/>（数据驱动查询，替代记忆查表）"]
+    GATEN -->|"否"| FIXN["补齐 → 重试"]
+    QUERY --> NEXTSTEP{"还有下一步?"}
+    NEXTSTEP -->|"是"| PRE_NEXT
+    NEXTSTEP -->|"否"| DONE["🏁 流程完成<br/>删除.flow + 清理.validated*"]
+
+    classDef chain fill:#1e1b4b,stroke:#4338ca,color:#e0e7ff
+    classDef program fill:#064e3b,stroke:#10b981,color:#d1fae5
+    class ENTRY,LOAD_L0,ROUTER,STEP,EXEC chain
+    class HOOK0,PRE_NEXT,HOOKN,QUERY program
+    </div>
+  </div>
+  <div class="chart-note">
+    <strong>程序化执行层组件</strong>：<br>
+    • <strong>状态机</strong>（state-machine.sh）：数据驱动查询下一步（--query-next），替代记忆查表<br>
+    • <strong>Hooks</strong>：pre-step.sh（物理检查点白名单 + step5硬卡点）/ post-step.sh（Schema + lint 三合一）<br>
+    • <strong>8 套 Lint</strong>：路径规范 / 选项一致性 / devlog 命名 / 文档平台 决策 / devlog 完整性 / 文档平台 文档质量 / 工作上下文新鲜度 / 工作上下文位置<br>
+    • <strong>预检</strong>：physical-checkpoint.sh（7 模式白名单）/ step5-precheck.sh（4 项硬校验）<br>
+    • <strong>元门控</strong>：refactor-gate.sh（13 项检查守护规则系统自身一致性）
+  </div>
+
+  <h3 style="font-size:16px;margin:24px 0 12px;color:var(--text-secondary)">物理检查点机制（v3 核心创新）</h3>
+  <div class="mermaid" style="margin-bottom:16px">
+flowchart TD
+    STEP["步骤N完成"] --> JSON["输出完成标记 JSON"]
+    JSON --> VAL["validate-output.sh<br/>（Schema校验 + 自动touch .step-N.validated）"]
+    VAL --> RET{"返回码?"}
+    RET -->|"0 通过"| CREATED["🔐 .step-N.validated 已创建"]
+    RET -->|"1/2 失败"| FIX["补齐 → 重试"]
+    RET -->|"3 工具缺失"| FALLBACK["降级 jq-only<br/>仍写 .validated（标注 validator_type）"]
+    CREATED --> LOAD{"加载步骤N+1前"}
+    LOAD --> LS["ls .step-N.validated"]
+    LS -->|"存在"| NEXT["✅ read_file 步骤N+1"]
+    LS -->|"不存在"| RED14["🔴 红牌R5：回退步骤N<br/>重新调用 validate-output.sh"]
+    FIX --> VAL
+    FALLBACK --> LOAD
+
+    style CREATED fill:#064e3b,stroke:#10b981,color:#d1fae5
+    style RED14 fill:#7f1d1d,stroke:#ef4444,color:#fecaca
+  </div>
+
+  <table style="width:100%;border-collapse:collapse;margin-top:12px;font-size:12px">
+    <thead><tr style="border-bottom:2px solid var(--border-default)"><th style="text-align:left;padding:6px 8px;color:var(--text-tertiary)">模式</th><th style="text-align:left;padding:6px 8px;color:var(--text-tertiary)">需要的 .validated</th><th style="text-align:left;padding:6px 8px;color:var(--text-tertiary)">不需要的</th></tr></thead>
+    <tbody>
+      <tr><td style="padding:5px 8px;font-weight:600">standard</td><td style="padding:5px 8px">step-1~step-7</td><td style="padding:5px 8px;color:var(--text-tertiary)">—</td></tr>
+      <tr><td style="padding:5px 8px;font-weight:600">full</td><td style="padding:5px 8px">step-1~step-10</td><td style="padding:5px 8px;color:var(--text-tertiary)">—</td></tr>
+      <tr><td style="padding:5px 8px;font-weight:600">micro-fix</td><td style="padding:5px 8px">step-4_5~step-7</td><td style="padding:5px 8px;color:var(--text-tertiary)">step-1~step-4, step-8~10</td></tr>
+      <tr><td style="padding:5px 8px;font-weight:600">iteration-fix</td><td style="padding:5px 8px">step-4_5~step-7</td><td style="padding:5px 8px;color:var(--text-tertiary)">step-1~step-4</td></tr>
+      <tr><td style="padding:5px 8px;font-weight:600">batch</td><td style="padding:5px 8px">同 standard</td><td style="padding:5px 8px;color:var(--text-tertiary)">跨批 step-1~3 不重复</td></tr>
+      <tr><td style="padding:5px 8px;font-weight:600;color:var(--text-tertiary)">cross-project</td><td style="padding:5px 8px;color:var(--text-tertiary)">同 standard（A项目侧）</td><td style="padding:5px 8px;color:var(--text-tertiary)">B项目侧不在主链路</td></tr>
+    </tbody>
+  </table>
+  <div class="chart-note" style="margin-top:8px">
+    <strong>文件命名规则</strong>：步骤 4.5 → <code>.step-4_5.validated</code>（<code>.</code> 替换为 <code>_</code>，避免 bash glob 误解析）。<br>
+    <strong>AI 不可伪造</strong>：<code>.validated</code> 只能由 <code>validate-output.sh</code> 创建，AI 自行 touch 视为红牌 R5。
+  </div>
+
+  <h3 style="font-size:16px;margin:24px 0 12px;color:var(--text-secondary)">工具门禁（红牌 R7 · 按阶段限制工具类别）</h3>
+  <div class="mermaid">
+flowchart TD
+    P0["阶段0 · 需求理解<br/>✅ interact + mcp_read + read_only（仅用户提及文件）<br/>❌ write_code + execute + mcp_write"]
+    P1["步骤1~3 · 研究→方案<br/>✅ read_only + interact + mcp_read + execute（仅只读命令）<br/>❌ write_code + mcp_write"]
+    P4["步骤4 · 方案决策<br/>✅ interact + read_only + execute + mcp_read<br/>❌ write_code + mcp_write"]
+    P5["步骤5+ · 编码及后续<br/>🔓 全部工具解锁"]
+
+    P0 --> P1 --> P4 --> P5
+
+    VIOLATE{{"违规调用禁用工具?"}}
+    VIOLATE -->|"是"| RED15["🔴 红牌R7：立即停止<br/>输出违规报告<br/>回当前步骤继续"]
+
+    EXEMPT1["模式豁免 · micro-fix<br/>阶段0：同 standard<br/>4.5+：全部解锁"]
+    EXEMPT2["模式豁免 · iteration-fix<br/>阶段0：同 standard<br/>4.5+：全部解锁"]
+    EXEMPT3["逃生舱 · 用户显式说<br/>'直接改' / '跳过研究'<br/>记录 human_override 后放行"]
+
+    style RED15 fill:#7f1d1d,stroke:#ef4444,color:#fecaca
+    style P5 fill:#064e3b,stroke:#10b981,color:#d1fae5
+    style EXEMPT3 fill:#fff3cd
+  </div>
+</div>
+
+<div class="section-divider"></div>
+
+<!-- Chapter 14: Source Index -->
+<div class="chart-section" id="ch14">
+  <div class="section-header">
+    <div class="section-icon" style="background:var(--accent-bg)">📋</div>
+    <h2>14. 源文件索引</h2>
+  </div>
+  <div class="chart-card">
+    <table style="width:100%;border-collapse:collapse;font-size:13px">
+      <thead>
+        <tr style="border-bottom:2px solid var(--border-default)">
+          <th style="text-align:left;padding:8px 12px;color:var(--text-tertiary)">文件</th>
+          <th style="text-align:left;padding:8px 12px;color:var(--text-tertiary)">说明</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td style="padding:8px 12px;color:var(--accent);font-family:monospace">SKILL.md</td><td style="padding:8px 12px">主入口，触发规则+全局配置+命令速查+流程加载指令</td></tr>
+        <tr><td style="padding:8px 12px;color:var(--accent);font-family:monospace">flow.md</td><td style="padding:8px 12px">开发流程详细指引（L0 路由层，阶段0+0.5+步骤1~10+热启动）</td></tr>
+        <tr><td style="padding:8px 12px;color:var(--accent);font-family:monospace">steps/step-router.md</td><td style="padding:8px 12px">步骤路由器（执行协议+门控+物理检查点+红牌+白名单）</td></tr>
+        <tr><td style="padding:8px 12px;color:var(--accent);font-family:monospace">references/closeout-flow.md</td><td style="padding:8px 12px">收尾子流程（A~K 11环节制，4种调用方共享；原名 wrapup-flow.md）</td></tr>
+        <tr><td style="padding:8px 12px;color:var(--accent);font-family:monospace">references/mode-matrix.md</td><td style="padding:8px 12px">模式矩阵（6种基础模式+1种修饰层+micro-fix降级条件）</td></tr>
+        <tr><td style="padding:8px 12px;color:var(--accent);font-family:monospace">references/gate-validator.md</td><td style="padding:8px 12px">门控校验规范（结构化校验+物理检查点白名单）</td></tr>
+        <tr><td style="padding:8px 12px;color:var(--accent);font-family:monospace">references/cross-project-flow.md</td><td style="padding:8px 12px">跨项目联调主索引（触发检测+衔接+集成+分析）</td></tr>
+        <tr><td style="padding:8px 12px;color:var(--accent);font-family:monospace">references/drift-handling.md</td><td style="padding:8px 12px">需求漂移处理子流程（三步固定动作+反模式）</td></tr>
+        <tr><td style="padding:8px 12px;color:var(--accent);font-family:monospace">references/micro-fix-light.md</td><td style="padding:8px 12px">micro-fix 轻量保留版执行规范（三道防线）</td></tr>
+        <tr><td style="padding:8px 12px;color:var(--accent);font-family:monospace">references/in-flow-sync.md</td><td style="padding:8px 12px">流程内文档同步（dev:sync 完整流程）</td></tr>
+        <tr><td style="padding:8px 12px;color:var(--accent);font-family:monospace">config/gates.yaml</td><td style="padding:8px 12px">门控规则单一权威源（物理检查点+lint+hooks+状态机+工具门禁）</td></tr>
+        <tr><td style="padding:8px 12px;color:var(--accent);font-family:monospace">scripts/</td><td style="padding:8px 12px">程序化执行层（63个脚本：state-machine/hooks/lints/precheck 等）</td></tr>
+      </tbody>
+    </table>
+    <p style="margin-top:16px;color:var(--text-tertiary);font-size:13px">完整索引见 flowchart.md 第 13 章（共 50+ 个文件）。</p>
+  </div>
+</div>
+
+</main>
+
+<!-- Back to top -->
+<button id="backToTop" title="回到顶部">↑</button>
+
+<script>
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: 'dark',
+    securityLevel: 'strict',
+    themeVariables: {
+      primaryColor: '#1e1b4b',
+      primaryTextColor: '#e0e7ff',
+      primaryBorderColor: '#4338ca',
+      lineColor: '#6366f1',
+      secondaryColor: '#1c1917',
+      tertiaryColor: '#18181b',
+      fontFamily: 'Inter, -apple-system, sans-serif',
+      fontSize: '13px',
+      nodeBorder: '#4338ca',
+      mainBkg: '#1e1b4b',
+      clusterBkg: 'rgba(99,102,241,0.06)',
+      clusterBorder: '#312e81',
+      edgeLabelBackground: '#18181b',
+      nodeTextColor: '#e0e7ff'
+    },
+    flowchart: {
+      useMaxWidth: true,
+      htmlLabels: false,
+      curve: 'basis',
+      padding: 12,
+      nodeSpacing: 30,
+      rankSpacing: 40
+    }
+  });
+
+  // Navigation highlight
+  const sections = document.querySelectorAll('.chart-section');
+  const navLinks = document.querySelectorAll('.nav-group a');
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        navLinks.forEach(link => {
+          link.classList.remove('active');
+          if (link.getAttribute('href') === '#' + entry.target.id) {
+            link.classList.add('active');
+          }
+        });
+      }
+    });
+  }, { rootMargin: '-80px 0px -60% 0px' });
+
+  sections.forEach(section => observer.observe(section));
+
+  // Back to top
+  const backToTop = document.getElementById('backToTop');
+  window.addEventListener('scroll', () => {
+    if (window.scrollY > 400) {
+      backToTop.classList.add('visible');
+    } else {
+      backToTop.classList.remove('visible');
+    }
+  });
+
+  backToTop.addEventListener('click', () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+
+  // Smooth scroll for nav links
+  navLinks.forEach(link => {
+    link.addEventListener('click', (e) => {
+      e.preventDefault();
+      const target = document.querySelector(link.getAttribute('href'));
+      if (target) {
+        target.scrollIntoView({ behavior: 'smooth' });
+      }
+    });
+  });
+</script>
+
+</body>
+</html>

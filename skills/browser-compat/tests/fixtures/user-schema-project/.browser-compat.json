@@ -1,0 +1,41 @@
+{
+  "$schema": "../../../schema.json",
+  "_comment": "fixture: 用户 schema 风格（脱敏自 my-project/.browser-compat.json）",
+
+  "targets": {
+    "chrome": "70",
+    "firefox": "68",
+    "safari": "9.1",
+    "edge": "79"
+  },
+
+  "ignore": [
+    "node_modules/**",
+    "**/*.test.ts",
+    "scripts/**"
+  ],
+
+  "rules": {
+    "_comment_js_error": "JS API - 在旧浏览器会直接报错，需拦截",
+    "structuredClone": "error",
+    "Object.hasOwn": "error",
+
+    "_comment_js_safe": "JS API - 有 polyfill 或可选功能",
+    "IntersectionObserver": "off",
+    "ResizeObserver": "off",
+    "requestIdleCallback": "off",
+
+    "_comment_css": "CSS",
+    ":has() Selector": "warn",
+    "backdrop-filter": "info"
+  },
+
+  "polyfills": [
+    "core-js",
+    "intersection-observer"
+  ],
+
+  "customMessages": {
+    "structuredClone": "Safari 15.4+ 才支持，建议用 JSON.parse(JSON.stringify(...))"
+  }
+}

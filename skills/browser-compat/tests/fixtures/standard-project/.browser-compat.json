@@ -1,0 +1,13 @@
+{
+  "target": "standard",
+  "baseline": {
+    "chrome": 90,
+    "safari": 14,
+    "firefox": 90,
+    "edge": 90
+  },
+  "polyfills": ["ResizeObserver"],
+  "ignore": [
+    { "rule_id": "no-has-selector", "reason": "管理后台仅 Chrome 访问" }
+  ]
+}

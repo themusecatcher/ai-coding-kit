@@ -1,0 +1,99 @@
+# =============================================================================
+# 平台集成能力清单
+# =============================================================================
+# 
+# 以下 skill 提供了可选的平台集成能力。
+# 无需任何配置即可在纯本地模式下正常使用核心功能。
+# 如需启用平台增强，在 config/org.yaml 中填写对应字段即可。
+#
+# 原则：平台集成是「可选增强」，不是「必要依赖」。核心流程始终跑在本地。
+
+integrations:
+
+  # ─── 文档平台 ───
+  # 配置 doc_platform_url 后，技术方案可发布到在线文档平台
+  # 未配置时自动降级为本地模式（~/.codebuddy/tech-docs/）
+  - skill: tech-doc
+    config_key: doc_platform_url
+    local_fallback: "~/.codebuddy/tech-docs/（自动）"
+
+  - skill: dev-flow
+    config_key: doc_platform_url
+    local_fallback: 步骤 4 文档决策跳过 / 静默降级
+
+  # ─── 任务管理平台 ───
+  # 配置 task_platform_url 后，可解析任务平台链接获取需求详情
+  # 未配置时自动降级为纯文本 / 口头描述处理
+  - skill: dev-flow
+    config_key: task_platform_url
+    local_fallback: 关键词触发不变，链接降级为纯文本
+
+  - skill: smart-commit
+    config_key: task_platform_url
+    local_fallback: 场景 B 二段式输出（仅基于 git diff）
+
+  - skill: requirement-intake
+    config_key: task_platform_url
+    local_fallback: 口头描述 / 截图 / 交互式提问 路径不受影响
+
+  - skill: issue-trace
+    config_key: task_platform_url
+    local_fallback: 跳过任务平台关联，专注源码追溯
+
+  # ─── 知识库 ───
+  # 配置 mcp_tools.knowledge_base 后，可交叉查询远程知识库
+  # 未配置时静默跳过，本地知识沉淀始终可用
+  - skill: dev-flow
+    config_key: mcp_tools.knowledge_base
+    local_fallback: 信号不命中 → 不加载对应引用 → 静默跳过
+
+  - skill: knowledge-loop
+    config_key: mcp_tools.knowledge_base
+    local_fallback: "~/.codebuddy/knowledge/ 始终可用（核心功能）"
+
+  - skill: issue-trace
+    config_key: mcp_tools.knowledge_base
+    local_fallback: 仅使用本地源码搜索
+
+  # ─── 代码平台 ───
+  # 配置 mcp_tools.code_platform 后，可在线查看跨项目代码
+  # 未配置时仅使用本地 git 操作
+  - skill: issue-trace
+    config_key: mcp_tools.code_platform
+    local_fallback: 本地有仓库 → clone 后追溯；无仓库 → 提示用户
+
+  # ─── 搜索引擎 ───
+  # 配置 mcp_tools.internal_search 后，可使用内部搜索引擎
+  # 未配置时降级为 web_search
+  - skill: dev-flow
+    config_key: mcp_tools.internal_search
+    local_fallback: 自动切换为 web_search
+
+# =============================================================================
+# 无需任何配置，开箱即用的 skill（零依赖）
+# =============================================================================
+# 
+# 以下 skill 不涉及任何外部平台，纯本地即可完整使用：
+#
+#   agent-browser          agent-browser
+#   browser-compat         浏览器兼容性检查
+#   browser-toolkit        浏览器工具路由
+#   code-review            代码审查
+#   coding-standards       编码规范
+#   complexity-optimizer   复杂度检测
+#   continuous-learning-v2 持续学习
+#   design-advisor         方案设计
+#   dom-animation          DOM 动画
+#   e2e-testing            E2E 测试
+#   find-skills            Skill 发现
+#   frontend-patterns      前端模式
+#   i18n                  国际化（纯本地 JSON 操作）
+#   pdf-reader             PDF 处理
+#   proactive-agent        主动 Agent
+#   research-doc           调研文档
+#   search-first           先搜索后编码
+#   security-review        安全审查
+#   self-improving-agent   自改进
+#   tavily-search          搜索工具
+#   verification-loop      验证循环
+#   verification-pipeline  验证管线

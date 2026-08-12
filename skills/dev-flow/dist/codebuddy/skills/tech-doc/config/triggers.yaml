@@ -1,0 +1,263 @@
+# tech-doc / 三模块触发关键词清单（数据驱动单一权威源）
+#
+# 用途：
+#   - SKILL.md 路由表 + doc-platform-doc.md/devlog.md/doc-sync.md 触发规则的统一真相
+#   - LLM 收到用户消息后按本配置匹配关键词路由到对应模块
+#
+# 维护原则（§19/§20 数据驱动）：
+#   - 增删触发关键词 → 只改本文件，不改 SKILL.md / 子模块提示词
+#   - SKILL.md 路由表 + 各子模块的「触发规则」段用「详见 config/triggers.yaml」引用本文件
+#
+# 来源：
+#   - SKILL.md L17-21（路由表）
+#   - doc-platform-doc.md §「触发规则」L48-83
+#   - doc-sync.md §「触发条件」L15-19
+#   - devlog.md §「使用方式」L18-23
+
+# ========================================
+# 路由优先级（与 SKILL.md 路由判断规则对齐）
+# ========================================
+routing:
+  priority:
+    - "优先匹配显式关键词：用户消息中包含子模块 explicit 关键词 → 直接路由"
+    - "组合场景：某些操作需要同时加载多个模块（如 doc-sync 执行过程中可能需要更新 devlog）"
+    - "不确定时询问：无法判断用户意图时，展示三个模块选项让用户选择"
+
+# ========================================
+# devlog 模块触发关键词
+# ========================================
+devlog:
+  module_file: "modules/devlog.md"
+  description: "生成本地开发日志 devlog.md 和执行计划 plan.md"
+  output_paths:
+    - "~/.codebuddy/dev-logs/<目录>/devlog.md"
+    - "~/.codebuddy/dev-logs/<目录>/plan.md"
+
+  explicit:
+    - "生成开发日志"
+    - "记录改动"
+    - "记录一下这次改动"
+    - "生成 devlog"
+    - "写个开发记录"
+    - "写个开发日志"
+    - "帮我生成开发日志"
+
+  dev_flow_invocation:
+    - step: "步骤 7（快速模式 commit 前）"
+      description: "六段全填，信息不足的章节写「待补充」"
+    - step: "步骤 10（完整模式归档）"
+      description: "六段全填，必须完整无缺"
+    - step: "收尾步骤 3.5（审查后）"
+      description: "六段全填，基于 diff + 对话上下文提取"
+
+# ========================================
+# doc-sync 模块触发关键词
+# ========================================
+doc_sync:
+  module_file: "modules/doc-sync.md"
+  description: "协调管理工作上下文、开发日志和 文档平台 技术方案三类文档的一致性"
+
+  explicit:
+    - "同步文档"
+    - "同步一下文档"
+    - "更新技术方案"
+    - "文档更新了"
+    - "doc_platform 同步"
+    - "doc_platform同步"
+    - "文档改了"
+    - "设计稿更新"
+    - "需求变更"
+    - "接口改了"
+    - "protobuf 改了"
+    - "后台文档补充了"
+    - "字段变了"
+    - "更新 doc_platform"
+    - "同步 doc_platform"
+    - "帮我同步"
+
+  passive_sync:
+    description: "用户告知外部文档发生变更（需求/设计/接口/协议变更）时被动触发"
+    triggers:
+      - "用户直接贴出新的数据结构或协议定义"
+      - "需求/设计/接口/协议有外部变更通告"
+
+  dev_flow_invocation:
+    - step: "步骤 5.5b（编码后）"
+      description: "时机①：最轻量；只更新工作上下文进度+备注"
+    - step: "步骤 5.5b 接口变更例外"
+      description: "protobuf/接口变更时，时机①提升为时机②（同时校验 文档平台）"
+    - step: "步骤 6 前（验证前）"
+      description: "时机②：主要同步点，三件套全部对齐"
+    - step: "步骤 7 / 收尾 3.5"
+      description: "时机③：兜底检查，确保不遗漏"
+    - step: "步骤 10（归档与交付）"
+      description: "时机④：完整同步，三件套归档"
+
+# ========================================
+# doc-platform-doc 模块触发关键词
+# ========================================
+doc_platform_doc:
+  module_file: "modules/doc-platform-doc.md"
+  description: "生成/编辑/发布 文档平台 线上技术文档（tech-proposal / tech-sharing / release-doc）"
+
+  # 显式触发（关键词命中即触发）
+  explicit:
+    - "tech-doc"
+    - "技术方案"
+    - "技术文档"
+    - "方案文档"
+    - "技评文档"
+    - "技术分享"
+    - "分享文档"
+    - "经验总结"
+    - "发布文档"
+    - "发布说明"
+    - "release notes"
+    - "上线文档"
+
+  # 显式触发（需配合 文档平台 链接或 docid）
+  explicit_requires_link:
+    - "更新文档"
+    - "精简文档"
+    - "优化文档"
+    - "补充文档"
+
+  # 隐式触发模式（满足任一即触发）
+  implicit_patterns:
+    - pattern: "写/生成/输出 + 技术方案"
+      examples: ["帮我写个技术方案", "生成技术方案文档"]
+    - pattern: "写/生成/输出 + 技术分享"
+      examples: ["帮我写个技术分享文档", "生成分享文档"]
+    - pattern: "写/生成/输出 + 发布文档"
+      examples: ["生成发布说明", "写个 release notes"]
+    - pattern: "发到/同步到/推到 + doc_platform + 文档意图"
+      examples: ["把方案发到 doc_platform", "分享文档同步到 doc_platform"]
+    - pattern: "需求/功能 + 方案评审"
+      examples: ["这个需求写个方案评审文档", "准备技评"]
+    - pattern: "doc_platform + 方案/文档"
+      examples: ["在 doc_platform 上写个方案", "doc_platform 技术方案"]
+    - pattern: "dev-flow 中用户要求生成方案"
+      examples: ["dev-flow 快速模式下「生成技术方案」"]
+    - pattern: "doc_platform 链接 + 编辑意图"
+      examples: ["这个 doc_platform 文档精简一下", "帮我优化下这个文档的整体方案章节"]
+    - pattern: "精简/优化/补充/删除 + 章节/内容 + 文档"
+      examples: ["整体方案的内容太多了，精简一下", "补充下测试建议章节"]
+
+  # 不触发场景（避免误触发）
+  do_not_trigger:
+    - "纯代码开发任务（由 dev-flow 处理）"
+    - "单次问答（如「技术方案怎么写？」只是咨询不是生成）"
+    - "已在 dev-flow 完整模式步骤 4 确认后自动触发时，不需要重复加载"
+
+  # 文档类型推断关键词（与 doc_platform-config.yaml doc_types 对应）
+  doc_type_inference:
+    tech-proposal:
+      - "技术方案"
+      - "方案文档"
+      - "技评文档"
+      - "方案评审"
+    tech-sharing:
+      - "技术分享"
+      - "分享文档"
+      - "经验总结"
+      - "踩坑记录"
+      - "最佳实践"
+    release-doc:
+      - "发布文档"
+      - "发布说明"
+      - "release notes"
+      - "版本发布"
+      - "上线文档"
+      - "changelog"
+
+  dev_flow_invocation:
+    - step: "步骤 4 阶段 3 决策后"
+      condition: "action ∈ {create, update}（relink/skip/auto_inherited_skip 时不加载）"
+    - step: "步骤 5.5b 接口变更例外"
+      condition: "protobuf/接口变更时配合 doc-sync 时机②"
+    - step: "步骤 7 H.3+"
+      condition: "上线后 bugfix 或提测后迭代修复命中阈值时（模式 C）"
+    - step: "步骤 10.3.5 文档平台 归档同步"
+      condition: "完整执行必走，doc_platform_tech_proposal.action ∉ {skip, auto_inherited_skip} 时强制（模式 C）"
+
+# ========================================
+# working-context 内部需求漂移子流程触发关键词
+# （v1 新增 2026-05-19，用途：dev-flow 流程中带外沟通后回流澄清场景）
+# ========================================
+working_context_drift:
+  module_file: "../../dev-flow/references/drift-handling.md"
+  module_section: ""  # drift-handling.md 为独立文件无需章节锚点
+  description: "dev-flow 编码推进中，用户与产品/设计/后端 IM 沟通后回流澄清结论，触发工作上下文与已写代码的对账刷新（不涉及外部 文档平台/Figma/protobuf 文档变更）"
+
+  # 路由说明：本节点的关键词不路由到 tech-doc 三模块，而是直接触发 dev-flow 内部子流程
+  # 由 dev-flow/SKILL.md 触发表的「需求漂移信号」消费
+  routes_to: "dev-flow"
+  routes_to_module: "references/doc-sync-rules.md §路由分流 → references/drift-handling.md"
+
+  # B. 沟通结果回流（带外信息回流）
+  communication_feedback:
+    - "产品说"
+    - "PM 说"
+    - "PM 确认"
+    - "设计说"
+    - "设计确认"
+    - "后端说"
+    - "后端确认"
+    - "和 XX 聊了"
+    - "沟通完了"
+    - "刚才确认了"
+    - "刚和 XX 对齐"
+
+  # C. 需求/方案否定（带方向性的推翻）
+  requirement_negation:
+    - "不做 X 了"
+    - "X 不要了"
+    - "原方案行不通"
+    - "之前理解错了"
+    - "方案要改"
+    - "重新做"
+    - "推翻原来"
+
+  # D. 澄清式调整（修正性补充）
+  clarification:
+    - "其实是"
+    - "实际是"
+    - "澄清下"
+    - "确认下来是"
+    - "修正一下"
+    - "补充说明"
+
+  # 模式豁免
+  exemptions:
+    - mode: "micro-fix"
+      reason: "任务规模 ≤3 行改动，沟通澄清场景几乎为零，强制反而打扰"
+
+  # 与 doc_sync 节点的边界（避免触发歧义）
+  boundary_with_doc_sync:
+    description: "外部文档变更（含 文档平台/Figma/protobuf）由 doc_sync 节点消费，本节点仅消费内部口头/IM 澄清"
+    overlap_keyword: "需求变更"
+    overlap_resolution: "若用户说「需求变更」且同时贴出 文档平台/Figma 链接 → 路由到 doc_sync；若仅口头表达 → 路由到本节点（routing.priority 已规定优先匹配显式关键词，链接为强信号）"
+
+# ========================================
+# 组合调用场景
+# ========================================
+combo_scenarios:
+  - name: "开发完想一次性搞定"
+    user_says: "帮我生成开发日志，顺便同步文档"
+    modules: ["devlog", "doc-sync"]
+
+  - name: "需求完结全量归档"
+    user_says: "全部文档归档一下"
+    modules: ["devlog", "doc-sync", "doc-platform-doc"]
+
+  - name: "写完方案想同步"
+    user_says: "技术方案写好了，帮我同步"
+    modules: ["doc-sync"]
+
+# ========================================
+# 配置版本（变更追踪）
+# ========================================
+meta:
+  version: "1.1.0"
+  last_updated: "2026-05-19"
+  source: "抽离自 SKILL.md L17-21 + doc-platform-doc.md §触发规则 + doc-sync.md §触发条件 + devlog.md §使用方式（B2-B3 改造）；v1.1 新增 working_context_drift 节点（dev-flow 内部需求漂移子流程权威源）"

@@ -1,0 +1,138 @@
+# browser-mcp-routing.yaml - V4 Browser 验证 MCP Server 选型决策表
+#
+# 设计哲学（半确定性 → YAML + LLM fallback 双层结构）：
+# - 第一层（确定性）：项目特征 + 用户提供的 URL 类型 → 直接命中候选 MCP
+# - 第二层（模糊性）：候选有多个 / 全部不命中 → LLM 综合上下文最终决策
+#
+# 与 references/browser-mcp-verification.md 关系：
+# - 本文件是「快速决策」配置；详细命令规范仍在 references 提示词
+# - LLM 应先查本表初筛 → 再读 references/browser-mcp-verification.md 执行细节
+
+version: 1
+
+# ========================================
+# 候选 MCP Server
+# ========================================
+servers:
+  - id: playwright_mcp
+    name: Playwright MCP
+    package: '@playwright/mcp'
+    strengths:
+      - '功能最全（导航/点击/截图/控制台/网络）'
+      - '可启动新浏览器实例 + 完整自动化'
+      - '支持 storage state 管理登录态'
+    weaknesses:
+      - '默认无登录态，需要预先采集 storage state'
+    handbook_anchor: '#playwright-mcp-使用指南'
+
+  - id: chrome_devtools_mcp
+    name: Chrome DevTools MCP
+    package: 'chrome-devtools-mcp'
+    strengths:
+      - '连接已打开的 Chrome（保留登录态/页面状态）'
+      - '直接读取真实用户场景的控制台/网络'
+    weaknesses:
+      - '需要用户手动启动 Chrome --remote-debugging-port=9222'
+      - '功能不如 Playwright MCP 全面'
+    handbook_anchor: '#chrome-devtools-mcp-使用指南'
+
+  - id: browser_mcp
+    name: BrowserMCP
+    package: '@browsermcp/mcp'
+    strengths:
+      - '轻量连接当前浏览器会话'
+      - '适合快速看一眼页面状态'
+    weaknesses:
+      - '能力相对有限'
+    handbook_anchor: ''
+
+# ========================================
+# 决策规则（按优先级匹配，第一条命中即返回）
+# 每条规则字段：
+#   when: 触发条件（match_any 任一命中 / match_all 全部命中）
+#   recommend: 推荐 server id 列表（顺序即偏好）
+#   confidence: high/medium/low；medium/low 时 LLM 必须二次评估
+# ========================================
+rules:
+  - id: r1_login_required_with_existing_chrome
+    description: '页面需要登录且用户已在 Chrome 中打开/已登录'
+    when:
+      match_any:
+        - 'user_has_chrome_remote_debug_running'
+        - 'page_requires_login_and_storage_state_unavailable'
+    recommend: [chrome_devtools_mcp, browser_mcp]
+    confidence: high
+
+  - id: r2_no_login_full_automation
+    description: '页面无需登录或已有 storage state，需要完整交互流程'
+    when:
+      match_any:
+        - 'page_no_login_required'
+        - 'storage_state_available'
+        - 'need_full_automation_with_assertions'
+    recommend: [playwright_mcp]
+    confidence: high
+
+  - id: r3_quick_inspection
+    description: '只需快速看一眼当前页面（无需复杂交互）'
+    when:
+      match_any:
+        - 'inspection_only_no_interaction'
+        - 'lightweight_check_request'
+    recommend: [browser_mcp, chrome_devtools_mcp]
+    confidence: medium
+
+  - id: r4_internal_network_only
+    description: '页面仅能通过公司内网/VPN 访问'
+    when:
+      match_any:
+        - 'url_is_internal_only'
+    recommend: [chrome_devtools_mcp, browser_mcp]
+    confidence: high
+    note: 'Playwright MCP 启动的新浏览器实例可能无法访问内网'
+
+  - id: r5_storage_state_available
+    description: '项目已有 .playwright/.auth/state.json 登录态文件'
+    when:
+      match_any:
+        - 'project_has_playwright_storage_state'
+    recommend: [playwright_mcp]
+    confidence: high
+
+# ========================================
+# 输入特征清单（LLM 评估时填充 true/false）
+# 这些特征可由 LLM 通过 codebase_search/grep_search 自行判断
+# ========================================
+features:
+  - id: user_has_chrome_remote_debug_running
+    detection_hint: '用户在对话中提到「我已经打开了 Chrome」「已经登录」「remote-debugging-port」等'
+  - id: page_requires_login_and_storage_state_unavailable
+    detection_hint: '页面 URL 已知需要登录（如 /admin /workbench），且未发现 .playwright/.auth/state.json'
+  - id: page_no_login_required
+    detection_hint: '页面 URL 是公开页（landing/share）'
+  - id: storage_state_available
+    detection_hint: 'ls .playwright/.auth/state.json 存在'
+  - id: need_full_automation_with_assertions
+    detection_hint: '需要执行多步交互后做 expect 断言'
+  - id: inspection_only_no_interaction
+    detection_hint: '用户只问「这个页面渲染对吗 / 控制台有没有报错」'
+  - id: lightweight_check_request
+    detection_hint: '用户用语轻量：「看一眼」「瞄一下」'
+  - id: url_is_internal_only
+    detection_hint: 'URL 包含内网域名或 10.x / 192.168.x 等内网标识'
+  - id: project_has_playwright_storage_state
+    detection_hint: 'find . -name "state.json" -path "*/.playwright/*" 命中'
+
+# ========================================
+# Fallback 策略
+# ========================================
+fallback:
+  description: '所有规则未命中时'
+  recommend: [playwright_mcp]
+  confidence: low
+  must_ask_user: true
+  prompt_template: |
+    没有规则强匹配；需要你确认两点：
+    1. 测试 URL 是什么？
+    2. 这个 URL 是否需要登录态？
+    然后我推荐使用 Playwright MCP 启动新浏览器实例进行验证。

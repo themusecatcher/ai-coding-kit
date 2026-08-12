@@ -1,0 +1,145 @@
+# stages.yaml - verification-pipeline 7 阶段定义
+# 数据驱动：scripts/run-verify.sh 读取本文件而非硬编码
+#
+# 设计哲学（确定性用代码）：
+# - 阶段定义、依赖图、并行分组、超时时间、命令模板均配置化
+# - AI 不需要记忆"哪些阶段并行/哪些必须串行"
+#
+# 与 dev-flow step-6 的对应：
+# - 本 skill 的 stage_id 与 dev-flow step-6 的 V1~V7 一一对应
+# - dev-flow step-6 是流程权威源；本文件是脚本调度的实现细节
+
+version: 2
+
+# ========================================
+# 阶段定义（按 V1~V7 编号，与 dev-flow step-6 对齐）
+# ========================================
+stages:
+  # ---------- 第一批：互相独立，可并行 ----------
+  - id: build
+    name: V1 Build
+    group: 1
+    required: true
+    timeout_seconds: 300
+    cmd: 'npm run build 2>&1 | tail -20'
+    pass_when: 'exit_code_zero'
+    on_fail: 'fix_immediately'
+
+  - id: typecheck
+    name: V2 TypeCheck
+    group: 1
+    required: true
+    timeout_seconds: 180
+    cmd: 'npx tsc --noEmit 2>&1 | head -30'
+    pass_when: 'exit_code_zero'
+    on_fail: 'fix_immediately'
+
+  - id: lint
+    name: V3 Lint
+    group: 1
+    required: true
+    timeout_seconds: 120
+    # 注意：{files} 由 run-verify.sh 替换为本次 git diff 的改动文件列表
+    cmd: 'npx eslint --no-error-on-unmatched-pattern {files} 2>&1 | head -30'
+    pass_when: 'exit_code_zero'
+    on_fail: 'fix_immediately'
+
+  # ---------- 第二批：依赖第一批通过后，可继续并行 ----------
+  - id: security
+    name: V6 Security
+    group: 2
+    required: false
+    timeout_seconds: 60
+    # 调用本 skill 自带 lint
+    cmd: 'bash {VP_ROOT}/scripts/lints/secret-grep-lint.sh {files}'
+    pass_when: 'exit_code_zero'
+    on_fail: 'fix_immediately'
+
+  - id: diff_review
+    name: V7 Diff Review
+    group: 2
+    required: true
+    timeout_seconds: 30
+    # 调用本 skill 自带 lint（lock 文件 / locales 检查）
+    cmd: 'bash {VP_ROOT}/scripts/lints/lock-file-lint.sh'
+    pass_when: 'exit_code_zero'
+    on_fail: 'cleanup_unexpected'
+
+  # ---------- 第二批延伸：按需触发 ----------
+  - id: browser
+    name: V4 Browser
+    group: 2
+    required: false
+    on_demand: true
+    # 浏览器验证需要 LLM 综合判断，无法纯脚本化
+    # 触发条件配置见 config/v4-trigger-rules.yaml
+    # 选型决策见 config/browser-mcp-routing.yaml
+    cmd: ''
+    pass_when: 'llm_review'
+    on_fail: 'analyze_root_cause'
+    handbook: '{VP_ROOT}/references/browser-mcp-verification.md'
+
+  - id: test
+    name: V5 Test
+    group: 2
+    required: false
+    on_demand: true
+    timeout_seconds: 600
+    cmd: 'npm run test -- --testPathPattern="{test_paths}" 2>&1 | tail -50'
+    pass_when: 'exit_code_zero'
+    on_fail: 'analyze_root_cause'
+    handbook: '{VP_ROOT}/references/e2e-verification.md'
+
+# ========================================
+# 并行分组（group 字段决定）
+# ========================================
+parallel_groups:
+  - group: 1
+    description: '编译/类型/Lint 互相独立，可并行'
+    members: [build, typecheck, lint]
+
+  - group: 2
+    description: '依赖第一批全部通过；group 2 内部 security/diff_review/browser/test 也可并行'
+    members: [security, diff_review, browser, test]
+    depends_on: [1]
+
+# ========================================
+# 默认执行集合
+# ========================================
+presets:
+  core:
+    description: '默认核心 3 阶段 + Diff Review'
+    stages: [build, typecheck, lint, diff_review]
+
+  full:
+    description: '完整 7 阶段（含按需的 browser/test）'
+    stages: [build, typecheck, lint, security, diff_review, browser, test]
+
+  minimal:
+    description: '仅编译 + 类型'
+    stages: [build, typecheck]
+
+# ========================================
+# 3 次失败熔断配置
+# ========================================
+circuit_breaker:
+  threshold: 3
+  state_dir: '{HOME}/.codebuddy/working-context/.verify-state'
+  on_trigger:
+    action: 'stop_and_ask_user'
+    options:
+      - id: rollback_redo
+        label: '🔄 回退重做（dev-flow 回到步骤 3）'
+      - id: manual_fix
+        label: '🛠️ 我来修（暂停流程）'
+      - id: skip_stage
+        label: '⏭️ 跳过此阶段'
+      - id: abort
+        label: '❌ 终止本次任务'
+
+# ========================================
+# 报告输出
+# ========================================
+report:
+  schema: '{VP_ROOT}/references/report.schema.json'
+  default_path: '{HOME}/.codebuddy/working-context/.verify-state/last-report.json'

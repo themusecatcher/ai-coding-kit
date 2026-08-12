@@ -1,0 +1,53 @@
+---
+description: ~/.codebuddy/ 下 agents/skills/rules 文件修改后的交互式提醒格式规范。修改这些文件后加载此规则。
+alwaysApply: false
+enabled: true
+updatedAt: 2026-04-16T18:57:00.000Z
+provider: 
+---
+
+# 交互式提醒格式规范
+
+> 当 `~/.codebuddy/` 下的 agents/skills/rules 文件被修改后，必须按以下流程提醒用户。
+
+## 提醒流程
+
+1. **输出简要文字说明**（≤3行）：说明修改了什么、为什么修改
+2. **展示选项表格 + `ask_followup_question`**：
+
+### 选项定义
+
+| # | 选项 | 说明 |
+|---|------|------|
+| A | 📊 更新 dev-flow flowchart（~/.codebuddy 目录下，{变更原因}） | 更新 flowchart 以反映本次变更 |
+| B | 🔄 同步到 ai-coding-kit | 在 `ai-coding-kit` 项目下执行 `pnpm sync` |
+| C | 📊 + 🔄 两项都执行 | 依次执行 A 和 B |
+| D | ⏭️ 跳过 | 稍后处理 |
+
+### 选项 A 触发条件
+
+满足**任一**即展示选项 A：
+- 修改了 `dev-flow/` 步骤/模式文件/SKILL.md
+- 修改了子 Skill 流程定义/交互选项
+- 修改了任何影响 dev-flow 用户交互流程的文件
+
+判断原则：按「是否影响 dev-flow 流程定义/交互流程」判断，不按目录归属判断。
+
+### 条件性隐藏
+
+不满足选项 A 触发条件时：
+- 同步移除 A 和 C，编号顺延（B→A, D→B）
+- 表格和 `ask_followup_question` 同步调整
+
+### 选项执行
+
+- 选 A → 读取 `flowchart/SPEC.md` 获取规范 → 展示版本管理交互式提示
+- 选 B → 提示执行 `pnpm sync`
+- 选 C → 依次执行 A 和 B
+- 选 D → 不再提醒
+
+## 自检清单（每次修改后必须核对）
+
+1. □ 简要文字说明（≤3行）已输出？
+2. □ 选项 A 触发条件已判断？
+3. □ 选项表格与 `ask_followup_question` 逐条一致？移除选项后编号已顺延？

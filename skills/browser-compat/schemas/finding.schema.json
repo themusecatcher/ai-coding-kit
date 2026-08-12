@@ -1,0 +1,78 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "browser-compat/finding.schema.json",
+  "title": "Browser Compat Check Report",
+  "description": "compat-check.js stdout JSON 输出契约（Draft-07）",
+  "type": "object",
+  "required": ["skill", "findings", "summary"],
+  "properties": {
+    "skill": { "const": "browser-compat" },
+    "scan_scope": {
+      "type": "string",
+      "enum": ["diff", "staged", "file", "directory"]
+    },
+    "projectRoot": {
+      "type": ["string", "null"],
+      "description": "扫描时推断出的项目根目录绝对路径；用于 summarize-result.js 反查 .browser-compat.json 做配置健康度自检"
+    },
+    "baseline": {
+      "type": ["object", "null"],
+      "properties": {
+        "level": { "type": "string", "enum": ["conservative", "standard", "aggressive"] },
+        "source": { "type": "string" },
+        "minVersions": {
+          "type": "object",
+          "properties": {
+            "chrome": { "type": "number" },
+            "safari": { "type": "number" },
+            "firefox": { "type": "number" },
+            "edge": { "type": "number" }
+          }
+        }
+      },
+      "required": ["level", "source"]
+    },
+    "findings": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/finding" }
+    },
+    "skipped": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["rule_id", "reason"],
+        "properties": {
+          "rule_id": { "type": "string" },
+          "reason": { "type": "string" }
+        }
+      }
+    },
+    "summary": {
+      "type": "object",
+      "required": ["critical", "warning", "info", "conclusion"],
+      "properties": {
+        "critical": { "type": "integer", "minimum": 0 },
+        "warning": { "type": "integer", "minimum": 0 },
+        "info": { "type": "integer", "minimum": 0 },
+        "conclusion": { "type": "string", "enum": ["approve", "warning", "block"] }
+      }
+    }
+  },
+  "$defs": {
+    "finding": {
+      "type": "object",
+      "required": ["severity", "type", "rule_id", "file", "line", "message"],
+      "properties": {
+        "severity": { "type": "string", "enum": ["CRITICAL", "WARNING", "INFO"] },
+        "type": { "type": "string", "enum": ["js", "css"] },
+        "rule_id": { "type": "string", "minLength": 1 },
+        "file": { "type": "string", "minLength": 1 },
+        "line": { "type": "integer", "minimum": 1 },
+        "code_snippet": { "type": "string" },
+        "message": { "type": "string", "minLength": 1 },
+        "reason": { "type": "string" },
+        "fix_hint": { "type": "string" }
+      }
+    }
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "name": "agent-browser",
+  "version": "1.0.0",
+  "description": "浏览器自动化 CLI 工具。用于网页交互自动化，包括页面导航、表单填写、按钮点击、截图、数据提取、Web 应用测试等浏览器任务。触发场景包括\"打开网站\"、\"填写表单\"、\"点击按钮\"、\"截图\"、\"抓取页面数据\"、\"测试 Web 应用\"、\"登录网站\"、\"自动化浏览器操作\"等需要程序化 Web 交互的任务。",
+  "author": {
+    "name": ""
+  },
+  "keywords": [
+    "agent",
+    "browser"
+  ],
+  "category": "productivity",
+  "skills": [
+    "./SKILL.md"
+  ]
+}

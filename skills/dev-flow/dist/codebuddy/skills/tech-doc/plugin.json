@@ -1,0 +1,16 @@
+{
+  "name": "tech-doc",
+  "version": "1.0.0",
+  "description": "文档处理中心。统一管理开发日志（devlog）、文档同步（doc-sync）和技术方案文档（tech-proposal）三大功能模块。支持独立使用和被 dev-flow 按需调用。根据用户意图自动路由到对应模块，按需加载避免 Token 浪费。技术方案模块同时支持在线发布（需配置 doc_platform_url）和本地模式（默认，输出到 ~/.codebuddy/tech-docs/）。触发关键词：「生成开发日志/记录改动/devlog」→ devlog 模块；「同步文档/文档更新了」→ doc-sync 模块；「技术方案/技术分享/发布文档/精简文档/优化文档」→ tech-proposal 模块。",
+  "author": {
+    "name": ""
+  },
+  "keywords": [
+    "tech",
+    "doc"
+  ],
+  "category": "productivity",
+  "skills": [
+    "./SKILL.md"
+  ]
+}

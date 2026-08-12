@@ -1,0 +1,193 @@
+{
+  "$schema": "https://json-schema.org/draft/2019-09/schema",
+  "$id": "https://codebuddy.local/skills/knowledge-loop/config/frontmatter.schema.json",
+  "title": "knowledge-loop frontmatter schema",
+  "description": "knowledge-loop 三类 frontmatter（_index.md / _overview.md / 主题文件）的 JSON Schema 守卫。由 scripts/lints/check-frontmatter.sh 调用。修改本文件即修改规则真相。",
+
+  "type": "object",
+  "required": ["__kind"],
+  "properties": {
+    "__kind": {
+      "description": "frontmatter 种类判别字段，由 lint 脚本根据文件名注入：'index' | 'overview' | 'topic'",
+      "enum": ["index", "overview", "topic"]
+    }
+  },
+  "oneOf": [
+    { "$ref": "#/$defs/indexFm" },
+    { "$ref": "#/$defs/overviewFm" },
+    { "$ref": "#/$defs/topicFm" }
+  ],
+
+  "$defs": {
+    "isoDate": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+    },
+    "isoDateTime": {
+      "type": "string",
+      "anyOf": [
+        { "pattern": "^\\d{4}-\\d{2}-\\d{2}$" },
+        { "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d+)?(Z|[+-]\\d{2}:?\\d{2})?$" },
+        { "const": "" }
+      ]
+    },
+    "gitSha": {
+      "type": "string",
+      "anyOf": [
+        { "pattern": "^[0-9a-f]{7,40}$" },
+        { "const": "" }
+      ]
+    },
+    "confidenceLevel": {
+      "description": "5 主级别 + 2 机器子状态 + 2 生命周期状态",
+      "enum": [
+        "draft",
+        "scanned",
+        "pending",
+        "verified",
+        "stale",
+        "auto-verified",
+        "auto-stale",
+        "archived",
+        "deprecated"
+      ]
+    },
+    "topicEnum": {
+      "enum": ["data-model", "api", "logic", "ui", "pitfalls"]
+    },
+    "codeAnchor": {
+      "type": "object",
+      "required": ["path"],
+      "properties": {
+        "path": { "type": "string", "minLength": 1 },
+        "symbols": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "uniqueItems": true
+        }
+      },
+      "additionalProperties": false
+    },
+    "release": {
+      "type": "object",
+      "required": ["released"],
+      "properties": {
+        "released": { "type": "boolean" },
+        "released_at": {
+          "anyOf": [
+            { "$ref": "#/$defs/isoDate" },
+            { "type": "null" }
+          ]
+        },
+        "verified_in_production": { "type": "boolean" }
+      },
+      "additionalProperties": false
+    },
+    "stability": {
+      "type": "object",
+      "properties": {
+        "last_verified": { "$ref": "#/$defs/isoDate" },
+        "drift_count": { "type": "integer", "minimum": 0 },
+        "days_since_merge": { "type": "integer", "minimum": 0 },
+        "confidence_score": { "type": "integer", "minimum": 0, "maximum": 100 }
+      },
+      "additionalProperties": false
+    },
+    "autoUpgrade": {
+      "type": "object",
+      "required": ["upgraded_at", "upgraded_by"],
+      "properties": {
+        "upgraded_at": { "$ref": "#/$defs/isoDate" },
+        "upgraded_by": {
+          "enum": ["step-1-arbitration", "dev:kb-sync", "dev:kb-scan"]
+        },
+        "code_anchor": { "type": "string" },
+        "source_ref": { "type": "string" },
+        "ttl_days": { "type": "integer", "minimum": 1, "maximum": 365 }
+      },
+      "additionalProperties": false
+    },
+
+    "indexFm": {
+      "type": "object",
+      "required": ["__kind", "project", "base_branch", "created"],
+      "properties": {
+        "__kind": { "const": "index" },
+        "project": { "type": "string", "minLength": 1 },
+        "base_branch": { "type": "string", "minLength": 1 },
+        "created": { "$ref": "#/$defs/isoDate" },
+        "last_updated": { "$ref": "#/$defs/isoDate" },
+        "last_scanned_sha": { "$ref": "#/$defs/gitSha" },
+        "last_synced_sha": { "$ref": "#/$defs/gitSha" },
+        "last_synced_at": { "$ref": "#/$defs/isoDateTime" }
+      },
+      "additionalProperties": false
+    },
+
+    "overviewFm": {
+      "type": "object",
+      "required": ["__kind", "module", "confidence", "created"],
+      "properties": {
+        "__kind": { "const": "overview" },
+        "module": { "type": "string", "minLength": 1 },
+        "confidence": { "$ref": "#/$defs/confidenceLevel" },
+        "created_branch": { "type": "string" },
+        "base_branch": { "type": "string" },
+        "code_anchors": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/codeAnchor" }
+        },
+        "release": { "$ref": "#/$defs/release" },
+        "stability": { "$ref": "#/$defs/stability" },
+        "auto_upgrade": { "$ref": "#/$defs/autoUpgrade" },
+        "created": { "$ref": "#/$defs/isoDate" },
+        "last_scanned": { "$ref": "#/$defs/isoDate" },
+        "last_scanned_sha": { "$ref": "#/$defs/gitSha" }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "confidence": { "const": "pending" } }, "required": ["confidence"] },
+          "then": { "required": ["created_branch"] }
+        },
+        {
+          "if": { "properties": { "confidence": { "enum": ["auto-verified", "auto-stale"] } }, "required": ["confidence"] },
+          "then": { "required": ["auto_upgrade"] }
+        }
+      ],
+      "additionalProperties": false
+    },
+
+    "topicFm": {
+      "type": "object",
+      "required": ["__kind", "module", "topic", "confidence", "created"],
+      "properties": {
+        "__kind": { "const": "topic" },
+        "module": { "type": "string", "minLength": 1 },
+        "topic": { "$ref": "#/$defs/topicEnum" },
+        "confidence": { "$ref": "#/$defs/confidenceLevel" },
+        "auto_upgrade": { "$ref": "#/$defs/autoUpgrade" },
+        "created_branch": { "type": "string" },
+        "base_branch": { "type": "string" },
+        "code_anchors": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/codeAnchor" }
+        },
+        "release": { "$ref": "#/$defs/release" },
+        "stability": { "$ref": "#/$defs/stability" },
+        "created": { "$ref": "#/$defs/isoDate" },
+        "last_scanned": { "$ref": "#/$defs/isoDate" }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "confidence": { "const": "pending" } }, "required": ["confidence"] },
+          "then": { "required": ["created_branch"] }
+        },
+        {
+          "if": { "properties": { "confidence": { "enum": ["auto-verified", "auto-stale"] } }, "required": ["confidence"] },
+          "then": { "required": ["auto_upgrade"] }
+        }
+      ],
+      "additionalProperties": false
+    }
+  }
+}

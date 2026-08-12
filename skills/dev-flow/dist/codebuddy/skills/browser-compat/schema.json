@@ -1,0 +1,137 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://codebuddy.local/schemas/browser-compat.schema.json",
+  "title": "BrowserCompat Config",
+  "description": "browser-compat Skill 的项目级配置 schema。同时支持「用户 schema」（targets / rules / ignore-as-paths / projects）和「我们 schema」（target / baseline / excludePaths / ignore-as-rule-objects）。两套字段可在同一文件混用。优先级与字段语义详见 SKILL.md §「配置文件 Schema 兼容」。",
+  "type": "object",
+  "additionalProperties": true,
+  "properties": {
+    "$schema": { "type": "string" },
+    "_comment": { "type": "string" },
+
+    "target": {
+      "description": "[语法糖] 浏览器兼容档位。等价于一组预设 targets，便于快速声明。",
+      "enum": ["conservative", "standard", "aggressive"]
+    },
+    "baseline": {
+      "description": "[我们 schema] 浏览器主版本号映射，数字。会与 target 合并。",
+      "type": "object",
+      "additionalProperties": { "type": ["number", "string"] },
+      "examples": [{ "chrome": 90, "safari": 14, "firefox": 90, "edge": 90 }]
+    },
+    "targets": {
+      "description": "[用户 schema] 浏览器版本声明，值可为字符串（如 \"9.1\"）或数字。ios → 映射到 safari，android → 映射到 chrome（取较小者）。",
+      "type": "object",
+      "additionalProperties": { "type": ["number", "string"] },
+      "examples": [{ "chrome": "70", "safari": "9.1", "firefox": "68", "edge": "79" }]
+    },
+
+    "rules": {
+      "description": "[用户 schema] ESLint 风格规则开关，值为 'error' | 'warn' | 'info' | 'off'。'off' 会被翻译成规则豁免，'warn'/'info' 暂记入 customRules（备未来 severity 降级）。",
+      "type": "object",
+      "additionalProperties": {
+        "type": "string",
+        "enum": ["error", "warn", "info", "off"]
+      }
+    },
+    "customRules": {
+      "description": "[我们 schema] 自定义规则覆写（高级）。",
+      "type": "object"
+    },
+
+    "ignore": {
+      "description": "[多态] 第一个元素是字符串 → 路径 glob 数组（用户 schema，并入 excludePaths）；是对象 → 规则豁免数组（我们 schema，每项含 rule_id + reason）。空数组合法。",
+      "type": "array",
+      "items": {
+        "oneOf": [
+          {
+            "type": "string",
+            "description": "路径 glob，如 'node_modules/**'、'**/*.test.ts'"
+          },
+          {
+            "type": "object",
+            "description": "规则豁免对象",
+            "required": ["rule_id"],
+            "properties": {
+              "rule_id": { "type": "string" },
+              "reason": { "type": "string" },
+              "match": { "type": "string", "enum": ["exact", "fuzzy"] }
+            },
+            "additionalProperties": true
+          }
+        ]
+      }
+    },
+    "excludePaths": {
+      "description": "[我们 schema] 路径排除。命名比 ignore 字符串数组更明确，新项目推荐使用此字段。",
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "includePaths": {
+      "description": "[共用] 显式包含的路径，留空则扫描全部。",
+      "type": "array",
+      "items": { "type": "string" }
+    },
+
+    "polyfills": {
+      "description": "[共用] 项目已注入的 polyfill 包名列表。命中规则但 polyfill 已注入时，rule-filter 会自动豁免。",
+      "type": "array",
+      "items": { "type": "string" }
+    },
+
+    "customMessages": {
+      "description": "[用户 schema｜保留字段] 规则违规时的自定义提示文案，key 为规则名（与 rules 对齐），value 为提示文本。当前 compat-check 暂不消费（脚本 finding.message 仍来自规则定义），未来扩展。",
+      "type": "object",
+      "additionalProperties": { "type": "string" }
+    },
+    "reportOptions": {
+      "description": "[用户 schema] 报告输出选项（保留字段，当前 compat-check 暂不消费，未来扩展）。",
+      "type": "object",
+      "properties": {
+        "showLineContent": { "type": "boolean" },
+        "maxIssuesPerFile": { "type": "number" },
+        "groupByFile": { "type": "boolean" },
+        "sortBySeverity": { "type": "boolean" }
+      },
+      "additionalProperties": true
+    },
+
+    "projects": {
+      "description": "[集中式] 多项目配置容器。脚本会从同目录 package.json>name 反查应用哪一份子配置；找不到时降级到目录名匹配，再不匹配则 fallback 到 browserslist。每个子配置使用与本 schema 同样的字段。",
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": true
+      }
+    }
+  },
+
+  "examples": [
+    {
+      "_comment": "用户 schema 风格（推荐已有项目沿用）",
+      "targets": { "chrome": "70", "safari": "9.1", "firefox": "68", "edge": "79" },
+      "rules": { "structuredClone": "error", "ResizeObserver": "off" },
+      "ignore": ["node_modules/**", "**/*.test.ts"],
+      "polyfills": ["core-js", "intersection-observer"]
+    },
+    {
+      "_comment": "我们 schema 风格（语法糖，推荐新项目使用）",
+      "target": "conservative",
+      "ignore": [{ "rule_id": "no-has-selector", "reason": "管理后台仅 Chrome" }],
+      "excludePaths": ["dist/**"],
+      "polyfills": ["ResizeObserver"]
+    },
+    {
+      "_comment": "集中式风格（在 monorepo 根目录维护多个项目）",
+      "projects": {
+        "my-project": {
+          "targets": { "chrome": "70", "safari": "9.1" },
+          "polyfills": ["core-js"]
+        },
+        "user-project": {
+          "targets": { "chrome": "80", "safari": "13" }
+        }
+      }
+    }
+  ]
+}

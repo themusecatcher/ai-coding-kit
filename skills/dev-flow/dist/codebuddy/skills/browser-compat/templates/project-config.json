@@ -1,0 +1,45 @@
+{
+  "$schema": "https://example.com/browser-compat-schema.json",
+  "_comment": "项目级浏览器兼容性配置模板。放置于项目根目录的 .browser-compat.json，browser-compat skill 将自动识别并应用。",
+
+  "target": "conservative",
+  "_target_comment": "三档基线之一：conservative（保守型，Safari 12+）| standard（标准型，Safari 14+）| aggressive（激进型，Chrome-only）",
+
+  "baseline": {
+    "chrome": 70,
+    "safari": 12,
+    "firefox": 68,
+    "edge": 79
+  },
+  "_baseline_comment": "具体版本声明，优先级高于 target。若项目已有 browserslist，建议保持一致。",
+
+  "polyfills": [
+    "ResizeObserver",
+    "IntersectionObserver"
+  ],
+  "_polyfills_comment": "已引入的 polyfill 名单。声明后检测脚本会跳过对应规则。",
+
+  "ignore": [],
+  "_ignore_comment": "允许使用的 API/属性（需业务理由）。示例：[{ \"rule_id\": \"no-has-selector\", \"reason\": \"管理后台仅 Chrome 访问\" }]",
+
+  "customRules": {},
+  "_customRules_comment": "项目自定义规则。示例：{ \"forbid-custom-font\": { \"severity\": \"WARNING\", \"pattern\": \"font-family:\\\\s*CustomFont\" } }",
+
+  "excludePaths": [
+    "node_modules/**",
+    "dist/**",
+    "build/**",
+    ".next/**",
+    "**/*.min.js",
+    "**/*.d.ts"
+  ],
+
+  "includePaths": [
+    "src/**/*.{js,jsx,ts,tsx,css,scss,less}"
+  ],
+
+  "hooks": {
+    "preCommit": true,
+    "_preCommit_comment": "是否在 pre-commit 时自动扫描 staged 文件，默认 true。需配合 husky + lint-staged。"
+  }
+}

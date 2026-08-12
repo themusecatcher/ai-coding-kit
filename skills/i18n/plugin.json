@@ -1,0 +1,15 @@
+{
+  "name": "i18n",
+  "version": "1.0.0",
+  "description": "国际化翻译资源操作规范。涉及翻译 key 新增/修改/删除、多语言资源文件操作、i18n 配置时加载此 skill。",
+  "author": {
+    "name": ""
+  },
+  "keywords": [
+    "i18n"
+  ],
+  "category": "productivity",
+  "skills": [
+    "./SKILL.md"
+  ]
+}

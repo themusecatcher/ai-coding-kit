@@ -1,0 +1,68 @@
+# =============================================================================
+# 组织环境配置
+# =============================================================================
+# 使用前请填写以下配置项，完成后相关 skill 即可正常工作。
+# 默认值为空，对应能力将自动降级（不会报错）。
+# =============================================================================
+
+# ──────────────────────────────────────
+# 代码仓库平台
+# ──────────────────────────────────────
+repo_platform_url: ""       # 如 "git.example.com"
+repo_platform_ssh: ""       # 如 "git@git.example.com:org/repo.git"
+
+# ──────────────────────────────────────
+# 内部平台 URL（用于替换 skill 中的硬编码内部域名）
+# 留空时相关功能降级为本地模式
+# ──────────────────────────────────────
+doc_platform_url: ""         # 文档/Wiki 平台，如 "wiki.example.com"
+task_platform_url: ""        # 任务/需求管理平台，如 "task.example.com"
+log_platform_url: ""         # 日志平台，如 "log.example.com"
+ci_platform_url: ""          # CI/代码评审平台，如 "code.example.com"
+
+# ──────────────────────────────────────
+# MCP 工具名称（用户自行配置自己的 MCP 工具清单）
+# 留空时相关 agent skill 只使用通用浏览器工具
+# ──────────────────────────────────────
+mcp_tools:
+  component_library: ""      # 组件库 MCP 工具名，如 "my-component-mcp"
+  internal_search: ""        # 内部搜索引擎 MCP 工具名
+  internal_docs: ""          # 内部文档 MCP 工具名
+  knowledge_base: ""         # 知识库 MCP 工具名
+  task_platform: ""          # 任务平台 MCP 工具名
+  log_platform: ""           # 日志平台 MCP 工具名
+  code_platform: ""          # 代码平台 MCP 工具名
+
+# ──────────────────────────────────────
+# 组织信息
+# ──────────────────────────────────────
+org_name: ""                 # 组织名称，用于文档示例中替换占位
+org_email_domain: ""         # 如 "example.com"（文档中邮箱后缀）
+
+# ──────────────────────────────────────
+# 路径配置
+# ──────────────────────────────────────
+# 工作空间路径（用于替换脚本中硬编码的目录路径）
+workspace_root: ""           # 如 "~/workspace"
+# 个人信息（用于替换文档/脚本中的作者名、用户名等）
+user_name: ""                # 如 "Your Name"
+user_dir_name: ""            # 如 "yourname"（替换 /Users/xxx 中的用户名部分）
+
+# ──────────────────────────────────────
+# 模板默认值（skill 文档/示例中使用的项目名）
+# ──────────────────────────────────────
+project_name: ""             # 默认项目名，如 "my-project"
+default_org: ""              # 默认组织名（同 org_name，独立字段便于模板引用）
+
+# ──────────────────────────────────────
+# 技术文档输出
+# ──────────────────────────────────────
+# 文档发布模式：
+#   auto  - 优先 wiki 平台（doc_platform_url 非空时），否则降级为本地
+#   local - 始终使用本地文档目录（无需配置 wiki）
+#   wiki  - 仅使用 wiki 平台（doc_platform_url 必须非空）
+tech_docs_mode: "auto"       # auto | local | wiki
+# 本地文档目录（tech_docs_mode 为 auto/local 时生效）
+# 留空则默认使用 ~/.codebuddy/tech-docs/
+# 目录结构：feat/ fix/ opt/ refactor/ tech-sharing/ release-doc/
+tech_docs_dir: ""            # 如 "~/docs/tech"

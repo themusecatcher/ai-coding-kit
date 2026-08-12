@@ -1,0 +1,16 @@
+{
+  "name": "code-review",
+  "version": "1.0.0",
+  "description": "三级代码审查工作流。L1 基础审查（编码后即触发）→ L2 完整审查（Commit 前）→ L3 多视角深度审查（完整模式归档前）。可独立使用，也被 dev-flow 按需调用。",
+  "author": {
+    "name": ""
+  },
+  "keywords": [
+    "code",
+    "review"
+  ],
+  "category": "productivity",
+  "skills": [
+    "./SKILL.md"
+  ]
+}

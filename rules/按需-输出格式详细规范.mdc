@@ -1,0 +1,50 @@
+---
+description: 输出格式详细规范（反模式表格、IDE 兼容性）。引用路径格式时按需加载。
+alwaysApply: false
+enabled: true
+updatedAt: 2026-05-26T14:17:00.000Z
+provider: 
+---
+
+# 输出格式详细规范
+
+> 从 AI 行为规范精简版移出（2026-05-26）。基线规则见 AI 行为规范 §「输出格式规范」。
+
+## 相对路径基准
+
+从 workspace 根目录（即 `<user_info>` 中 `Workspace Folder` 的直接子目录）开始。如 workspace 为 `~/my-project/`，则路径以 `src/...` 或 `packages/...` 开头。
+
+## 适用场景
+
+影响范围/改动汇总/批次规划/交付报告/合并审查/研究结果/代码位置/调用栈/错误定位/正文叙述中的文件目录函数（除名词性引用）。
+
+## 例外
+
+- YAML/JSON 结构化字段（如 `files_modified`）
+- 代码块内（` ``` ` 包裹）的代码
+
+## 🚫 不可点击反模式（实测验证）
+
+| # | 反模式 | 错误示例 | 失效原因 |
+|---|--------|----------|---------|
+| 1 | Markdown 链接 + vscode 协议 | `[src/x.tsx](vscode://file/.../x.tsx)` | CodeBuddy IDE Chat webview 不支持 vscode:// 协议跳转 |
+| 2 | Markdown 链接 + file 协议 | `[src/x.tsx](file:///Users/.../x.tsx)` | webview 拦截 file:// 或跳转浏览器 |
+| 3 | Markdown 链接 + 相对路径 URL | `[x.tsx](src/x.tsx)` | 无 base URL，点击无响应 |
+| 4 | 裸绝对路径 | `~/project/src/x.tsx` | 跳浏览器或不可点击 |
+| 5 | 只有文件名无目录 | `index.tsx` | IDE 无法定位到唯一文件 |
+
+## ✅ 输出前 2 步自检
+
+1. 路径在反引号 `` ` ` `` 内？
+2. 路径从 workspace 子目录开始，不是绝对路径？
+
+## 🌐 IDE 兼容性说明
+
+| 格式 | VSCode + CodeBuddy 插件 | CodeBuddy IDE Chat |
+|------|:---:|:---:|
+| `` `相对路径` `` 反引号路径 ⭐ | ✅ | ✅ |
+| `[text](vscode://file/...)` | ✅ | ❌ 不可点击 |
+| `[text](file:///...)` | ❌ webview 拦截 | ❌ 跳浏览器 |
+| 裸绝对路径 `/Users/...` | ❌ | ❌ |
+
+**结论**：所有输出一律使用反引号包裹相对路径，不区分运行环境。

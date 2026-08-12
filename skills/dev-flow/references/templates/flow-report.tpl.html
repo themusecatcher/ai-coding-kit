@@ -1,0 +1,1430 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>dev-flow 复盘报告 · __REQUIREMENT_ID__</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='15' y='8' width='60' height='80' rx='4' fill='%23818cf8' opacity='.9'/><rect x='22' y='18' width='46' height='8' rx='2' fill='%23fff' opacity='.6'/><rect x='22' y='32' width='36' height='5' rx='1.5' fill='%23fff' opacity='.3'/><rect x='22' y='42' width='40' height='5' rx='1.5' fill='%23fff' opacity='.3'/><rect x='22' y='52' width='30' height='5' rx='1.5' fill='%23fff' opacity='.3'/><rect x='22' y='62' width='38' height='5' rx='1.5' fill='%23fff' opacity='.3'/></svg>">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+    /* CSS 变量与 dashboard.tpl.html 保持一致，确保视觉统一 */
+    :root {
+      --bg-primary: #09090b; --bg-secondary: #0f0f12; --bg-tertiary: #18181b;
+      --bg-elevated: #1c1c1f; --bg-hover: #27272a;
+      --border-default: #27272a; --border-muted: #1e1e21;
+      --text-primary: #fafafa; --text-secondary: #a1a1aa; --text-tertiary: #71717a;
+      --accent: #818cf8; --accent-hover: #6366f1;
+      --accent-bg: rgba(99,102,241,0.06);
+      --green: #34d399; --green-bg: rgba(52,211,153,0.08);
+      --red: #f87171; --red-bg: rgba(248,113,113,0.08);
+      --yellow: #fbbf24; --yellow-bg: rgba(251,191,36,0.06);
+      --purple: #c084fc; --purple-bg: rgba(192,132,252,0.08);
+      --orange: #fb923c; --orange-bg: rgba(251,146,60,0.08);
+      --cyan: #22d3ee; --cyan-bg: rgba(34,211,238,0.08);
+      --pink: #f472b6; --pink-bg: rgba(244,114,182,0.08);
+      --radius-md: 8px; --radius-lg: 12px; --radius-xl: 16px;
+      --shadow-md: 0 4px 16px rgba(0,0,0,0.5);
+    }
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg-primary); color: var(--text-primary);
+      -webkit-font-smoothing: antialiased; line-height: 1.55;
+      padding: 32px 48px; min-height: 100vh;
+      max-width: 1200px; margin: 0 auto;
+    }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-thumb { background: var(--border-default); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--text-tertiary); }
+    * { scrollbar-width: thin; scrollbar-color: var(--border-default) transparent; }
+    a { color: var(--accent); text-decoration: none; transition: color 150ms; }
+    a:hover { color: var(--accent-hover); text-decoration: underline; }
+    code {
+      font-family: 'SF Mono', Menlo, Monaco, Consolas, monospace;
+      font-size: 0.88em; padding: 2px 6px; background: var(--bg-tertiary);
+      border-radius: 4px; color: var(--text-secondary);
+    }
+
+    /* === Hero 区域 === */
+    .hero {
+      margin-bottom: 36px; padding: 32px 36px;
+      background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-tertiary) 60%, var(--accent-bg) 100%);
+      border: 1px solid var(--border-muted);
+      border-radius: var(--radius-xl);
+      position: relative; overflow: hidden;
+    }
+    .hero::before {
+      content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 6px;
+      background: linear-gradient(180deg, var(--accent) 0%, var(--purple) 80%);
+      border-radius: 0 3px 3px 0;
+    }
+    .hero::after {
+      content: ''; position: absolute; right: -40px; top: -40px;
+      width: 160px; height: 160px;
+      background: radial-gradient(circle, rgba(129,140,248,0.08) 0%, transparent 70%);
+      border-radius: 50%; pointer-events: none;
+    }
+    .hero-title {
+      font-size: 13px; color: var(--text-tertiary); font-weight: 500;
+      letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 8px;
+    }
+    .hero-id {
+      font-size: 26px; font-weight: 700; letter-spacing: -0.02em;
+      margin-bottom: 14px; word-break: break-all;
+      background: linear-gradient(135deg, var(--text-primary) 0%, var(--accent) 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .hero-reqid {
+      font-size: 12px; color: var(--text-tertiary);
+      margin-top: -10px; margin-bottom: 14px;
+    }
+    .hero-tags {
+      display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px;
+    }
+    .tag {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 5px 12px; border-radius: 999px;
+      font-size: 12px; font-weight: 500;
+      border: 1px solid var(--border-default);
+      background: var(--bg-tertiary); color: var(--text-secondary);
+    }
+    .tag.success { background: var(--green-bg); color: var(--green); border-color: rgba(52,211,153,0.3); }
+    .tag.warn { background: var(--yellow-bg); color: var(--yellow); border-color: rgba(251,191,36,0.3); }
+    .tag.danger { background: var(--red-bg); color: var(--red); border-color: rgba(248,113,113,0.3); }
+    .tag.accent { background: var(--accent-bg); color: var(--accent); border-color: rgba(129,140,248,0.3); }
+    .tag.purple { background: var(--purple-bg); color: var(--purple); border-color: rgba(192,132,252,0.3); }
+    .tag.cyan { background: var(--cyan-bg); color: var(--cyan); border-color: rgba(34,211,238,0.3); }
+    /* 涉及项目区块：有向协作链路 */
+    .projects-flow {
+      display: flex; align-items: stretch;
+    }
+    .flow-node { flex: 1; min-width: 0; }
+    .flow-arrow {
+      display: flex; align-items: center; justify-content: center;
+      padding: 0 8px; flex-shrink: 0;
+    }
+    .flow-arrow .arrow-line {
+      width: 28px; height: 2px;
+      background: linear-gradient(90deg, var(--border-default), var(--text-tertiary));
+      position: relative;
+    }
+    .flow-arrow .arrow-line::after {
+      content: ''; position: absolute; right: -1px; top: 50%;
+      transform: translateY(-50%);
+      border-left: 7px solid var(--text-tertiary);
+      border-top: 4.5px solid transparent;
+      border-bottom: 4.5px solid transparent;
+    }
+    @media (max-width: 700px) {
+      .projects-flow { flex-direction: column; }
+      .flow-arrow { padding: 4px 0; }
+      .flow-arrow .arrow-line {
+        width: 2px; height: 22px;
+        background: linear-gradient(180deg, var(--border-default), var(--text-tertiary));
+      }
+      .flow-arrow .arrow-line::after {
+        right: auto; left: 50%; top: auto; bottom: -1px;
+        transform: translateX(-50%);
+        border-left: 4.5px solid transparent;
+        border-right: 4.5px solid transparent;
+        border-top: 7px solid var(--text-tertiary);
+        border-bottom: none;
+      }
+    }
+    .project-card {
+      background: var(--bg-secondary); border: 1px solid var(--border-muted);
+      border-radius: var(--radius-lg); padding: 16px 18px;
+      transition: border-color 200ms, transform 200ms;
+      position: relative; overflow: hidden;
+    }
+    .project-card::before {
+      content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px;
+      transition: width 200ms;
+    }
+    .project-card[data-role="main"]::before { background: linear-gradient(180deg, #818cf8, #6366f1); }
+    .project-card[data-role="source"]::before { background: linear-gradient(180deg, #22d3ee, #06b6d4); }
+    .project-card[data-role="fix"]::before { background: linear-gradient(180deg, #34d399, #10b981); }
+    .project-card[data-role="dep-bump"]::before { background: linear-gradient(180deg, #fbbf24, #f59e0b); }
+    .project-card[data-role="dependency"]::before { background: linear-gradient(180deg, #c084fc, #a855f7); }
+    .project-card[data-role="extra"]::before { background: linear-gradient(180deg, #fb923c, #f97316); }
+    .project-card:hover {
+      border-color: var(--border-default);
+      transform: translateY(-1px);
+    }
+    .project-card .role-badge {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 3px 9px; border-radius: 999px;
+      font-size: 10px; font-weight: 600;
+      letter-spacing: 0.04em; text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+    .project-card[data-role="main"] .role-badge {
+      background: var(--accent-bg); color: var(--accent);
+      border: 1px solid rgba(129,140,248,0.3);
+    }
+    .project-card[data-role="source"] .role-badge {
+      background: var(--cyan-bg); color: var(--cyan);
+      border: 1px solid rgba(34,211,238,0.3);
+    }
+    .project-card[data-role="fix"] .role-badge {
+      background: var(--green-bg); color: var(--green);
+      border: 1px solid rgba(52,211,153,0.3);
+    }
+    .project-card[data-role="dep-bump"] .role-badge {
+      background: var(--yellow-bg); color: var(--yellow);
+      border: 1px solid rgba(251,191,36,0.3);
+    }
+    .project-card[data-role="dependency"] .role-badge {
+      background: var(--purple-bg); color: var(--purple);
+      border: 1px solid rgba(192,132,252,0.3);
+    }
+    .project-card[data-role="extra"] .role-badge {
+      background: var(--orange-bg); color: var(--orange);
+      border: 1px solid rgba(251,146,60,0.3);
+    }
+    .project-card .project-name {
+      font-size: 15px; font-weight: 600; color: var(--text-primary);
+      margin-bottom: 6px; word-break: break-all;
+    }
+    /* 修复落点高亮 */
+    .project-card[data-role="fix"] {
+      border-color: rgba(52,211,153,0.35);
+      box-shadow: 0 0 12px rgba(52,211,153,0.06);
+    }
+    /* 节点本次数据：分支 / 文件数 / MR */
+    .project-card .project-role-desc {
+      font-size: 11px; color: var(--text-tertiary); margin-top: 4px;
+    }
+    .project-card .project-meta {
+      display: flex; flex-direction: column; gap: 6px; margin-top: 10px;
+    }
+    .project-card .meta-row {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 11px; color: var(--text-tertiary); min-width: 0;
+    }
+    .project-card .meta-row code {
+      font-size: 10.5px; overflow: hidden;
+      text-overflow: ellipsis; white-space: nowrap;
+    }
+    .project-card .meta-files { color: var(--text-secondary); font-weight: 500; }
+    /* MR 状态徽章 */
+    .mr-badge {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 2px 9px; border-radius: 999px;
+      font-size: 10.5px; font-weight: 600; text-decoration: none;
+    }
+    .mr-badge.merged {
+      background: var(--green-bg); color: var(--green);
+      border: 1px solid rgba(52,211,153,0.3);
+    }
+    .mr-badge.created {
+      background: var(--yellow-bg); color: var(--yellow);
+      border: 1px solid rgba(251,191,36,0.3);
+    }
+    .mr-badge.pushed {
+      background: var(--bg-elevated); color: var(--text-secondary);
+      border: 1px solid var(--border-default);
+    }
+    a.mr-badge:hover { filter: brightness(1.2); text-decoration: none; }
+    /* 协作链闭环状态徽章 */
+    .handoff-status {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 2px 10px; border-radius: 999px;
+      font-size: 10.5px; font-weight: 600; margin-bottom: 6px;
+    }
+    .handoff-status.done {
+      background: var(--green-bg); color: var(--green);
+      border: 1px solid rgba(52,211,153,0.3);
+    }
+    .handoff-status.doing {
+      background: var(--yellow-bg); color: var(--yellow);
+      border: 1px solid rgba(251,191,36,0.3);
+    }
+    /* Hero 跨项目迷你链路分隔符 */
+    .tag .chain-sep { opacity: 0.55; margin: 0 3px; font-weight: 400; }
+    .projects-handoff {
+      margin-top: 12px; padding: 12px 16px;
+      background: var(--bg-tertiary); border-left: 3px solid var(--cyan);
+      border-radius: 0 var(--radius-md) var(--radius-md) 0;
+      font-size: 12px; color: var(--text-secondary);
+      line-height: 1.6;
+    }
+    .projects-handoff .handoff-label {
+      font-size: 11px; font-weight: 600; color: var(--cyan);
+      letter-spacing: 0.04em; text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+    .hero-meta {
+      display: flex; gap: 20px; flex-wrap: wrap;
+      font-size: 13px; color: var(--text-tertiary);
+    }
+    .hero-meta span { display: inline-flex; align-items: center; gap: 5px; }
+
+    /* Hero 全局统计行 */
+    .hero-global {
+      margin-top: 8px; font-size: 12px; color: var(--text-tertiary);
+      display: flex; gap: 16px; flex-wrap: wrap;
+      padding-bottom: 4px;
+    }
+    .hero-global .global-stat {
+      display: inline-flex; align-items: center; gap: 4px;
+    }
+    .hero-global .global-stat strong { color: var(--accent); font-weight: 600; }
+
+    /* Hero 快捷链接栏 */
+    .hero-links {
+      display: flex; gap: 8px; flex-wrap: wrap;
+      margin-top: 14px; padding-top: 14px;
+      border-top: 1px solid var(--border-muted);
+    }
+    .hero-link {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 5px 12px; border-radius: var(--radius-md);
+      font-size: 12px; font-weight: 500;
+      background: var(--bg-tertiary); color: var(--text-secondary);
+      border: 1px solid var(--border-default);
+      transition: all 200ms; text-decoration: none;
+    }
+    .hero-link:hover {
+      background: var(--bg-hover); color: var(--accent);
+      border-color: var(--accent); text-decoration: none;
+    }
+    .hero-link.disabled {
+      opacity: 0.35; cursor: not-allowed; pointer-events: none;
+    }
+
+    /* 健康度评分环 — ECharts Gauge */
+    .health-score {
+      position: absolute; right: 28px; top: 20px;
+      display: flex; flex-direction: column; align-items: center; gap: 6px;
+    }
+    .health-ring {
+      width: 144px; height: 144px;
+    }
+    .health-label {
+      font-size: 10px; color: var(--text-tertiary); font-weight: 500;
+      letter-spacing: 0.1em; text-transform: uppercase;
+    }
+    /* 等级徽章：药丸形背景 */
+    .health-grade {
+      font-size: 11px; font-weight: 600;
+      letter-spacing: 0.05em;
+      padding: 3px 12px; border-radius: 999px;
+      transition: background 500ms ease, color 500ms ease;
+    }
+    @keyframes hr-puff-in {
+      from { opacity: 0; transform: scale(0.8); }
+      to   { opacity: 1; transform: scale(1); }
+    }
+    @media (max-width: 700px) {
+      .hero {
+        display: flex; flex-direction: column; align-items: center;
+        text-align: center;
+      }
+      .hero::before { display: none; }
+      .hero::after { display: none; }
+      .health-score {
+        position: static; margin-bottom: 16px;
+      }
+      .hero-meta, .hero-global, .hero-links { justify-content: center; }
+    }
+
+    /* === 区块标题 === */
+    .section {
+      margin-bottom: 36px; padding-bottom: 12px;
+      border-bottom: 1px solid var(--border-muted);
+    }
+    .section:last-of-type { border-bottom: none; }
+    .section-title {
+      display: flex; align-items: center; gap: 10px;
+      font-size: 16px; font-weight: 600;
+      margin-bottom: 18px; padding-bottom: 10px;
+      color: var(--text-primary);
+      border-bottom: 1px solid var(--border-muted);
+    }
+    .section-title .icon { font-size: 18px; }
+    .section-title .badge {
+      margin-left: auto; padding: 3px 10px; border-radius: 999px;
+      font-size: 11px; font-weight: 500;
+      background: var(--bg-tertiary); color: var(--text-tertiary);
+      border: 1px solid var(--border-default);
+    }
+
+    /* === 执行数据总览 KPI === */
+    .kpi-grid {
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px;
+    }
+    @media (max-width: 1100px) {
+      .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 600px) {
+      .kpi-grid { grid-template-columns: 1fr; }
+    }
+    .kpi-card {
+      background: var(--bg-secondary); border: 1px solid var(--border-muted);
+      border-radius: var(--radius-lg); padding: 18px 20px;
+      transition: border-color 200ms, transform 200ms, box-shadow 200ms;
+      position: relative; overflow: hidden;
+    }
+    /* 顶部渐变横线（取代原左侧竖线） */
+    .kpi-card::before {
+      content: ''; position: absolute; left: 0; top: 0; right: 0; height: 3px;
+      border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+      transition: height 200ms, opacity 200ms;
+    }
+    .kpi-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(129,140,248,0.12);
+    }
+    .kpi-card:hover::before { height: 4px; opacity: 0.9; }
+    /* 顶部渐变线 + 背景微渐变 + 数值色 — 12 色相均匀分布，视觉高区分度 */
+    .kpi-card[data-idx="0"]::before { background: linear-gradient(90deg, #c4b5fd, #8b5cf6); }
+    .kpi-card[data-idx="0"] { background: linear-gradient(180deg, rgba(139,92,246,0.07) 0%, var(--bg-secondary) 45%); }
+    .kpi-card[data-idx="0"] .kpi-value { color: #8b5cf6; }
+
+    .kpi-card[data-idx="1"]::before { background: linear-gradient(90deg, #93c5fd, #3b82f6); }
+    .kpi-card[data-idx="1"] { background: linear-gradient(180deg, rgba(59,130,246,0.07) 0%, var(--bg-secondary) 45%); }
+    .kpi-card[data-idx="1"] .kpi-value { color: #3b82f6; }
+
+    .kpi-card[data-idx="2"]::before { background: linear-gradient(90deg, #67e8f9, #06b6d4); }
+    .kpi-card[data-idx="2"] { background: linear-gradient(180deg, rgba(6,182,212,0.07) 0%, var(--bg-secondary) 45%); }
+    .kpi-card[data-idx="2"] .kpi-value { color: #06b6d4; }
+
+    .kpi-card[data-idx="3"]::before { background: linear-gradient(90deg, #6ee7b7, #10b981); }
+    .kpi-card[data-idx="3"] { background: linear-gradient(180deg, rgba(16,185,129,0.07) 0%, var(--bg-secondary) 45%); }
+    .kpi-card[data-idx="3"] .kpi-value { color: #10b981; }
+
+    .kpi-card[data-idx="4"]::before { background: linear-gradient(90deg, #86efac, #22c55e); }
+    .kpi-card[data-idx="4"] { background: linear-gradient(180deg, rgba(34,197,94,0.07) 0%, var(--bg-secondary) 45%); }
+    .kpi-card[data-idx="4"] .kpi-value { color: #22c55e; }
+
+    .kpi-card[data-idx="5"]::before { background: linear-gradient(90deg, #bef264, #84cc16); }
+    .kpi-card[data-idx="5"] { background: linear-gradient(180deg, rgba(132,204,22,0.07) 0%, var(--bg-secondary) 45%); }
+    .kpi-card[data-idx="5"] .kpi-value { color: #84cc16; }
+
+    .kpi-card[data-idx="6"]::before { background: linear-gradient(90deg, #fde68a, #eab308); }
+    .kpi-card[data-idx="6"] { background: linear-gradient(180deg, rgba(234,179,8,0.07) 0%, var(--bg-secondary) 45%); }
+    .kpi-card[data-idx="6"] .kpi-value { color: #eab308; }
+
+    .kpi-card[data-idx="7"]::before { background: linear-gradient(90deg, #fdba74, #f97316); }
+    .kpi-card[data-idx="7"] { background: linear-gradient(180deg, rgba(249,115,22,0.07) 0%, var(--bg-secondary) 45%); }
+    .kpi-card[data-idx="7"] .kpi-value { color: #f97316; }
+
+    .kpi-card[data-idx="8"]::before { background: linear-gradient(90deg, #fca5a5, #ef4444); }
+    .kpi-card[data-idx="8"] { background: linear-gradient(180deg, rgba(239,68,68,0.07) 0%, var(--bg-secondary) 45%); }
+    .kpi-card[data-idx="8"] .kpi-value { color: #ef4444; }
+
+    .kpi-card[data-idx="9"]::before { background: linear-gradient(90deg, #f9a8d4, #ec4899); }
+    .kpi-card[data-idx="9"] { background: linear-gradient(180deg, rgba(236,72,153,0.07) 0%, var(--bg-secondary) 45%); }
+    .kpi-card[data-idx="9"] .kpi-value { color: #ec4899; }
+
+    .kpi-card[data-idx="10"]::before { background: linear-gradient(90deg, #e879f9, #d946ef); }
+    .kpi-card[data-idx="10"] { background: linear-gradient(180deg, rgba(217,70,239,0.07) 0%, var(--bg-secondary) 45%); }
+    .kpi-card[data-idx="10"] .kpi-value { color: #d946ef; }
+
+    .kpi-card[data-idx="11"]::before { background: linear-gradient(90deg, #c4b5fd, #a855f7); }
+    .kpi-card[data-idx="11"] { background: linear-gradient(180deg, rgba(168,85,247,0.07) 0%, var(--bg-secondary) 45%); }
+    .kpi-card[data-idx="11"] .kpi-value { color: #a855f7; }
+    /* 改动行数特殊颜色 */
+    .lines-added { color: #34d399; }
+    .lines-deleted { color: #f87171; }
+    .lines-sep { color: var(--text-tertiary); }
+    .kpi-label {
+      font-size: 11px; color: var(--text-tertiary); font-weight: 500;
+      letter-spacing: 0.04em; text-transform: uppercase; margin-bottom: 8px;
+    }
+    .kpi-value {
+      font-size: 26px; font-weight: 700; letter-spacing: -0.02em;
+      margin-bottom: 4px;
+    }
+    /* 单位：灰色，与 lines-sep 同色 */
+    .kpi-unit {
+      font-size: 14px; font-weight: 400;
+      color: var(--text-tertiary);
+      margin-left: 3px;
+    }
+    /* 迭代轮次明细 — 绝对定位在卡片右上角 */
+    .kpi-breakdown {
+      position: absolute; top: 14px; right: 14px;
+      display: flex; flex-wrap: wrap; gap: 5px;
+    }
+    .kpi-breakdown-item {
+      font-size: 10px; font-weight: 500;
+      background: var(--bg-tertiary);
+      color: var(--text-tertiary);
+      padding: 2px 7px; border-radius: 5px;
+      border: 1px solid var(--border-muted);
+    }
+    .kpi-breakdown-item .kbi-rounds {
+      color: var(--text-primary); font-weight: 600;
+    }
+    .kpi-breakdown-item .kbi-unit,
+    .kpi-breakdown-item .kbi-date {
+      color: var(--text-tertiary); font-size: 10px;
+    }
+    .kpi-breakdown-item.kbi-has-rounds {
+      background: var(--bg-elevated);
+      border-color: var(--border-default);
+    }
+    .kpi-compare {
+      font-size: 11px; color: var(--text-tertiary);
+      display: flex; align-items: center; gap: 4px; flex-wrap: wrap;
+    }
+    .kpi-sub {
+      color: var(--accent); font-weight: 500;
+      margin-left: auto;
+    }
+    .kpi-compare .delta {
+      font-weight: 500;
+      font-size: 10px;
+      padding: 0 5px;
+      border-radius: 3px;
+    }
+    .kpi-compare .delta.up {
+      color: #f87171;
+      background: rgba(248,113,113,0.08);
+      border: 1px solid rgba(248,113,113,0.18);
+    }
+    .kpi-compare .delta.down {
+      color: #34d399;
+      background: rgba(52,211,153,0.08);
+      border: 1px solid rgba(52,211,153,0.18);
+    }
+    .kpi-compare .delta.up-good {
+      color: #34d399;
+      background: rgba(52,211,153,0.08);
+      border: 1px solid rgba(52,211,153,0.18);
+    }
+    .kpi-compare .delta.down-bad {
+      color: #f87171;
+      background: rgba(248,113,113,0.08);
+      border: 1px solid rgba(248,113,113,0.18);
+    }
+
+    /* === 数据洞察 === */
+    .insight-list { display: flex; flex-direction: column; gap: 10px; }
+    .insight {
+      padding: 16px 20px; border-radius: var(--radius-md);
+      border: 1px solid var(--border-muted);
+      display: flex; gap: 14px; align-items: flex-start;
+      transition: border-color 200ms, transform 150ms;
+    }
+    .insight:hover { transform: translateX(3px); }
+    .insight.warn { background: var(--yellow-bg); border-color: rgba(251,191,36,0.25); }
+    .insight.danger { background: var(--red-bg); border-color: rgba(248,113,113,0.25); }
+    .insight.ok { background: var(--green-bg); border-color: rgba(52,211,153,0.25); }
+    .insight.info { background: var(--accent-bg); border-color: rgba(129,140,248,0.25); }
+    .insight-icon { font-size: 18px; flex-shrink: 0; line-height: 1.4; }
+    .insight-body { flex: 1; }
+    .insight-title { font-size: 13px; font-weight: 600; margin-bottom: 3px; }
+    .insight-msg { font-size: 13px; color: var(--text-secondary); }
+
+    /* === 用户纠正（时间轴布局） === */
+    .corrections-timeline {
+      position: relative; padding: 4px 0 0 24px;
+    }
+    .corrections-timeline::before {
+      content: ''; position: absolute; left: 6px; top: 14px; bottom: 6px;
+      width: 3px; background: linear-gradient(180deg, rgba(129,140,248,0.4) 0%, rgba(99,102,241,0.2) 100%);
+      border-radius: 2px;
+    }
+    .cr-group-header {
+      position: relative; padding: 8px 0 8px 0;
+      font-size: 12px; color: var(--text-primary); font-weight: 600;
+    }
+    .cr-group-header:first-child { padding-top: 0; }
+    .cr-group-header::before {
+      content: ''; position: absolute; left: -22px; top: 50%; transform: translateY(-50%);
+      width: 11px; height: 11px; border-radius: 50%;
+      background: var(--accent);
+      border: 2px solid var(--bg-primary);
+      box-shadow: 0 0 8px rgba(129,140,248,0.5);
+      z-index: 1;
+    }
+    .cr-group-header:first-child::before { top: 50%; }
+    .cr-item {
+      position: relative; padding: 6px 0;
+      display: flex; gap: 10px; align-items: center;
+    }
+    .cr-item:last-child { padding-bottom: 2px; }
+    .cr-item::before {
+      content: ''; position: absolute; left: -19.5px; top: 50%; transform: translateY(-50%);
+      width: 7px; height: 7px; border-radius: 50%;
+      background: #71717a;
+      border: 2px solid var(--bg-primary);
+      transition: all 200ms ease;
+      z-index: 1;
+    }
+    .cr-item:hover::before {
+      background: var(--accent);
+      box-shadow: 0 0 6px rgba(129,140,248,0.4);
+    }
+    .cr-time {
+      flex-shrink: 0; font-size: 11px; color: var(--text-tertiary);
+      font-family: 'SF Mono', Menlo, monospace;
+      min-width: 36px;
+    }
+    .cr-content {
+      font-size: 13px; color: var(--text-secondary); line-height: 1.55;
+    }
+    .empty-hint {
+      padding: 20px; text-align: center;
+      color: var(--text-tertiary); font-size: 13px;
+    }
+
+    /* === Hero 快捷链接 === */
+    .link-btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 10px 16px; border-radius: var(--radius-md);
+      font-size: 13px; font-weight: 500;
+      background: var(--bg-secondary); color: var(--text-secondary);
+      border: 1px solid var(--border-default);
+      transition: all 200ms;
+      position: relative; overflow: hidden;
+    }
+    .link-btn::before {
+      content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 0;
+      background: var(--accent); transition: width 200ms; opacity: 0.15;
+    }
+    .link-btn:hover {
+      background: var(--bg-hover); color: var(--accent);
+      text-decoration: none;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(129,140,248,0.15);
+    }
+    .link-btn:hover::before {
+      width: 100%;
+    }
+    .link-btn.disabled {
+      opacity: 0.35; cursor: not-allowed; pointer-events: none;
+      filter: grayscale(0.8);
+    }
+
+    /* === 页脚 === */
+    .footer {
+      margin-top: 48px; padding-top: 22px;
+      border-top: 1px solid var(--border-default);
+      font-size: 12px; color: var(--text-tertiary);
+      display: flex; justify-content: space-between; flex-wrap: wrap; gap: 12px;
+      opacity: 0.7; transition: opacity 200ms;
+    }
+    .footer:hover { opacity: 1; }
+    .footer-link { color: var(--text-tertiary); transition: color 150ms; }
+    .footer-link:hover { color: var(--accent); text-decoration: none; }
+
+    /* === 迭代履历时间线 === */
+    .timeline {
+      position: relative; padding-left: 24px;
+    }
+    .timeline::before {
+      content: ''; position: absolute; left: 7px; top: 0; bottom: 0;
+      width: 2px; background: var(--border-default);
+    }
+    .timeline-item {
+      position: relative; padding-bottom: 18px;
+    }
+    .timeline-item:last-child { padding-bottom: 0; }
+    .timeline-dot {
+      position: absolute; left: -21px; top: 16px; transform: translateY(-50%);
+      width: 10px; height: 10px; border-radius: 50%;
+      background: var(--accent);
+      border: 2px solid var(--bg-primary);
+      z-index: 1;
+    }
+    .timeline-item:last-child .timeline-dot {
+      background: var(--green);
+    }
+    .timeline-header {
+      display: flex; align-items: center; gap: 8px; margin-bottom: 4px;
+    }
+    .timeline-badge {
+      font-size: 11px; font-weight: 600;
+      padding: 2px 8px; border-radius: 999px;
+      background: var(--accent-bg); color: var(--accent);
+      border: 1px solid rgba(129,140,248,0.2);
+    }
+    .timeline-meta {
+      font-size: 11px; color: var(--text-tertiary);
+      font-family: 'SF Mono', Menlo, monospace;
+    }
+    .timeline-summary {
+      font-size: 13px; color: var(--text-secondary);
+      line-height: 1.55;
+    }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5.6.0/dist/echarts.min.js"></script>
+</head>
+<body>
+  <!-- ============ Hero ============ -->
+  <section class="hero" id="hero"></section>
+
+  <!-- ============ 区块 1：执行数据总览 ============ -->
+  <section class="section">
+    <div class="section-title">
+      <span class="icon">📊</span>
+      <span>执行数据总览</span>
+      <span class="badge" id="kpi-baseline-info">vs 历史均值</span>
+    </div>
+    <div class="kpi-grid" id="kpi-grid"></div>
+  </section>
+
+  <!-- ============ 区块 1.4：涉及项目（仅跨项目时显示）============ -->
+  <section class="section projects-section" id="involved-projects-section" style="display:none;">
+    <div class="section-title">
+      <span class="icon">🔗</span>
+      <span>涉及项目</span>
+      <span class="badge" id="projects-count">0</span>
+    </div>
+    <div id="involved-projects-content"></div>
+  </section>
+
+  <!-- ============ 区块 1.5：纠正分类（有条件显示）============ -->
+  <section class="section" id="correction-types-section" style="display:none;">
+    <div class="section-title">
+      <span class="icon">📊</span>
+      <span>纠正分类 Correction Breakdown</span>
+    </div>
+    <div id="correction-types-content"></div>
+  </section>
+
+  <!-- ============ 区块 2：数据洞察 ============ -->
+  <section class="section">
+    <div class="section-title">
+      <span class="icon">💡</span>
+      <span>数据洞察</span>
+    </div>
+    <div class="insight-list" id="insight-list"></div>
+  </section>
+
+  <!-- ============ 区块 3：迭代履历 ============ -->
+  <section class="section" id="iteration-timeline-section" style="display:none;">
+    <div class="section-title">
+      <span class="icon">📋</span>
+      <span>迭代履历</span>
+    </div>
+    <div class="timeline" id="iteration-timeline"></div>
+  </section>
+
+  <!-- ============ 区块 4：用户纠正 ============ -->
+  <section class="section">
+    <div class="section-title">
+      <span class="icon">🔧</span>
+      <span>用户纠正</span>
+      <span class="badge" id="corrections-count">0</span>
+    </div>
+    <div class="corrections-timeline" id="corrections-list"></div>
+  </section>
+
+  <!-- ============ 区块 5：回退详情 ============ -->
+  <section class="section" id="rollback-section" style="display:none;">
+    <div class="section-title">
+      <span class="icon">↩️</span>
+      <span>回退详情</span>
+      <span class="badge" id="rollback-count">0</span>
+    </div>
+    <div id="rollback-list"></div>
+  </section>
+
+  <!-- ============ Footer ============ -->
+  <footer class="footer">
+    <span>生成时间：__GENERATED_AT__</span>
+    <span>
+      <a href="https://www.codebuddy.ai" class="footer-link" target="_blank">dev-flow Skill</a>
+      &nbsp;·&nbsp;
+      <a href="file://__HOME_DIR__/.codebuddy/.metrics/dashboard.html" class="footer-link" target="_blank">📈 全局仪表盘</a>
+    </span>
+  </footer>
+
+  <script>
+    // 数据由 gen-flow-report.py 注入
+    const FLOW_DATA = __FLOW_DATA__;
+
+    // === 工具函数 ===
+    function fmt(v, decimals) {
+      if (v === null || v === undefined) return '—';
+      if (typeof v === 'number') {
+        return decimals !== undefined ? v.toFixed(decimals) : v.toString();
+      }
+      return String(v);
+    }
+    function escapeHtml(s) {
+      if (s === null || s === undefined) return '';
+      return String(s)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    }
+    function pctDelta(cur, base) {
+      if (!base || base === 0) return null;
+      return Math.round(((cur - base) / base) * 100);
+    }
+
+    // === Hero ===
+    // === Hero 快捷链接 ===
+    function renderHeroLinks() {
+      const links = FLOW_DATA.links;
+      const linkBtns = [
+        { icon: '📄', label: '工作上下文', href: links.working_context, key: 'ctx' },
+        { icon: '📝', label: 'Devlog', href: links.devlog, key: 'devlog' },
+        { icon: '📐', label: 'Plan', href: links.plan, key: 'plan' },
+        { icon: '🧠', label: 'Knowledge', href: links.knowledge_dir, key: 'kb' },
+        { icon: '🎫', label: '任务平台', href: links.task_url, key: 'task' },
+        { icon: '📚', label: '文档平台', href: links.doc_url, key: 'doc_platform' },
+        { icon: '📈', label: '全局仪表盘', href: links.dashboard, key: 'dashboard' },
+      ];
+      const html = linkBtns.map(b => {
+        if (!b.href) {
+          return `<span class="hero-link disabled">${b.icon} ${escapeHtml(b.label)}</span>`;
+        }
+        return `<a href="${escapeHtml(b.href)}" class="hero-link" target="_blank">${b.icon} ${escapeHtml(b.label)}</a>`;
+      }).join('');
+      document.getElementById('hero-links').innerHTML = html;
+    }
+
+    // ECharts 图表实例引用
+    let healthChartInstance = null;
+    let healthChartConfig = null; // 由 renderHero 写入，initHealthChart 读取
+
+
+    // === 跨项目信息渲染（hero-tags 行：迷你协作链路） ===
+    function renderCrossProjectTag() {
+      const cp = FLOW_DATA.cross_project;
+      if (cp && cp.is_cross) {
+        const names = (cp.projects || []).map(p => escapeHtml(p.short || p.name));
+        const chain = names.length > 0
+          ? names.join('<span class="chain-sep">→</span>')
+          : '跨项目协作';
+        return `<span class="tag cyan">🔗 ${chain}</span>`;
+      }
+      // 单项目：显示项目名 tag
+      const r = FLOW_DATA.report;
+      const projName = (r.projects_involved && r.projects_involved.length > 0)
+        ? r.projects_involved[0]
+        : (r.primary_project || null);
+      if (projName) {
+        return `<span class="tag">📁 ${escapeHtml(projName)}</span>`;
+      }
+      return '';
+    }
+
+    // === 涉及项目区块渲染（有向协作链路，条件显示） ===
+    function renderInvolvedProjects() {
+      const cp = FLOW_DATA.cross_project;
+      if (!cp || !cp.is_cross || !cp.projects || cp.projects.length === 0) {
+        return '';
+      }
+      const roleIcon = { main: '🏠', source: '🔍', fix: '🔧', 'dep-bump': '📦', dependency: '🔗', extra: '📌' };
+      const roleLabel = { main: '主项目', source: '发现方', fix: '修复方', 'dep-bump': '依赖升级', dependency: '被依赖方', extra: '关联项目' };
+
+      // 从 handoff_note 兜底解析 MR（格式：项目名 MR !xxx），兼容无结构化字段的旧数据
+      const handoffMrs = [];
+      if (cp.handoff_note) {
+        const re = /([\w-]+)\s*MR\s*!(\d+)/gi;
+        let m;
+        while ((m = re.exec(cp.handoff_note)) !== null) {
+          handoffMrs.push({ proj: m[1].toLowerCase(), num: m[2] });
+        }
+      }
+      const findHandoffMr = (p) => {
+        const keys = [p.name, p.short, p.workspace ? String(p.workspace).split('/').pop() : '']
+          .filter(Boolean).map(s => String(s).toLowerCase());
+        const hit = handoffMrs.find(h => keys.some(k => k.includes(h.proj) || h.proj.includes(k)));
+        return hit ? `!${hit.num}` : '';
+      };
+
+      const mrStatusMap = {
+        merged:  { cls: 'merged',  label: '已合入' },
+        created: { cls: 'created', label: '待合入' },
+        open:    { cls: 'created', label: '待合入' },
+        pushed:  { cls: 'pushed',  label: '待 MR' },
+      };
+      function mrBadgeHtml(p) {
+        const mr = p.mr || findHandoffMr(p);
+        const st = mrStatusMap[p.mr_status] || (mr ? mrStatusMap.created : null);
+        if (!st) return '';
+        const icon = st.cls === 'merged' ? '✅' : (st.cls === 'created' ? '🟡' : '⏳');
+        const text = mr ? `MR ${mr} · ${st.label}` : st.label;
+        if (p.mr_url && mr) {
+          return `<a class="mr-badge ${st.cls}" href="${escapeHtml(p.mr_url)}" target="_blank">${icon} ${escapeHtml(text)}</a>`;
+        }
+        return `<span class="mr-badge ${st.cls}">${icon} ${escapeHtml(text)}</span>`;
+      }
+
+      const nodesHtml = cp.projects.map(p => {
+        const icon = roleIcon[p.role] || '📦';
+        const label = roleLabel[p.role] || p.role;
+        const metaRows = [];
+        if (p.branch) {
+          metaRows.push(`<div class="meta-row">🌿 <code title="${escapeHtml(p.branch)}">${escapeHtml(p.branch)}</code></div>`);
+        }
+        if (p.files_changed !== null && p.files_changed !== undefined) {
+          let filesHtml = `📄 改动 ${escapeHtml(String(p.files_changed))} 个文件`;
+          if (p.lines_added !== null && p.lines_added !== undefined) {
+            filesHtml += ` <span class="lines-added">+${escapeHtml(String(p.lines_added))}</span><span class="lines-sep">/</span><span class="lines-deleted">-${escapeHtml(String(p.lines_deleted || 0))}</span>`;
+          }
+          metaRows.push(`<div class="meta-row meta-files">${filesHtml}</div>`);
+        }
+        const mrBadge = mrBadgeHtml(p);
+        if (mrBadge) metaRows.push(`<div class="meta-row">${mrBadge}</div>`);
+        return `<div class="flow-node"><div class="project-card" data-role="${escapeHtml(p.role || '')}"${p.workspace ? ` title="${escapeHtml(p.workspace)}"` : ''}>
+          <div class="role-badge">${icon} ${escapeHtml(label)}</div>
+          <div class="project-name">${escapeHtml(p.short || p.name)}</div>
+          ${p.role_label ? `<div class="project-role-desc">${escapeHtml(p.role_label)}</div>` : ''}
+          ${metaRows.length ? `<div class="project-meta">${metaRows.join('')}</div>` : ''}
+        </div></div>`;
+      });
+      const flowHtml = nodesHtml.join('<div class="flow-arrow"><div class="arrow-line"></div></div>');
+
+      const statusHtml = cp.status
+        ? (cp.status === 'completed'
+          ? '<span class="handoff-status done">✅ 协作链已闭环</span>'
+          : `<span class="handoff-status doing">⏳ ${escapeHtml(cp.status)}</span>`)
+        : '';
+      const handoffHtml = (cp.handoff_note || statusHtml) ? `<div class="projects-handoff">
+        <div class="handoff-label">🔗 衔接说明</div>
+        ${statusHtml}
+        ${cp.handoff_note ? `<div>${escapeHtml(cp.handoff_note)}</div>` : ''}
+      </div>` : '';
+
+      return `<div class="projects-flow">${flowHtml}</div>${handoffHtml}`;
+    }
+
+    function renderHero() {
+      const r = FLOW_DATA.report;
+      const score = FLOW_DATA.health_score;
+      const ftrTag = r.first_time_right
+        ? '<span class="tag success">✅ 一次做对</span>'
+        : '<span class="tag warn">⚠️ 有回退/纠正</span>';
+      const modeTag = `<span class="tag accent">${r.mode === 'standard' ? '标准执行' : (r.mode === 'cross-project' ? '跨项目执行' : '完整执行')}</span>`;
+      const cmplxColor = r.complexity === 'simple' ? 'success' : (r.complexity === 'complex' ? 'danger' : 'warn');
+      const cmplxTag = `<span class="tag ${cmplxColor}">${r.complexity}</span>`;
+      const iterTag = r.iteration > 1 ? `<span class="tag purple">${r.iteration} 轮迭代</span>` : '';
+      const typeMap = { feature: '✨ 功能', bugfix: '🐛 修复', refactor: '♻️ 重构', style: '🎨 样式', other: '📦 其他' };
+      const typeTag = `<span class="tag">${typeMap[r.requirement_type] || typeMap['feature']}</span>`;
+      const crossTag = renderCrossProjectTag();
+
+      // 分段色（主色 + 渐变亮色 + 半透明色 + 等级文本 + 徽章背景色）
+      let ringColor, ringLight, ringAlpha, ringLabel, gradeBg;
+      if (score >= 80)      {
+        ringColor = '#34d399'; ringLight = '#6ee7b7'; ringAlpha = 'rgba(52,211,153,0.40)';
+        ringLabel = '优秀'; gradeBg = 'rgba(52,211,153,0.12)';
+      }
+      else if (score >= 60) {
+        ringColor = '#fbbf24'; ringLight = '#fde68a'; ringAlpha = 'rgba(251,191,36,0.40)';
+        ringLabel = '良好'; gradeBg = 'rgba(251,191,36,0.12)';
+      }
+      else if (score >= 40) {
+        ringColor = '#fb923c'; ringLight = '#fdba74'; ringAlpha = 'rgba(251,146,60,0.40)';
+        ringLabel = '一般'; gradeBg = 'rgba(251,146,60,0.12)';
+      }
+      else                  {
+        ringColor = '#f87171'; ringLight = '#fca5a5'; ringAlpha = 'rgba(248,113,113,0.40)';
+        ringLabel = '需改善'; gradeBg = 'rgba(248,113,113,0.12)';
+      }
+      // 写入全局配置供 initHealthChart 使用
+      healthChartConfig = { score, ringColor, ringLight, ringAlpha };
+
+      const chartHtml = `
+        <div class="health-ring" id="health-chart"></div>
+        <div class="health-label">健康度</div>
+        <div class="health-grade" style="color:${ringColor};background:${gradeBg};animation:hr-puff-in 600ms ease-out 200ms both;">
+          ${ringLabel}
+        </div>`;
+
+      document.getElementById('hero').innerHTML = `
+        <div class="health-score">${chartHtml}</div>
+        <div class="hero-title">DEV-FLOW 复盘报告</div>
+        <div class="hero-id">${escapeHtml(r.title || r.requirement_id)}</div>
+        ${r.requirement_id && r.title ? `<div class="hero-reqid"><code>${escapeHtml(r.requirement_id)}</code></div>` : ''}
+        <div class="hero-tags">
+          ${typeTag}${crossTag}${ftrTag}${modeTag}${cmplxTag}${iterTag}
+        </div>
+        <div class="hero-meta">
+          <span>📅 ${escapeHtml(r.start_date)} → ${escapeHtml(r.complete_date)}</span>
+          ${r.branch ? `<span>🌿 <code>${escapeHtml(r.branch)}</code></span>` : ''}
+        </div>
+        <div class="hero-global" id="hero-global"></div>
+        <div class="hero-links" id="hero-links"></div>
+      `;
+      renderHeroGlobal();
+    }
+
+    // === ECharts 健康度环初始化 ===
+    function initHealthChart() {
+      const container = document.getElementById('health-chart');
+      if (!container || !healthChartConfig) return;
+      const { score, ringColor, ringLight, ringAlpha } = healthChartConfig;
+
+      // 销毁旧实例
+      if (healthChartInstance) healthChartInstance.dispose();
+
+      healthChartInstance = echarts.init(container);
+      const option = {
+        series: [{
+          type: 'gauge',
+          startAngle: 90,
+          endAngle: -270,
+          center: ['50%', '50%'],
+          radius: '73%',
+          pointer: { show: false },
+          progress: {
+            show: true,
+            overlap: false,
+            roundCap: true,
+            clip: false,
+            width: 9,
+            itemStyle: {
+              shadowBlur: 14,
+              shadowColor: ringAlpha,
+              shadowOffsetX: 0,
+              shadowOffsetY: 0,
+              color: new echarts.graphic.LinearGradient(0, 0, 1, 1, [
+                { offset: 0, color: ringLight },
+                { offset: 1, color: ringColor }
+              ])
+            }
+          },
+          axisLine: {
+            lineStyle: {
+              width: 9,
+              color: [[1, '#1e1e21']]
+            }
+          },
+          axisTick: { show: false },
+          splitLine: { show: false },
+          axisLabel: { show: false },
+          title: { show: false },
+          detail: {
+            valueAnimation: true,
+            animationDuration: 1000,
+            animationEasing: 'cubicOut',
+            formatter: function (value) {
+              return '{value|' + Math.round(value) + '}\n{unit|/ 100}';
+            },
+            rich: {
+              value: {
+                fontSize: 32,
+                fontWeight: 'bold',
+                fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, sans-serif',
+                color: ringColor,
+                textShadowColor: ringAlpha,
+                textShadowBlur: 12
+              },
+              unit: {
+                fontSize: 11,
+                color: '#71717a',
+                fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, sans-serif',
+                padding: [5, 0, 0, 0]
+              }
+            },
+            offsetCenter: [0, '28%']
+          },
+          data: [{ value: score }]
+        }]
+      };
+      healthChartInstance.setOption(option);
+    }
+
+    // ECharts 响应式
+    window.addEventListener('resize', function () {
+      if (healthChartInstance) healthChartInstance.resize();
+
+    });
+
+    function renderHeroGlobal() {
+      const gs = FLOW_DATA.global_stats;
+      if (!gs) return;
+      const html = [
+        `<span class="global-stat">📊 累计 <strong>${gs.total_requirements}</strong> 个需求</span>`,
+      ];
+      if (gs.health && gs.health.total > 0) {
+        // 两段式口径：必需字段完整率（主指标，着色）+ 全字段完整率（次要，灰色）
+        // 避免推荐字段（如 est_tokens）老数据普遍缺失时整体显示 0% 造成误导
+        const reqPct = Math.round(((gs.health.total - gs.health.missing_required) / gs.health.total) * 100);
+        const fullPct = Math.round((gs.health.complete / gs.health.total) * 100);
+        const color = reqPct >= 80 ? 'var(--green)' : (reqPct >= 60 ? 'var(--yellow)' : 'var(--red)');
+        html.push(`<span class="global-stat" title="必需字段完整率：必需字段无缺失的报告占比；全字段完整率：必需+推荐字段均无缺失的报告占比">🌡️ 必需字段 <strong style="color:${color};">${reqPct}%</strong><span style="color:var(--text-tertiary);"> · 全字段 ${fullPct}%</span></span>`);
+      }
+      document.getElementById('hero-global').innerHTML = html.join('');
+    }
+
+    // === 执行数据总览 ===
+    function renderKpis() {
+      const r = FLOW_DATA.report;
+      const b = FLOW_DATA.baseline;
+      const iter = FLOW_DATA.iteration_breakdown;
+      const baselineInfo = b
+        ? `vs ${b.mode} 模式 · ${b.sample_size} 条样本均值`
+        : '历史样本不足，仅展示本次';
+      document.getElementById('kpi-baseline-info').textContent = baselineInfo;
+
+      // 迭代标识 HTML（对话轮次卡片右上角用，仅显示总轮数）
+      function buildIterationHtml() {
+        if (!iter || !iter.iteration || iter.iteration <= 1) return '';
+        return `<div class="kpi-breakdown">
+          <span class="kpi-breakdown-item">×${iter.iteration} 迭代</span>
+        </div>`;
+      }
+
+      // 跨项目：改动文件数/行数按项目拆分（有明细时）
+      const cpData = FLOW_DATA.cross_project;
+      const cpProjects = (cpData && cpData.is_cross ? (cpData.projects || []) : []);
+      const perProjFiles = cpProjects
+        .filter(p => p.files_changed !== null && p.files_changed !== undefined)
+        .map(p => `${p.short || p.name} ${p.files_changed}`)
+        .join(' · ');
+      const perProjLines = cpProjects
+        .filter(p => p.lines_added !== null && p.lines_added !== undefined)
+        .map(p => `${p.short || p.name} +${p.lines_added}/-${p.lines_deleted || 0}`)
+        .join(' · ');
+
+      // direction: 'lower-better' 数值越低越好；'higher-better' 越高越好；'neutral' 中性
+      const cards = [
+        { label: '一次做对', value: r.first_time_right ? '✅' : '❌',
+          baseline: b ? (b.first_time_right_rate * 100).toFixed(0) + '% 历史' : null,
+          tone: r.first_time_right ? 'good' : 'warn', direction: 'higher-better' },
+        { label: '回退次数', value: r.rollback_count, unit: '次',
+          baseline: b ? `均值 ${b.rollback_count.toFixed(1)}` : null,
+          baselineNum: b ? b.rollback_count : null,
+          tone: r.rollback_count === 0 ? 'good' : (r.rollback_count > 2 ? 'danger' : 'warn'),
+          direction: 'lower-better' },
+        { label: '用户纠正', value: r.user_corrections, unit: '次',
+          baseline: b ? `均值 ${b.user_corrections.toFixed(1)}` : null,
+          baselineNum: b ? b.user_corrections : null,
+          tone: r.user_corrections <= 1 ? 'good' : (r.user_corrections > 3 ? 'danger' : 'warn'),
+          direction: 'lower-better' },
+        { label: 'L2 问题/文件', value: r.issues_per_file.toFixed(2),
+          baseline: b ? `均值 ${b.l2_issues_per_file.toFixed(2)}` : null,
+          baselineNum: b ? b.l2_issues_per_file : null, curNum: r.issues_per_file,
+          tone: r.issues_per_file < 0.5 ? 'good' : (r.issues_per_file > 1.5 ? 'danger' : 'warn'),
+          direction: 'lower-better',
+          subValue: (r.l2_issues_found != null ? (
+            r.l2_issues_found > 0
+              ? `发现 ${r.l2_issues_found} · 修复 ${r.l2_issues_fixed != null ? r.l2_issues_fixed : 0} (${Math.round((r.l2_issues_fixed || 0) / r.l2_issues_found * 100)}%)`
+              : '发现 0'
+          ) : '') },
+        { label: '验证 Bug', value: r.bugs_found_in_verify, unit: '个',
+          baseline: b ? `均值 ${b.bugs_found_in_verify.toFixed(1)}` : null,
+          baselineNum: b ? b.bugs_found_in_verify : null,
+          tone: r.bugs_found_in_verify === 0 ? 'good' : (r.bugs_found_in_verify > 2 ? 'danger' : 'warn'),
+          direction: 'lower-better',
+          subValue: (r.bugs_found_in_verify != null ? (
+            r.bugs_found_in_verify > 0
+              ? `发现 ${r.bugs_found_in_verify} · 修复 ${r.bugs_fixed_in_verify != null ? r.bugs_fixed_in_verify : 0} (${Math.round(((r.bugs_fixed_in_verify || 0) / r.bugs_found_in_verify) * 100)}%)`
+              : '发现 0'
+          ) : '') },
+        { label: '改动文件数', value: r.files_changed, unit: '个',
+          baseline: b ? `均值 ${b.files_changed.toFixed(1)}` : null,
+          baselineNum: b ? b.files_changed : null,
+          tone: r.files_changed <= 6 ? 'neutral' : (r.files_changed > 15 ? 'danger' : 'warn'),
+          direction: 'neutral',
+          subValue: perProjFiles || `新增 ${r.files_created} · 删 ${r.files_deleted}` },
+        { label: '改动行数', value: `+${r.lines_added}/-${r.lines_deleted}`,
+          baseline: b ? `均值 +${b.lines_added.toFixed(0)}/-${b.lines_deleted.toFixed(0)}` : null,
+          tone: 'neutral', direction: 'neutral',
+          subValue: perProjLines || '' },
+        { label: '计划吻合度',
+          value: r.plan_adherence
+            ? ({full: '完全吻合', minor_deviation: '小幅偏差', major_deviation: '重大偏差', unassessed: '待评估'}[r.plan_adherence] || r.plan_adherence)
+            : '未采集',
+          baseline: null,
+          tone: r.plan_adherence === 'full' ? 'good' : (r.plan_adherence === 'major_deviation' ? 'danger' : 'neutral'),
+          direction: 'higher-better' },
+        { label: '对话轮次', value: r.conversation_rounds != null ? r.conversation_rounds : '未采集', unit: '轮',
+          baseline: b ? `均值 ${b.conversation_rounds?.toFixed(1) || '—'}` : null,
+          baselineNum: b?.conversation_rounds, curNum: r.conversation_rounds,
+          tone: 'neutral', direction: 'lower-better',
+          subValue: (r.conversation_rounds > 0 ? (r.files_changed / r.conversation_rounds).toFixed(1) + ' 文件/轮' : ''),
+          breakdown: buildIterationHtml() || (r.iteration > 1
+            ? `<div class="kpi-breakdown"><span class="kpi-breakdown-item">×${r.iteration} 迭代</span></div>` : '') },
+        { label: '缺陷密度', value: r.bugs_per_100_lines != null ? r.bugs_per_100_lines.toFixed(1) : '未采集', unit: '/ 百行',
+          baseline: b ? `均值 ${b.bugs_per_100_lines?.toFixed(1) || '—'} / 百行` : null,
+          baselineNum: b?.bugs_per_100_lines, curNum: r.bugs_per_100_lines,
+          tone: (r.bugs_per_100_lines || 0) === 0 ? 'good' : 'warn',
+          direction: 'lower-better' },
+        { label: '执行跨度',
+          get value() {
+            const d = datesToDuration(r.start_date, r.complete_date);
+            const m = d.match(/^(\d+)\s*(天)$/);
+            return m ? m[1] : d;
+          },
+          get unit() {
+            const d = datesToDuration(r.start_date, r.complete_date);
+            return /^\d+\s*天$/.test(d) ? '天' : '';
+          },
+          baseline: null, tone: 'neutral', direction: 'neutral' },
+        { label: '经验沉淀', value: r.lessons_learned > 0 ? r.lessons_learned : '无', unit: r.lessons_learned > 0 ? '条' : '',
+          baseline: null, tone: r.lessons_learned > 0 ? 'good' : 'neutral', direction: 'higher-better',
+          subValue: (r.rules_created > 0 ? `规则 +${r.rules_created}` : '') },
+      ];
+
+      const html = cards.map((c, idx) => {
+        let deltaHtml = '';
+        if (c.baselineNum !== null && c.baselineNum !== undefined && c.curNum !== undefined) {
+          const cur = c.curNum;
+          const base = c.baselineNum;
+          const delta = pctDelta(cur, base);
+          if (delta !== null && Math.abs(delta) >= 5) {
+            const arrow = delta > 0 ? '↑' : '↓';
+            const cls = c.direction === 'lower-better'
+              ? (delta > 0 ? 'up' : 'down')
+              : (delta > 0 ? 'up-good' : 'down-bad');
+            deltaHtml = ` <span class="delta ${cls}">${arrow}${Math.abs(delta)}%</span>`;
+          }
+        } else if (typeof c.value === 'number' && c.baselineNum !== null && c.baselineNum !== undefined) {
+          const delta = pctDelta(c.value, c.baselineNum);
+          if (delta !== null && Math.abs(delta) >= 5) {
+            const arrow = delta > 0 ? '↑' : '↓';
+            const cls = c.direction === 'lower-better'
+              ? (delta > 0 ? 'up' : 'down')
+              : (delta > 0 ? 'up-good' : 'down-bad');
+            deltaHtml = ` <span class="delta ${cls}">${arrow}${Math.abs(delta)}%</span>`;
+          }
+        }
+        // 改动行数：特殊渲染
+        const valHtml = c.label === '改动行数'
+          ? `<span class="lines-added">+${r.lines_added}</span><span class="lines-sep">/</span><span class="lines-deleted">-${r.lines_deleted}</span>`
+          : escapeHtml(String(c.value));
+        // 单位（灰色）
+        const unitHtml = c.unit ? `<span class="kpi-unit">${escapeHtml(c.unit)}</span>` : '';
+        // 迭代明细（在 value 上方）
+        const breakdownHtml = c.breakdown || '';
+        return `
+          <div class="kpi-card" data-idx="${idx}">
+            <div class="kpi-label">${escapeHtml(c.label)}</div>
+            <div class="kpi-value">${valHtml}${unitHtml}</div>
+            <div class="kpi-compare">
+              ${c.baseline ? escapeHtml(c.baseline) : '—'}${deltaHtml}
+              ${c.subValue ? `<span class="kpi-sub">${escapeHtml(c.subValue)}</span>` : ''}
+            </div>
+            ${breakdownHtml}
+          </div>
+        `;
+      }).join('');
+
+      document.getElementById('kpi-grid').innerHTML = html;
+    }
+
+    // === 数据洞察 ===
+    function renderInsights() {
+      const insights = FLOW_DATA.insights || [];
+      const iconMap = { warn: '⚠️', danger: '🚨', ok: '✅', info: '📊' };
+      const html = insights.map(i => `
+        <div class="insight ${escapeHtml(i.level)}">
+          <div class="insight-icon">${iconMap[i.level] || '📌'}</div>
+          <div class="insight-body">
+            <div class="insight-title">${escapeHtml(i.title)}</div>
+            <div class="insight-msg">${escapeHtml(i.message)}</div>
+          </div>
+        </div>
+      `).join('') || '<div class="empty-hint">无洞察数据</div>';
+      document.getElementById('insight-list').innerHTML = html;
+    }
+
+    // === 纠正分类迷你面板 ===
+    function renderCorrectionTypes() {
+      const r = FLOW_DATA.report;
+      const ct = r.correction_types;
+      if (!ct || r.user_corrections <= 0) {
+        document.getElementById('correction-types-section').style.display = 'none';
+        return;
+      }
+      const total = ct.logic + ct.boundary + ct.other;
+      if (total === 0) {
+        document.getElementById('correction-types-section').style.display = 'none';
+        return;
+      }
+      document.getElementById('correction-types-section').style.display = '';
+      const maxVal = Math.max(ct.logic, ct.boundary, ct.other, 1);
+      const items = [
+        { label: '逻辑错误', en: 'Logic Error', val: ct.logic, color: '#f87171', hint: '业务逻辑理解错误（"不对，应该是..."）' },
+        { label: '遗漏边界', en: 'Missing Edge', val: ct.boundary, color: '#fbbf24', hint: '遗漏边界条件/空值处理（"没考虑 loading 态"）' },
+        { label: '其他', en: 'Other', val: ct.other, color: '#71717a', hint: '命名/风格/架构调整' },
+      ];
+      let suggestion = '';
+      if (ct.logic > ct.boundary && ct.logic >= 2) {
+        suggestion = '💡 建议：逻辑类纠正占比较高，下次在步骤 3 方案确认时用更具体的示例描述预期行为。';
+      } else if (ct.boundary >= 2) {
+        suggestion = '💡 建议：边界遗漏较多，建议编码后按"空/加载/错误/空数据"四态自检。';
+      }
+      const html = `
+        <div style="background:var(--bg-secondary);border:1px solid var(--border-muted);border-radius:var(--radius-lg);padding:20px 24px;">
+          <div style="font-size:13px;color:var(--text-secondary);margin-bottom:16px;">
+            本次共 <b style="color:var(--accent);">${total}</b> 次纠正，分布如下：
+          </div>
+          ${items.map(it => `
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;" title="${it.hint}">
+              <span style="min-width:70px;text-align:right;font-size:12px;color:var(--text-secondary);">${it.label} <span style="font-size:10px;color:var(--text-tertiary);">${it.en}</span></span>
+              <div style="flex:1;height:22px;background:var(--bg-tertiary);border-radius:4px;overflow:hidden;">
+                <div style="height:100%;width:${Math.round(it.val / maxVal * 100)}%;background:${it.color};border-radius:4px;transition:width 600ms ease;min-width:${it.val > 0 ? 8 : 0}px;"></div>
+              </div>
+              <span style="min-width:32px;text-align:left;font-size:14px;font-weight:700;color:${it.color};font-variant-numeric:tabular-nums;">${it.val}</span>
+            </div>
+          `).join('')}
+          ${suggestion ? `<div style="margin-top:12px;padding:10px 14px;background:var(--accent-bg);border-radius:var(--radius-md);font-size:12px;color:var(--accent);">${suggestion}</div>` : ''}
+        </div>`;
+      document.getElementById('correction-types-content').innerHTML = html;
+    }
+
+    // === 用户纠正 ===
+    function renderCorrections() {
+      const items = FLOW_DATA.corrections || [];
+      const r = FLOW_DATA.report;
+      document.getElementById('corrections-count').textContent = items.length || r.user_corrections || 0;
+      let html;
+      if (items.length === 0) {
+        if (r.user_corrections > 0) {
+          html = `<div class="correction-item">
+            <div class="correction-content" style="color:var(--text-secondary);">
+              ⚠️ 共 ${r.user_corrections} 次用户纠正，但工作上下文中未记录详情。<br>
+              <span style="font-size:11px;color:var(--text-tertiary);margin-top:4px;display:inline-block;">
+                原因：纠正以迭代回退形式体现（非标准 🔧[纠正] 格式），请更新工作上下文补录。
+              </span>
+            </div>
+          </div>`;
+        } else {
+          html = `<div class="empty-hint">本次无用户纠正记录 ✨</div>`;
+        }
+      } else {
+        // 按日期分组，时间轴布局
+        // 混合格式兼容：无日期条目（time 为纯 HH:mm）归入「时间未标注」组并原样显示时间，
+        // 避免纯时间被误判为日期分组标题（new Date 解析失败 → 标题错乱、条目时间丢失）
+        const groups = {};
+        items.forEach(c => {
+          const parts = (c.time || '').split(' ');
+          const hasDate = parts.length > 1;
+          const datePart = hasDate ? parts[0] : '时间未标注';
+          if (!groups[datePart]) groups[datePart] = [];
+          groups[datePart].push({ content: c.content, timeOnly: hasDate ? parts[1] : (c.time || '') });
+        });
+        html = Object.entries(groups).map(([date, group]) => {
+          const d = new Date(date + 'T00:00:00');
+          const weekNames = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
+          const dateLabel = isNaN(d.getTime())
+            ? `${date} · ${group.length} 条`
+            : `${d.getMonth() + 1}月${d.getDate()}日 ${weekNames[d.getDay()]} · ${group.length} 条`;
+          const itemsHtml = group.map(c => {
+            return `
+            <div class="cr-item">
+              ${c.timeOnly ? `<div class="cr-time">${escapeHtml(c.timeOnly)}</div>` : ''}
+              <div class="cr-content">${escapeHtml(c.content)}</div>
+            </div>`;
+          }).join('');
+          return `<div class="cr-group-header">${dateLabel}</div>${itemsHtml}`;
+        }).join('');
+      }
+      document.getElementById('corrections-list').innerHTML = html;
+    }
+
+    // === 迭代履历 ===
+    function renderIterationTimeline() {
+      const iter = FLOW_DATA.iteration_breakdown;
+      if (!iter || iter.iteration <= 1) {
+        document.getElementById('iteration-timeline-section').style.display = 'none';
+        return;
+      }
+      const items = iter.per_iteration || [];
+      if (items.length === 0) {
+        document.getElementById('iteration-timeline-section').style.display = 'none';
+        return;
+      }
+      document.getElementById('iteration-timeline-section').style.display = '';
+
+      const html = items.map(item => {
+        const roundsDisplay = item.rounds != null ? ` · ${item.rounds} 轮对话` : '';
+        return `
+          <div class="timeline-item">
+            <div class="timeline-dot"></div>
+            <div class="timeline-content">
+              <div class="timeline-header">
+                <span class="timeline-badge">迭代 ${escapeHtml(String(item.num))}</span>
+                <span class="timeline-meta">${escapeHtml(item.date || '')}${roundsDisplay}</span>
+              </div>
+              ${item.summary ? `<div class="timeline-summary">${escapeHtml(item.summary)}</div>` : ''}
+            </div>
+          </div>`;
+      }).join('');
+
+      document.getElementById('iteration-timeline').innerHTML = html;
+    }
+
+    function datesToDuration(start, end) {
+      if (!start || !end) return '—';
+      const s = new Date(start);
+      const e = new Date(end);
+      if (isNaN(s) || isNaN(e)) return '—';
+      const days = Math.round((e - s) / 86400000);
+      if (days === 0) return '当天完成';
+      return `${days} 天`;
+    }
+
+    // === 回退详情 ===
+    function renderRollbacks() {
+      const items = FLOW_DATA.rollbacks_detail || [];
+      const section = document.getElementById('rollback-section');
+      if (items.length === 0) {
+        section.style.display = 'none';
+        return;
+      }
+      section.style.display = '';
+      document.getElementById('rollback-count').textContent = items.length;
+      const stepNames = {
+        '0': '阶段0 需求理解', '1': '步骤1 研究定位', '2': '步骤2 确认范围',
+        '3': '步骤3 制定方案', '4': '步骤4 方案汇报', '4.5': '步骤4.5 环境检查',
+        '5': '步骤5 执行修改', '5.5': '步骤5.5 编码后置', '6': '步骤6 质量验证',
+        '7': '步骤7 清理检查', '8': '步骤8 L3审查', '9': '步骤9 反思学习', '10': '步骤10 归档交付',
+      };
+      const html = items.map(r => {
+        const fromName = stepNames[r.from] || `步骤${r.from}`;
+        const toName = stepNames[r.to] || `步骤${r.to}`;
+        return `
+          <div class="correction-item">
+            <div class="correction-time">${escapeHtml(fromName)} → ${escapeHtml(toName)}</div>
+            <div class="correction-content">回退到 ${escapeHtml(toName)} 重新执行</div>
+          </div>`;
+      }).join('');
+      document.getElementById('rollback-list').innerHTML = html;
+    }
+
+
+    // === 涉及项目区块初始化 ===
+    function renderInvolvedProjectsSection() {
+      const section = document.getElementById('involved-projects-section');
+      const content = document.getElementById('involved-projects-content');
+      const countEl = document.getElementById('projects-count');
+      if (!section || !content) return;
+
+      const cp = FLOW_DATA.cross_project;
+      if (!cp || !cp.is_cross || !cp.projects || cp.projects.length === 0) {
+        section.style.display = 'none';
+        return;
+      }
+      section.style.display = '';
+      content.innerHTML = renderInvolvedProjects();
+      if (countEl) countEl.textContent = cp.projects.length;
+    }
+
+    // === 主渲染 ===
+    function render() {
+      try {
+        renderHero();
+        initHealthChart();
+        renderHeroLinks();
+        renderKpis();
+        renderInvolvedProjectsSection();
+        renderCorrectionTypes();
+        renderInsights();
+        renderIterationTimeline();
+        renderCorrections();
+        renderRollbacks();
+      } catch (e) {
+        console.error('渲染失败：', e);
+        document.body.innerHTML = `<div style="color:var(--red);padding:40px;">渲染失败：${e.message}</div>` + document.body.innerHTML;
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', render);
+  </script>
+</body>
+</html>

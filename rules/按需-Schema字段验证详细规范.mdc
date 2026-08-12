@@ -1,0 +1,72 @@
+---
+description: Schema 字段实现验证详细规范——读 skill schema 中的「枚举控制字段」时按需加载，含完整三步法 + 典型反例 + 禁令清单
+alwaysApply: false
+enabled: true
+---
+
+# Schema 字段实现验证详细规范（按需）
+
+> 触发条件：读取 skill schema 中带「枚举值」的「控制类字段」（典型如 `trigger_step` / `phase` / `mode` / `routing_target` / `action`），即将根据该字段向用户提供决策选项前。
+> AI 行为规范 alwaysApply 中保留核心原则与三步法骨架；本文件提供完整反例和禁令清单。
+
+## 核心原则（与 alwaysApply 同源）
+
+读到任何 skill schema 中带「枚举值」的「控制类字段」时，**必须先 grep 确认存在分发逻辑后才能据此向用户提供决策选项**。
+
+## 三步验证法（详细版）
+
+### Step 1：统计字段总出现次数
+
+```bash
+grep -rn "字段名" ~/.codebuddy/skills/<skill>/
+```
+
+目的：摸清字段在该 skill 中被引用的全部位置。
+
+### Step 2：统计「读取并分支判断」的代码
+
+```bash
+grep -rn "字段名.*==\|字段名.*=\|case.*字段名" \
+  ~/.codebuddy/skills/<skill>/scripts \
+  ~/.codebuddy/skills/<skill>/steps
+```
+
+目的：确认是否真的有代码读取该字段并基于值做分支跳转。
+
+### Step 3：判定与处置
+
+| Step 2 命中数 | 判定 | 处置 |
+|--------------|------|------|
+| ≥ 1 | 真分发字段 | 可据此向用户提供决策矩阵（每个枚举值映射到对应执行路径） |
+| **= 0** | **「幽灵选项」字段** | 只能按主流程默认路径执行，**不得**给用户提供"选择枚举值"的决策矩阵；如必须返回字段，固定返回最常见的默认值（如 `immediate`/`none`） |
+
+## 典型反例（2026-05-29 实际事故）
+
+**场景**：AI 看到 step-4-decision.md 的输出 schema 中：
+
+```json
+"trigger_step": {
+  "enum": ["immediate", "step-5-5b", "step-7-h3plus", "step-10-archive", "none"]
+}
+```
+
+**错误处理**：构造决策矩阵向用户解释 4 个时机的"适用场景"，让用户选择何时触发文档平台发布。
+
+**正确处理**：
+1. Step 1 grep 发现 `trigger_step` 字段在 skill 中出现 12 次（schema 定义 + 文档说明）
+2. Step 2 grep 发现**任何脚本/步骤文件中都没有读取 trigger_step 做分支**（命中数 = 0）
+3. Step 3 判定：「幽灵选项」字段 → 按 `step-4-decision.md` 流程图默认路径（§6 立即执行）→ 字段固定返回 `immediate`
+
+## 禁令清单
+
+- 🚫 看到枚举值即构造"决策矩阵"
+- 🚫 用"按设计推迟"等话术包装尚未验证的分支
+- 🚫 编造"适用场景表"误导用户
+- 🚫 跳过 Step 2 的 grep 验证，仅凭 schema 文档脑补字段含义
+- 🚫 Step 2 命中数 = 0 时仍向用户输出"建议选择 X"等导向性建议
+
+## 与其他规范的关系
+
+- 本规范是 alwaysApply `AI行为规范.mdc` §「Schema 字段实现验证 reflex」的详细展开版
+- 与 dev-flow 触发规则无关（不影响是否触发 dev-flow）
+- 与 issue-trace 的根因分析无关（issue-trace 关注代码逻辑，本规范关注 schema 字段实现）

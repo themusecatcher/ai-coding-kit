@@ -1,0 +1,16 @@
+{
+  "name": "e2e-testing",
+  "version": "1.0.0",
+  "description": "Playwright 端到端测试模式，包括页面对象模型、配置管理、CI/CD 集成、产物管理和不稳定测试处理策略。",
+  "author": {
+    "name": ""
+  },
+  "keywords": [
+    "e2e",
+    "testing"
+  ],
+  "category": "productivity",
+  "skills": [
+    "./SKILL.md"
+  ]
+}

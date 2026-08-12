@@ -1,0 +1,90 @@
+{
+  "version": "1.0",
+  "description": "dev-flow Hook 注册表（Anthropic Claude Code Hooks 风格）",
+  "status": "implemented",
+  "hooks": {
+    "PreStepLoad": [
+      {
+        "matcher": "step-(\\d+(\\.\\d+)?)",
+        "description": "加载任意步骤前自动跑物理检查点白名单 + 步骤 5 加上编码前置硬卡点",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash $DEV_FLOW_ROOT/scripts/hooks/pre-step.sh"
+          }
+        ]
+      }
+    ],
+    "PostStepComplete": [
+      {
+        "matcher": "step-(\\d+(\\.\\d+)?)",
+        "description": "步骤完成 JSON 输出后自动跑 validate-output + doc-platform-lint",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash $DEV_FLOW_ROOT/scripts/hooks/post-step.sh"
+          }
+        ]
+      }
+    ],
+    "OnAskFollowupQuestion": [
+      {
+        "matcher": ".*",
+        "description": "调用 ask_followup_question 前后自动跑交互选项一致性 lint",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash $DEV_FLOW_ROOT/scripts/lints/interactive-options-lint.sh /tmp/df-conversation-snapshot.json"
+          }
+        ]
+      }
+    ],
+    "OnDevLogsCreate": [
+      {
+        "matcher": ".*",
+        "description": "创建 dev-logs/ 目录前自动跑命名 lint",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash $DEV_FLOW_ROOT/scripts/lints/devlog-dir-name-lint.sh"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [],
+    "PostToolUse": [],
+    "OnModeSwitch": [],
+    "OnFlowFileChange": [],
+    "OnStep5Start": [
+      {
+        "matcher": "step-5",
+        "description": "步骤 5 开始时标记基准时间戳，供 working-context-freshness-lint 校验",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash $DEV_FLOW_ROOT/scripts/lints/mark-step5-start.sh"
+          }
+        ]
+      }
+    ],
+    "OnStep5_5Complete": [
+      {
+        "matcher": "step-5\\.5",
+        "description": "步骤 5.5 完成时校验工作上下文是否已更新",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash $DEV_FLOW_ROOT/scripts/lints/working-context-freshness-lint.sh"
+          }
+        ]
+      }
+    ]
+  },
+  "meta": {
+    "schema_version": "1.0",
+    "created_at": "2026-05-14",
+    "refactor_phase": 8,
+    "implemented_hooks": ["PreStepLoad", "PostStepComplete", "OnAskFollowupQuestion", "OnDevLogsCreate"],
+    "notes": "Hook 实际触发由 AI 在合适时机主动调用 pre-step.sh / post-step.sh，本配置作为人类可读的注册表。未来可扩展为 daemon 自动监听文件变化触发。"
+  }
+}

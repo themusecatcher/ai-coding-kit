@@ -1,0 +1,625 @@
+version: "1.0"
+description: dev-flow 门控规则单一权威源（v3 重构 2026-05-14 完成填充）
+status: implemented
+last_updated: "2026-05-14T20:50:00+08:00"
+implemented_lints:
+  - path-lint           # R1-R5 路径门控
+  - interactive-options-lint  # C1-C8 选项一致性
+  - devlog-dir-name-lint  # 4 项 dev-logs 命名
+  - doc-platform-lint          # 6 项 文档平台 决策
+  - devlog-integrity-lint     # devlog 双件齐全
+  - doc-platform-doc-lint      # 6 项 文档平台 文档正文质量（tech-doc Skill 资产，跨 Skill 引用）
+  - working-context-freshness-lint  # 工作上下文更新新鲜度门控
+  - working-context-location-lint   # 工作上下文位置/状态完整性门控（2026-06-02 新增，反误归档）
+implemented_prechecks:
+  - physical-checkpoint  # 7 模式白名单
+  - step5-precheck       # 编码前置硬卡点
+
+# ========================================
+# 物理检查点白名单（按基础模式分流）
+# 批次 4 实施完成
+# ========================================
+physical_checkpoints:
+  # 单一权威源：scripts/precheck/physical-checkpoint.sh 实现完整逻辑
+  # 本配置仅作为人类可读的索引参考
+  status: implemented
+  script: scripts/precheck/physical-checkpoint.sh
+  
+  # 标准执行：阶段 0 → 7
+  standard:
+    required:
+      - step-1
+      - step-2
+      - step-3
+      - step-4
+      - step-4_5
+      - step-5
+      - step-5_5
+      - step-6
+      - step-7
+    excluded: []
+  
+  # 完整执行：阶段 0 → 10
+  full:
+    required:
+      - step-1
+      - step-2
+      - step-3
+      - step-4
+      - step-4_5
+      - step-5
+      - step-5_5
+      - step-6
+      - step-7
+      - step-8
+      - step-9
+      - step-10
+  
+  # micro-fix：仅 4.5 → 7
+  micro-fix:
+    required:
+      - step-4_5
+      - step-5
+      - step-5_5
+      - step-6
+      - step-7
+    excluded:
+      - step-1
+      - step-2
+      - step-3
+      - step-4
+      - step-8
+      - step-9
+      - step-10
+  
+  iteration-fix:
+    required:
+      - step-4_5
+      - step-5
+      - step-5_5
+      - step-6
+      - step-7
+    excluded:
+      - step-1
+      - step-2
+      - step-3
+      - step-4
+  
+  batch:
+    required:
+      - step-1
+      - step-2
+      - step-3
+      - step-4
+      - step-4_5
+      - step-5
+      - step-5_5
+      - step-6
+      - step-7
+  
+  cross-project:
+    required:
+      - step-1
+      - step-2
+      - step-3
+      - step-4
+      - step-4_5
+      - step-5
+      - step-5_5
+      - step-6
+      - step-7
+
+# ========================================
+# Lint 规则注册（批次 1-3 实施时填充）
+# ========================================
+lints:
+  path-lint:
+    script: scripts/lints/path-lint.sh
+    status: implemented
+    description: 路径可点击性 lint（R1-R5），单一权威源
+    triggers:
+      - step-1-research-report
+      - step-2-scope-report
+      - step-3-batch-plan
+      - step-7-merge-report
+      - step-10-delivery-report
+      - iteration-fix-report
+      - verification-pipeline-report
+      - verification-report
+    rules:
+      - id: R1
+        severity: block
+        description: 禁止裸绝对路径（/Users|/home|/opt 开头未被反引号包裹）
+      - id: R2
+        severity: warn
+        description: 禁止裸相对源码路径（src|app|components 等）
+      - id: R3
+        severity: warn
+        description: 禁止孤立行号引用（L42 须紧跟反引号路径）
+      - id: R4
+        severity: block
+        description: 禁止 Markdown 链接 vscode://file 或 file:/// 协议
+      - id: R5
+        severity: warn
+        description: 禁止只写文件名（须带相对路径前缀）
+    exit_codes:
+      0: pass
+      1: block_violation
+      2: warn_violation
+  interactive-options-lint:
+    script: scripts/lints/interactive-options-lint.sh
+    status: implemented
+    description: 交互式选项一致性 lint（C1-C8），单一权威源
+    triggers:
+      - decision-points
+      - step-transitions
+      - hot-start-recovery
+    rules:
+      - id: C1
+        severity: block
+        description: 双重展示（文本表格 + ask_followup_question 必须共存）
+      - id: C2
+        severity: block
+        description: 数量一致（文本行数 === options 数组长度）
+      - id: C3
+        severity: block
+        description: 条件性隐藏同步
+      - id: C5
+        severity: block
+        description: 标准模式步骤流转必须 ask_followup_question
+      - id: C6
+        severity: block
+        description: 精简模式仅豁免 4 处流转（0.5->1 / 4.5->5 / 5->5.5 / 5.5->6）
+      - id: C7
+        severity: block
+        description: 措辞兑现（出现「弹出交互式选项」字样必须实际调用工具）
+    exit_codes:
+      0: pass
+      1: block_violation
+      2: warn_violation
+    snapshot_protocol: |
+      AI 在每次输出含 ask_followup_question 的回合时，先把当前回合元信息
+      写入 /tmp/df-conversation-snapshot.json，然后调用本脚本校验。
+      详见 scripts/lints/interactive-options-lint.sh 顶部协议说明。
+
+  devlog-dir-name-lint:
+    script: scripts/lints/devlog-dir-name-lint.sh
+    status: implemented
+    description: dev-logs 目录命名 lint（4 项检查），单一权威源
+    triggers:
+      - step-4-decision
+    rules:
+      - id: format_matched
+        severity: block
+        regex: ^\d{8}_(feat|fix|opt|refactor)_[^\s/\\]+$
+        description: 目录名必须匹配标准格式
+      - id: type_valid
+        severity: block
+        description: 类型段必须 ∈ {feat, fix, opt, refactor}
+      - id: brief_has_chinese
+        severity: block
+        description: 简述段至少含 1 个汉字
+      - id: no_project_suffix
+        severity: block
+        description: 末尾不含项目缩写（user-project/my-project/myComponent/other-project/web-project/myLib/myProject/web-projectV2）
+    output_modes:
+      json: 默认输出 JSON（含 dir_name 和 4 项 boolean）
+      raw: 仅返回退出码
+      shell: 输出 4 个 shell 变量（供 source 使用）
+    exit_codes:
+      0: pass
+      1: fail
+      2: invalid_args
+    integration: |
+      validate-output.sh 校验 step-4 完成标记中的 4 项 boolean。
+      AI/调用方在创建 dev-logs 目录前，先调用 devlog-dir-name-lint.sh 计算 4 个值，
+      写入 step-4 完成标记 JSON 的 plan_saved_to_disk.name_lint 字段。
+
+  doc-platform-lint:
+    script: scripts/lints/doc-platform-lint.sh
+    status: implemented
+    description: 文档平台技术方案决策门控（6 项校验），单一权威源
+    triggers:
+      - step-4-decision
+      - step-4-stage-2b
+    rules:
+      - id: decision_made
+        severity: block
+        description: 必须为 true（含 auto_inherited_skip）
+      - id: action_valid
+        severity: block
+        description: action ∈ {create, update, relink, skip, auto_inherited_skip}
+      - id: probe_executed
+        severity: block
+        description: 除 auto_inherited_skip 外必须为 true
+      - id: docid_when_update_relink
+        severity: block
+        description: action=update/relink 时 matched_docid 非空
+      - id: parent_docid_when_create
+        severity: block
+        description: action=create 时 parent_docid 非空
+      - id: create_update_closure
+        severity: block
+        description: |
+          action=create/update 时必须完成发布闭环（防止把发布动作延后到步骤 5/7/10）：
+            ① docid 非空（已发布或已关联）
+            ② status == "synced"（同步状态正确）
+            ③ trigger_step ∈ {immediate, 空} （只允许 immediate；废弃枚举 step-5-5b/step-7-h3plus/step-10-archive 任一即拦截）
+    skip_conditions:
+      - user_decision: modify
+      - user_decision: change_plan
+      - user_decision: pause
+      - user_decision: cancel
+
+  devlog-integrity-lint:
+    script: scripts/lints/devlog-integrity-lint.sh
+    status: implemented
+    description: dev-logs 完整性自检（plan.md / devlog.md 双件齐全），P1 物理事实兜底
+    triggers:
+      - step-7-standard
+      - step-7-batch
+    rules:
+      - id: plan_md_present
+        severity: block
+        description: v3 阈值（2026-05-12）后创建的目录必须有 plan.md，缺失则 ERROR
+      - id: devlog_md_present
+        severity: warn
+        description: v3 后产物有 plan.md 但缺 devlog.md → WARN（推断流程进行中）
+      - id: pre_v3_legacy_missing
+        severity: warn
+        description: v3 前历史产物缺失 → WARN（不阻断）
+    options:
+      - flag: --quiet
+        description: 仅输出 ERROR / WARN，不输出 OK 行（CI 推荐）
+      - flag: --strict
+        description: 任意 ERROR 退出码 1（用于 CI / pre-commit）
+      - flag: --help
+        description: 显示帮助
+    integration:
+      step-7: steps/step-7-commit.md §K
+      reference: references/gate-validator.md §「dev-logs 物理事实兜底（P0/P1 闭环）」 §P1
+    skip_conditions:
+      - mode: micro-fix      # 不创建/修改 dev-logs，无沉淀价值
+      - mode: full           # 推迟到步骤 10（与 H/I/J 同节奏）
+
+  doc-platform-doc-lint:
+    script: ../../tech-doc/scripts/lints/doc-platform-lint.sh
+    status: implemented
+    description: |
+      文档平台正文质量 lint（6 项），tech-doc Skill 资产。
+      与 dev-flow 的 doc-platform-lint（决策门控）分工：本 lint 校验文档正文，发布前阻断。
+    owner_skill: tech-doc
+    triggers:
+      - step-8-10-full-doc_platform-publish      # 完整模式 §10.3.5 文档平台 同步发布前
+      - tech-doc-doc_platform-mode-A             # doc-platform-doc 模式 A 自动填充末尾（已在 F5 落地）
+      - tech-doc-doc_platform-mode-B             # doc-platform-doc 模式 B 手动输入末尾（已在 F5 落地）
+    rules:
+      - id: placeholder_clean
+        severity: block
+        description: 人员类占位符必须替换（链接类占位符允许保留），TBD 必须替换
+      - id: urls_valid
+        severity: block
+        description: 所有 URL 必须以 http(s):// 开头
+      - id: section_numbering
+        severity: block
+        description: 中文章节编号一二三...必须连续不跳号（仅 tech-proposal 文档类型）
+      - id: design_image_filled
+        severity: block
+        description: 「三、页面功能」表格设计图列每行非空（仅 tech-proposal 文档类型）
+      - id: designer_when_figma
+        severity: block
+        description: 含 figma_url 时「需求背景」表格必须存在「设计稿（Figma）」行（仅 tech-proposal 文档类型）
+      - id: required_chapters
+        severity: block
+        description: |
+          8 大必填章节必须齐全（按标题关键字识别，支持「数据埋点」选填导致编号自适应）；
+          来源：2026-07-03 复盘——AI 漏写「代码归属模块/页面功能/回滚方案」整章，
+          旧 6 项检查只校验内容正确性不校验章节完整性，导致静默 pass（仅 tech-proposal 文档类型）
+    doc_type_matrix:
+      tech-proposal: 跑全部 6 项
+      tech-sharing: 仅跑 placeholder_clean + urls_valid（其他 4 项 skipped）
+      release-doc: 仅跑 placeholder_clean + urls_valid（其他 4 项 skipped）
+    output_modes:
+      json: 默认输出 JSON（含 file / doc_type / 6 项检查结果 / violations 数组）
+      raw: 仅返回退出码
+      shell: 输出 shell 变量（供 source）
+    exit_codes:
+      0: pass
+      1: fail
+      2: invalid_args
+    integration: |
+      ① step-8-10-full.md §10.3.5：在调用 use_skill('tech-doc') 模式 C 完成同步后，
+         发布到 文档平台 前必须执行本 lint。失败则阻断 doc_platform_sync_result=synced 标记，
+         必须修复后重跑。
+      ② tech-doc/modules/doc-platform-doc.md 模式 A/B 末尾已强制调用（F5 落地）。
+      ③ 跨 Skill 调用方式：bash <skill-root>/scripts/lints/doc-platform-lint.sh \
+         --doc-type {tech-proposal|tech-sharing|release-doc} <markdown-file>
+    skip_conditions:
+      - doc_platform_action: skip                # doc_platform_tech_proposal.action=skip
+      - doc_platform_action: auto_inherited_skip # 自动继承跳过
+      - doc_platform_action: relink              # 仅重链不动文档正文
+
+  working-context-freshness-lint:
+    script: scripts/lints/working-context-freshness-lint.sh
+    status: implemented
+    description: |
+      工作上下文更新新鲜度 lint。确保每轮编码（步骤 5）完成后，
+      工作上下文文件的 mtime 已在步骤 5 开始时间之后被更新。
+      设计哲学：「确定性用代码，模糊性用 LLM」——文件是否更新是物理事实，用脚本强制。
+    triggers:
+      - step-5_5-post-coding       # 步骤 5.5 编码后置钩子执行时
+      - step-7-pre-commit          # 步骤 7 commit 前兜底检查
+    companion_scripts:
+      - scripts/lints/mark-step5-start.sh  # 步骤 5 开始时标记基准时间戳
+    rules:
+      - id: WC1
+        severity: block
+        description: 工作上下文 mtime 必须 > 步骤 5 开始时间戳
+    exit_codes:
+      0: pass
+      1: block_violation
+      2: skip_no_baseline
+    usage: |
+      # 步骤 5 开始时（AI 调用）：
+      bash $DEV_FLOW_ROOT/scripts/lints/mark-step5-start.sh <flow-name>
+      
+      # 步骤 5.5 / 步骤 7 校验时（AI 调用）：
+      bash $DEV_FLOW_ROOT/scripts/lints/working-context-freshness-lint.sh <flow-name>
+      
+      # 也可显式传入时间戳：
+      bash $DEV_FLOW_ROOT/scripts/lints/working-context-freshness-lint.sh <flow-name> --timestamp 1716000000
+    skip_conditions:
+      - mode: micro-fix    # micro-fix 不要求更新工作上下文（任务太短无沉淀价值）
+
+  working-context-location-lint:
+    script: scripts/lints/working-context-location-lint.sh
+    status: implemented
+    description: |
+      工作上下文位置/状态完整性 lint。流程结束节点强制校验 .md 文件位置 +
+      头部 status 与 .flow status 一致性 + .active-flows 残留 + archive/ 中 .md 存在性。
+      设计动机：2026-06-02 事故根因——有人/Agent 在 status:completed 后手动
+      `mv .md` 到 archive/ 子目录，但 dev-flow 不存在自动归档机制，所有现有 lint
+      （freshness-lint 用 -f 静默跳过 / validate-output.sh §P2 同样 -f 跳过）
+      均无法识别。本 lint 显式断言 .md 必须在顶层。
+    triggers:
+      - step-7-post-complete    # 标准模式步骤 7 完成后
+      - step-10-post-complete   # 完整模式步骤 10 完成后
+      - dev-status-doctor       # dev:status --doctor 体检命令（--all 模式）
+    rules:
+      - id: L1
+        severity: block
+        description: 位置完整性——<flow-name>.md 必须位于顶层 working-context/，不得在 archive/ 子目录
+      - id: L2
+        severity: warn
+        description: 状态一致性——.md 头部 status 不得与 .flow 文件 status 矛盾（如 .flow=completed 但 .md=in_progress）
+      - id: L3
+        severity: block
+        description: 残留检测——.flow 已删除（流程结束）后 .active-flows/<flow>.step-*.validated* / .done 不得有残留
+      - id: L4
+        severity: block
+        description: archive 检测——archive/ 子目录不应存在 .md 文件（dev-flow 不归档 .md，仅 --all 模式触发）
+    options:
+      - flag: --all
+        description: 全量扫描模式（dev:status --doctor 体检使用）
+      - flag: --help
+        description: 显示帮助
+    exit_codes:
+      0: pass
+      1: block_violation
+      2: warn_only
+      3: invalid_args
+    integration: |
+      ① post-step.sh 在 step-7 / step-10 完成后自动触发（单流程模式）
+      ② 用户主动跑 `bash <skill-root>/scripts/lints/working-context-location-lint.sh --all` 全量体检
+    skip_conditions: []  # 任何模式都不跳过；位置完整性是物理事实，不应有豁免
+# ========================================
+# Hook 注册（2026-05-29 状态升级为 implemented）
+# 实际脚本：scripts/hooks/{pre-step,post-step}.sh
+# 调度规则：详见 steps/step-router.md §「程序化执行入口」
+# ========================================
+hooks:
+  pre-step-load:
+    matcher: "step-(\\d+(\\.\\d+)?)"
+    script: scripts/hooks/pre-step.sh
+    status: implemented
+    description: |
+      加载下一步骤前调用。自动跑：
+      ① physical-checkpoint.sh 白名单校验
+      ② 若 target=5：step5-precheck.sh + mark-step5-start.sh
+    usage: |
+      bash scripts/hooks/pre-step.sh <flow-name> <target-step-id>
+
+  post-step-complete:
+    matcher: "step-(\\d+(\\.\\d+)?)"
+    script: scripts/hooks/post-step.sh
+    status: implemented
+    description: |
+      步骤完成后调用。自动跑 validate-output.sh + 必要的 lint。
+    usage: |
+      bash scripts/hooks/post-step.sh <step-id> <json-file> <flow-name>
+
+# ========================================
+# 状态机数据驱动（v3.1 新增 2026-05-15，方向 ② 实施）
+# ========================================
+# 单一权威源：state-machine.sh 通过 df_get_yaml_list 读取本配置
+# 旧版硬编码 case 语句保留为 fallback，YAML 解析失败时自动回退
+state_machine:
+  status: implemented
+  description: 状态机步骤序列与子类型映射的单一权威源
+  
+  # 各模式的完整步骤序列（与 physical_checkpoints 互补：本段定义"完整流程"，physical_checkpoints 定义"必校验的检查点"）
+  # 格式：YAML inline list，空格分隔
+  step_sequences:
+    standard: "0 0.5 1 2 3 4 4.5 5 5.5 6 7"
+    full: "0 0.5 1 2 3 4 4.5 5 5.5 6 7 8 9 10"
+    micro-fix: "0 4.5 5 5.5 6 7"
+    iteration-fix: "0 4.5 5 5.5 6 7"
+    batch: "0 0.5 1 2 3 4 4.5 5 5.5 6 7"
+    cross-project: "0 0.5 1 2 3 4 4.5 5 5.5 6 7"
+  
+  # step-7 子类型映射（state-machine.sh::query_step7_variant）
+  step7_variants:
+    standard: "step7_standard"
+    cross-project: "step7_standard"
+    full: "step7_full"
+    micro-fix: "step7_micro_fix"
+    iteration-fix: "step7_standard"
+    # batch 模式特殊：根据 batch_final 标志区分
+    batch_not_final: "step7_batch"
+    batch_final: "step7_standard"
+  
+  # step-5.5 子类型映射（2026-07-14 新增，为 micro-fix 模式提供 dedicated schema variant）
+  step5_5_variants:
+    standard: "step5_5"
+    full: "step5_5"
+    micro-fix: "step5_5_micro_fix"
+    iteration-fix: "step5_5"
+    batch: "step5_5"
+    cross-project: "step5_5"
+  
+  # step-6 子类型映射（2026-07-14 新增，为 micro-fix 模式提供 dedicated schema variant）
+  step6_variants:
+    standard: "step6"
+    full: "step6"
+    micro-fix: "step6_micro_fix"
+    iteration-fix: "step6"
+    batch: "step6"
+    cross-project: "step6"
+  
+  # batch 模式的循环规则
+  batch_loop:
+    loop_target: "4.5"      # 非最后批次时回到 4.5
+    end_condition: "batch_current >= batch_total"
+
+# ========================================
+# 工具门禁：按步骤限制 tool call 范围（红牌 #15）
+# 借鉴 Statewright 状态机护栏 + Pipeline Harness 产物门禁
+# 2026-05-29 新增，v2 修订
+# ========================================
+tool_gates:
+  status: implemented
+  description: |
+    dev-flow 激活期间，按当前步骤限制可调用的工具类别。
+    违规即红牌 #15。AI 不得以"任务简单"为由绕过。
+    注意：本规则是辅助层约束（依赖 AI 自律），物理层由 physical-checkpoint.sh 保障。
+  
+  # 工具分类定义
+  tool_categories:
+    read_only:
+      - codebase_search
+      - search_content
+      - search_file
+      - read_file
+      - list_dir
+      - task          # code-explorer subagent
+    
+    write_code:
+      - replace_in_file
+      - write_to_file
+      - delete_file
+    
+    execute:
+      - execute_command
+    
+    interact:
+      - ask_followup_question
+      - use_skill       # 注意：仅允许加载 skill 规范，skill 内产生的工具调用仍受本门禁约束
+      - todo_write
+    
+    mcp_read:
+      - mcp_get_tool_description
+      - mcp_call_tool   # 仅限只读类 MCP 工具（搜索/查询/获取文档）
+    
+    mcp_write:
+      - mcp_call_tool   # 涉及文件修改的 MCP 工具（create_or_update_file/batch_modify_files 等）
+
+  # 按步骤定义允许的工具类别
+  phases:
+    stage_0:
+      name: "需求理解"
+      allowed: [interact, mcp_read, read_only]
+      blocked: [write_code, execute, mcp_write]
+      read_only_scope: |
+        read_only 工具仅允许以下目标：
+        - ~/.codebuddy/ 下的工作上下文文件（.flow / .md / .yaml）
+        - 用户消息中明确提及的具体文件（最多 3 个，仅用于理解需求上下文）
+        禁止：主动搜索/遍历项目源码、读取 node_modules
+      rationale: "需求阶段以确认需求为主，有限度地查看用户提及的文件辅助理解"
+    
+    step_1_to_3:
+      name: "研究→方案"
+      allowed: [read_only, interact, mcp_read, execute]
+      blocked: [write_code, mcp_write]
+      execute_scope: |
+        execute_command 仅允许只读类命令：
+        - git: log, diff, branch, show, blame, status, stash list
+        - 文件查看: ls, find, wc, grep, cat, head, tail, awk, diff, stat, tree, file, which
+        - 包管理查询: npm list, npm info, yarn why（禁止 install/add/remove）
+        禁止：sed -i, mv, rm, cp（覆盖）, npm install, git commit/push/checkout -b, mkdir（项目内）
+      rationale: "研究阶段只读不写，execute 限定为只读类命令"
+    
+    step_4:
+      name: "方案决策"
+      allowed: [interact, read_only, execute, mcp_read]
+      blocked: [write_code, mcp_write]
+      execute_scope: |
+        同 step_1_to_3 的只读命令范围。
+        额外允许：git log --oneline, git diff (辅助决策)
+      rationale: "决策阶段做汇报和确认，允许只读命令辅助决策"
+    
+    step_5_plus:
+      name: "编码及后续"
+      allowed: [read_only, write_code, execute, interact, mcp_read, mcp_write]
+      blocked: []
+      rationale: "编码阶段全工具解锁"
+
+  # 模式豁免规则（v2 新增）
+  mode_exemptions:
+    micro-fix:
+      description: "micro-fix 跳过步骤 1-4，直接从阶段 0 → 4.5 → 5"
+      stage_0:
+        # micro-fix 阶段 0 是极简确认（≤3 行），允许读用户提及的文件
+        allowed: [interact, mcp_read, read_only]
+        blocked: [write_code, execute, mcp_write]
+        read_only_scope: "同 standard.stage_0，允许读用户明确提及的文件"
+      step_4_5_plus:
+        # 从 4.5 开始全部解锁
+        allowed: [read_only, write_code, execute, interact, mcp_read, mcp_write]
+        blocked: []
+    
+    iteration-fix:
+      description: "iteration-fix 从步骤 4.5 开始，阶段 0 做极简确认"
+      stage_0:
+        allowed: [interact, mcp_read, read_only]
+        blocked: [write_code, execute, mcp_write]
+        read_only_scope: "允许读取上次迭代的相关文件（工作上下文中记录的文件列表）"
+      step_4_5_plus:
+        allowed: [read_only, write_code, execute, interact, mcp_read, mcp_write]
+        blocked: []
+
+  # 违规处理
+  violation:
+    severity: red_card_15
+    action: |
+      1. 立即停止当前操作
+      2. 输出违规报告：当前步骤 + 使用的工具 + 违规原因 + 正确做法
+      3. 回到当前步骤继续正确执行
+    human_override: |
+      用户显式说以下内容时，记录 override 并允许跳过门禁：
+      - "直接改" / "跳过研究" / "不用分析了直接写"
+      - "我已经分析好了，你只管改"
+      - "不用走流程了"
+      记录格式：在工作上下文中追加 human_override: { reason: "<用户原话>", at: "<step>", time: "<ISO>" }
+
+# ========================================
+# 元数据
+# ========================================
+meta:
+  schema_version: "1.0"
+  created_at: "2026-05-14"
+  last_updated: "2026-05-14"
+  refactor_phase: 0
+  notes: |
+    本文件是 dev-flow 重构后的门控规则单一权威源。
+    批次 0 为占位结构，后续批次将逐步填充实际规则。
+    禁止在文档中重复维护这里已声明的规则。
