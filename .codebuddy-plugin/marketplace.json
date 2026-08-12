@@ -1,10 +1,10 @@
 {
-  "name": "skillhub",
+  "name": "ai-coding-kit",
   "description": "个人 Skill 集合，包含 dev-flow、code-review、smart-commit 等研发效能工具",
   "version": "1.0.0",
   "owner": {
-    "name": "",
-    "email": ""
+    "name": "themusecatcher",
+    "email": "themusecatcher@163.com"
   },
   "plugins": [
     {
@@ -13,43 +13,57 @@
       "description": "浏览器自动化 CLI 工具。用于网页交互自动化，包括页面导航、表单填写、按钮点击、截图、数据提取、Web 应用测试等浏览器任务。触发场景包括\"打开网站\"、\"填写表单\"、\"点击按钮\"、\"截图\"、\"抓取页面数据\"、\"测试 Web 应用\"、\"登录网站\"、\"自动化浏览器操作\"等需要程序化 Web 交互的任务。",
       "version": "1.0.0",
       "author": {
-        "name": ""
+        "name": "themusecatcher"
       },
       "keywords": [
-        "agent",
-        "browser"
+        "浏览器自动化",
+        "网页交互",
+        "页面导航",
+        "表单填写",
+        "截图",
+        "数据提取",
+        "Web 测试",
+        "agent-browser"
       ],
-      "category": "productivity",
+      "category": "browser",
       "strict": false
     },
     {
       "name": "browser-compat",
       "source": "skills/browser-compat",
-      "description": "浏览器兼容性检查专家。检测 JS/CSS 代码是否使用了超出项目目标浏览器基线的 API 或属性（如 :has() / container-type / structuredClone / Object.hasOwn 等）， 并提供 Polyfill / 降级方案替代。支持独立使用和被 dev-flow / code-review 按需调用。 触发关键词：检查兼容性、兼容性审查、浏览器兼容、ca…",
+      "description": "浏览器兼容性检查专家。检测 JS/CSS 代码是否使用了超出项目目标浏览器基线的 API 或属性（如 :has() / container-type / structuredClone / Object.hasOwn 等）， 并提供 Polyfill / 降级方案替代。支持独立使用和被 dev-flow / code-review 按需调用。…",
       "version": "1.0.0",
       "author": {
-        "name": ""
+        "name": "themusecatcher"
       },
       "keywords": [
-        "browser",
-        "compat"
+        "浏览器兼容性",
+        "caniuse",
+        "polyfill",
+        "baseline检查",
+        "browserslist",
+        "browser-compat"
       ],
-      "category": "productivity",
+      "category": "browser",
       "strict": false
     },
     {
       "name": "browser-toolkit",
       "source": "skills/browser-toolkit",
-      "description": "浏览器自动化工具智能路由中枢。面向「我该用哪个工具」的决策场景，在 agent-browser、Playwright、Chrome DevTools MCP 三大执行后端之间基于任务特征自动推荐最优方案，并支持多工具协同编排。触发场景：工具选型咨询、页面性能调试（页面慢/LCP/CLS/网络瀑布/内存泄漏）、连接真实浏览器（我当前的Chrome/已登录状态/remote-debugging）、跨…",
+      "description": "浏览器自动化工具智能路由中枢。面向「我该用哪个工具」的决策场景，在 agent-browser、Playwright、Chrome DevTools MCP 三大执行后端之间基于任务特征自动推荐最优方案，并支持多工具协同编排。…",
       "version": "1.0.0",
       "author": {
-        "name": ""
+        "name": "themusecatcher"
       },
       "keywords": [
-        "browser",
-        "toolkit"
+        "浏览器工具选型",
+        "Playwright",
+        "Chrome DevTools",
+        "页面性能调试",
+        "跨浏览器兼容",
+        "browser-toolkit"
       ],
-      "category": "productivity",
+      "category": "browser",
       "strict": false
     },
     {
@@ -58,13 +72,18 @@
       "description": "三级代码审查工作流。L1 基础审查（编码后即触发）→ L2 完整审查（Commit 前）→ L3 多视角深度审查（完整模式归档前）。可独立使用，也被 dev-flow 按需调用。",
       "version": "1.0.0",
       "author": {
-        "name": ""
+        "name": "themusecatcher"
       },
       "keywords": [
-        "code",
-        "review"
+        "代码审查",
+        "code review",
+        "L1审查",
+        "L2审查",
+        "L3审查",
+        "PR审查",
+        "代码质量"
       ],
-      "category": "productivity",
+      "category": "quality",
       "strict": false
     },
     {
@@ -73,13 +92,18 @@
       "description": "通用编码规范、最佳实践和设计模式，适用于 TypeScript、JavaScript、React 和 Node.js 开发。",
       "version": "1.0.0",
       "author": {
-        "name": ""
+        "name": "themusecatcher"
       },
       "keywords": [
-        "coding",
-        "standards"
+        "编码规范",
+        "最佳实践",
+        "TypeScript",
+        "JavaScript",
+        "React",
+        "Node.js",
+        "coding-standards"
       ],
-      "category": "productivity",
+      "category": "quality",
       "strict": false
     },
     {
@@ -88,13 +112,17 @@
       "description": "检测TypeScript/JavaScript文件中复杂度超过20的函数，基于ESLint complexity规则。",
       "version": "1.0.0",
       "author": {
-        "name": ""
+        "name": "themusecatcher"
       },
       "keywords": [
-        "complexity",
-        "optimizer"
+        "代码复杂度",
+        "圈复杂度",
+        "ESLint complexity",
+        "TypeScript",
+        "JavaScript",
+        "复杂度检测"
       ],
-      "category": "productivity",
+      "category": "quality",
       "strict": false
     },
     {
@@ -103,14 +131,17 @@
       "description": "基于本能的学习系统，通过钩子观察会话，创建带置信度评分的原子本能，并将其演化为技能/命令/Agent。v2.1 新增项目级本能隔离，防止跨项目污染。",
       "version": "1.0.0",
       "author": {
-        "name": ""
+        "name": "themusecatcher"
       },
       "keywords": [
-        "continuous",
-        "learning",
-        "v2"
+        "持续学习",
+        "本能学习",
+        "知识演化",
+        "技能自生成",
+        "项目级隔离",
+        "continuous-learning"
       ],
-      "category": "productivity",
+      "category": "knowledge",
       "strict": false
     },
     {
@@ -119,28 +150,37 @@
       "description": "方案分析与避坑指南。编码前的\"大脑\"——帮助正确分析问题、设计方案、规避已知错误模式。包含设计指南、样式分析、反模式清单三大模块。可被 dev-flow 步骤 3（制定方案）按需调用，也可独立使用。",
       "version": "1.0.0",
       "author": {
-        "name": ""
+        "name": "themusecatcher"
       },
       "keywords": [
-        "design",
-        "advisor"
+        "方案分析",
+        "避坑指南",
+        "设计模式",
+        "反模式",
+        "代码设计",
+        "design-advisor"
       ],
-      "category": "productivity",
+      "category": "requirements",
       "strict": false
     },
     {
       "name": "dev-flow",
       "source": "skills/dev-flow",
-      "description": "面向 AI 辅助编程的系统化开发工作流与代码规范。仅由用户**显式命令**（`dev-flow` / `dev:` / `--micro` / `--fast`）触发或活跃流程相关恢复触发；AI 不基于关键词主观判断自动触发。适用于功能开发、bug 修复、代码优化、样式调整、问题排查等所有代码开发任务。覆盖从需求输入到代码交付的完整生命周期，强制执行最小入侵、根因分析、反模式规避等核心原则。统一…",
+      "description": "面向 AI 辅助编程的系统化开发工作流与代码规范。仅由用户**显式命令**（`dev-flow` / `dev:` / `--micro` / `--fast`）触发或活跃流程相关恢复触发；AI 不基于关键词主观判断自动触发。适用于功能开发、bug 修复、代码优化、样式调整、问题排查等所有代码开发任务。覆盖从需求输入到代码交付的完整生命周期，强制执行最小入侵、根因分析、反模式规避等核心原则。…",
       "version": "1.0.0",
       "author": {
-        "name": ""
+        "name": "themusecatcher"
       },
       "keywords": [
-        "dev",
-        "flow"
+        "开发工作流",
+        "AI辅助编程",
+        "编码规范",
+        "bug修复",
+        "代码优化",
+        "功能开发",
+        "dev-flow"
       ],
-      "category": "productivity",
+      "category": "dev-tools",
       "strict": false
     },
     {
@@ -149,13 +189,18 @@
       "description": "DOM 定位与动画开发规范。适用于涉及 DOM 定位、PopperJS、CSS 动画、transform 的开发场景。涵盖渲染链路分析、调试日志、生命周期管理等核心规则。",
       "version": "1.0.0",
       "author": {
-        "name": ""
+        "name": "themusecatcher"
       },
       "keywords": [
-        "dom",
-        "animation"
+        "DOM定位",
+        "CSS动画",
+        "PopperJS",
+        "transform",
+        "渲染链路",
+        "动画开发",
+        "dom-animation"
       ],
-      "category": "productivity",
+      "category": "frontend",
       "strict": false
     },
     {
@@ -164,13 +209,17 @@
       "description": "Playwright 端到端测试模式，包括页面对象模型、配置管理、CI/CD 集成、产物管理和不稳定测试处理策略。",
       "version": "1.0.0",
       "author": {
-        "name": ""
+        "name": "themusecatcher"
       },
       "keywords": [
-        "e2e",
-        "testing"
+        "端到端测试",
+        "Playwright",
+        "页面对象模型",
+        "CI/CD",
+        "不稳定测试",
+        "e2e-testing"
       ],
-      "category": "productivity",
+      "category": "testing",
       "strict": false
     },
     {
@@ -179,13 +228,16 @@
       "description": "帮助用户发现和安装 Agent 技能。当用户询问\"怎么做 X\"、\"找一个做 X 的技能\"、\"有没有能...的技能\"或表示想扩展能力时使用。适用于用户寻找可能已有可安装技能的功能场景。",
       "version": "1.0.0",
       "author": {
-        "name": ""
+        "name": "themusecatcher"
       },
       "keywords": [
-        "find",
-        "skills"
+        "发现技能",
+        "安装技能",
+        "技能推荐",
+        "扩展能力",
+        "find-skills"
       ],
-      "category": "productivity",
+      "category": "dev-tools",
       "strict": false
     },
     {
@@ -194,13 +246,18 @@
       "description": "前端开发模式，涵盖 React、Next.js、状态管理、性能优化和 UI 最佳实践。",
       "version": "1.0.0",
       "author": {
-        "name": ""
+        "name": "themusecatcher"
       },
       "keywords": [
-        "frontend",
-        "patterns"
+        "前端模式",
+        "React",
+        "Next.js",
+        "状态管理",
+        "性能优化",
+        "UI最佳实践",
+        "frontend-patterns"
       ],
-      "category": "productivity",
+      "category": "frontend",
       "strict": false
     },
     {
@@ -209,42 +266,57 @@
       "description": "国际化翻译资源操作规范。涉及翻译 key 新增/修改/删除、多语言资源文件操作、i18n 配置时加载此 skill。",
       "version": "1.0.0",
       "author": {
-        "name": ""
+        "name": "themusecatcher"
       },
       "keywords": [
-        "i18n"
+        "国际化",
+        "翻译",
+        "多语言",
+        "i18n",
+        "翻译key",
+        "多语言资源"
       ],
-      "category": "productivity",
+      "category": "frontend",
       "strict": false
     },
     {
       "name": "issue-trace",
       "source": "skills/issue-trace",
-      "description": "问题深度根因定位与调用链追溯助手（纯分析场景）。从用户描述的问题表象出发，沿代码逻辑/数据流/依赖链反向追溯真实根因，输出根因定论 + 证据链 + 必要时附跨项目调用链可视化。【核心能力】(1) 表象 → 嫌疑点拆解；(2) 跨项目源码追溯（强制走『跨项目分析 reflex 三步法』）；(3) 根因定论 + 治本/治标双修复建议；(4) 不自动触发 dev-flow，看完输出由用户决定是否进入修…",
+      "description": "问题深度根因定位与调用链追溯助手（纯分析场景）。从用户描述的问题表象出发，沿代码逻辑/数据流/依赖链反向追溯真实根因，输出根因定论 + 证据链 + 必要时附跨项目调用链可视化。【核心能力】(1) 表象 → 嫌疑点拆解；(2) 跨项目源码追溯（强制走『跨项目分析 reflex 三步法』）；(3) 根因定论 + 治本/治标双修复建议；…",
       "version": "1.0.0",
       "author": {
-        "name": ""
+        "name": "themusecatcher"
       },
       "keywords": [
-        "issue",
-        "trace"
+        "根因定位",
+        "调用链追溯",
+        "问题排查",
+        "trace",
+        "深度分析",
+        "链路追踪",
+        "issue-trace"
       ],
-      "category": "productivity",
+      "category": "troubleshooting",
       "strict": false
     },
     {
       "name": "knowledge-loop",
       "source": "skills/knowledge-loop",
-      "description": "AI 驱动的本地代码知识沉淀与复用系统（仅本地 ~/.codebuddy/knowledge/，非 MCP 远程知识库）。自动沉淀每次开发中接触到的接口/数据模型/业务逻辑/UI/易错点等代码相关知识，在后续需求中自动检索复用，让 AI 越用越聪明。与 远程知识库 MCP（remote_kb） 远程知识库形成互补：本 skill 是 AI 的『肌肉记忆』（本地、可写、AI 沉淀），知识库平台 是…",
+      "description": "AI 驱动的本地代码知识沉淀与复用系统（仅本地 ~/.codebuddy/knowledge/，非 MCP 远程知识库）。自动沉淀每次开发中接触到的接口/数据模型/业务逻辑/UI/易错点等代码相关知识，在后续需求中自动检索复用，让 AI 越用越聪明。…",
       "version": "1.0.0",
       "author": {
-        "name": ""
+        "name": "themusecatcher"
       },
       "keywords": [
-        "knowledge",
-        "loop"
+        "代码知识",
+        "知识沉淀",
+        "本地知识库",
+        "dev:kb",
+        "dev:k",
+        "知识地图",
+        "knowledge-loop"
       ],
-      "category": "productivity",
+      "category": "knowledge",
       "strict": false
     },
     {
@@ -253,13 +325,18 @@
       "description": "PDF 全能工具包。读取/提取文本和表格、PDF 转图片、OCR 识别、提取嵌入图片、合并/拆分/旋转/水印/裁剪 PDF、创建新 PDF。当用户提到 .pdf 文件或需要处理 PDF 时自动加载。",
       "version": "1.0.0",
       "author": {
-        "name": ""
+        "name": "themusecatcher"
       },
       "keywords": [
-        "pdf",
-        "reader"
+        "PDF",
+        "读取PDF",
+        "PDF转图片",
+        "OCR",
+        "合并PDF",
+        "水印",
+        "pdf-reader"
       ],
-      "category": "productivity",
+      "category": "docs",
       "strict": false
     },
     {
@@ -268,13 +345,17 @@
       "description": "将 AI Agent 从被动执行者转变为主动合作伙伴，能预判需求并持续改进。集成 WAL 协议、工作缓冲区、上下文压缩恢复和经过实战验证的安全模式。Hal Stack 🦞 的一部分。",
       "version": "1.0.0",
       "author": {
-        "name": ""
+        "name": "halthelobster"
       },
       "keywords": [
-        "proactive",
-        "agent"
+        "主动Agent",
+        "AI合作伙伴",
+        "预判需求",
+        "上下文压缩",
+        "WAL协议",
+        "proactive-agent"
       ],
-      "category": "productivity",
+      "category": "dev-tools",
       "strict": false
     },
     {
@@ -283,28 +364,38 @@
       "description": "需求输入与理解工作流。收集、分析、确认需求的完整流程，支持 任务平台 链接、Figma 设计稿、口头描述、截图等多种输入方式。可被 dev-flow 阶段 0 按需调用，也可独立使用。触发关键词：帮我分析这个需求、走需求理解流程、帮我理解下这个 任务平台 单。",
       "version": "1.0.0",
       "author": {
-        "name": ""
+        "name": "themusecatcher"
       },
       "keywords": [
-        "requirement",
-        "intake"
+        "需求分析",
+        "需求理解",
+        "Figma设计稿",
+        "任务平台",
+        "需求确认",
+        "requirement-intake"
       ],
-      "category": "productivity",
+      "category": "requirements",
       "strict": false
     },
     {
       "name": "research-doc",
       "source": "skills/research-doc",
-      "description": "外网资料搜索与文档生成工具。根据用户指定的主题进行外网搜索、整理汇总，生成 PPT、PDF、Word、Excel 等格式的文档。触发场景包括但不限于：(1)调研/搜索/查找资料/分析/对比+主题；(2)给出/列出/梳理/整理+专业内容+并生成文档；(3)生成报告/做个PPT/导出Word/导出Excel；(4)针对XX产品/技术/领域+给出/总结+方法/标准/规范+生成文档。核心判断：只要任务涉…",
+      "description": "外网资料搜索与文档生成工具。根据用户指定的主题进行外网搜索、整理汇总，生成 PPT、PDF、Word、Excel 等格式的文档。触发场景包括但不限于：(1)调研/搜索/查找资料/分析/对比+主题；(2)给出/列出/梳理/整理+专业内容+并生成文档；(3)生成报告/做个PPT/导出Word/导出Excel；(4)针对XX产品/技术/领域+给出/总结+方法/标准/规范+生成文档。…",
       "version": "1.0.0",
       "author": {
-        "name": ""
+        "name": "themusecatcher"
       },
       "keywords": [
-        "research",
-        "doc"
+        "资料搜索",
+        "文档生成",
+        "调研报告",
+        "PPT",
+        "Word",
+        "Excel",
+        "外网搜索",
+        "research-doc"
       ],
-      "category": "productivity",
+      "category": "docs",
       "strict": false
     },
     {
@@ -313,13 +404,15 @@
       "description": "先搜索后编码的工作流。在编写自定义代码前先搜索已有工具、库和模式，调用研究者 Agent。",
       "version": "1.0.0",
       "author": {
-        "name": ""
+        "name": "themusecatcher"
       },
       "keywords": [
-        "search",
-        "first"
+        "先搜索后编码",
+        "工具复用",
+        "查找已有实现",
+        "search-first"
       ],
-      "category": "productivity",
+      "category": "dev-tools",
       "strict": false
     },
     {
@@ -328,13 +421,18 @@
       "description": "在添加认证、处理用户输入、管理密钥、创建 API 端点或实现支付/敏感功能时使用。提供全面的安全检查清单和安全模式。",
       "version": "1.0.0",
       "author": {
-        "name": ""
+        "name": "themusecatcher"
       },
       "keywords": [
-        "security",
-        "review"
+        "安全审查",
+        "认证",
+        "密钥管理",
+        "XSS防护",
+        "注入检测",
+        "安全模式",
+        "security-review"
       ],
-      "category": "productivity",
+      "category": "quality",
       "strict": false
     },
     {
@@ -343,29 +441,35 @@
       "description": "经验回顾与规则质量管理。提供三大能力：(1) 任务前经验回顾——从 .learnings/ 和规则文件中检索相关经验；(2) 规则质量审计——检测规则冲突/过时/重复；(3) 学习记录管理——查询/清理/promote .learnings/ 条目到规则。适用于 dev-flow 步骤 9 调用、用户主动请求回顾/审计、日常对话中检测到可改进模式。",
       "version": "1.0.0",
       "author": {
-        "name": ""
+        "name": "themusecatcher"
       },
       "keywords": [
-        "self",
-        "improving",
-        "agent"
+        "经验回顾",
+        "规则审计",
+        "自我改进",
+        "learnings管理",
+        "规则质量",
+        "self-improving-agent"
       ],
-      "category": "productivity",
+      "category": "knowledge",
       "strict": false
     },
     {
       "name": "smart-commit",
       "source": "skills/smart-commit",
-      "description": "智能 Commit Message 生成器。基于代码 Diff 自动生成符合 Conventional Commits 规范的 commit message，包含精简版和标准版两套 body。支持剪贴板复制、可选自动提交。可被 dev-flow 按需调用，也可在任何 Git 仓库中独立使用。触发关键词：commit message、提交信息、生成提交、smart commit、帮我提交、针对当前…",
+      "description": "智能 Commit Message 生成器。基于代码 Diff 自动生成符合 Conventional Commits 规范的 commit message，包含精简版和标准版两套 body。支持剪贴板复制、可选自动提交。可被 dev-flow 按需调用，也可在任何 Git 仓库中独立使用。…",
       "version": "1.0.0",
       "author": {
-        "name": ""
+        "name": "themusecatcher"
       },
       "keywords": [
-        "smart",
-        "commit"
+        "commit message",
+        "提交信息",
+        "Conventional Commits",
+        "自动生成commit",
+        "smart-commit"
       ],
-      "category": "productivity",
+      "category": "dev-tools",
       "strict": false
     },
     {
@@ -374,28 +478,36 @@
       "description": "通过 Tavily API 进行 AI 优化的网页搜索，为 AI Agent 返回简洁、相关的搜索结果。",
       "version": "1.0.0",
       "author": {
-        "name": ""
+        "name": "themusecatcher"
       },
       "keywords": [
-        "tavily",
-        "search"
+        "Tavily API",
+        "网页搜索",
+        "AI搜索",
+        "外网搜索",
+        "tavily-search"
       ],
-      "category": "productivity",
+      "category": "dev-tools",
       "strict": false
     },
     {
       "name": "tech-doc",
       "source": "skills/tech-doc",
-      "description": "文档处理中心。统一管理开发日志（devlog）、文档同步（doc-sync）和技术方案文档（tech-proposal）三大功能模块。支持独立使用和被 dev-flow 按需调用。根据用户意图自动路由到对应模块，按需加载避免 Token 浪费。技术方案模块同时支持在线发布（需配置 doc_platform_url）和本地模式（默认，输出到 ~/.codebuddy/tech-docs/）。触发关…",
+      "description": "文档处理中心。统一管理开发日志（devlog）、文档同步（doc-sync）和技术方案文档（tech-proposal）三大功能模块。支持独立使用和被 dev-flow 按需调用。根据用户意图自动路由到对应模块，按需加载避免 Token 浪费。技术方案模块同时支持在线发布（需配置 doc_platform_url）和本地模式（默认，输出到 ~/.codebuddy/tech-docs/）。…",
       "version": "1.0.0",
       "author": {
-        "name": ""
+        "name": "themusecatcher"
       },
       "keywords": [
-        "tech",
-        "doc"
+        "开发日志",
+        "devlog",
+        "文档同步",
+        "技术方案",
+        "doc-sync",
+        "tech-proposal",
+        "tech-doc"
       ],
-      "category": "productivity",
+      "category": "docs",
       "strict": false
     },
     {
@@ -404,13 +516,15 @@
       "description": "全面的验证系统，用于 AI 编码会话的质量保证。",
       "version": "1.0.0",
       "author": {
-        "name": ""
+        "name": "themusecatcher"
       },
       "keywords": [
-        "verification",
-        "loop"
+        "验证系统",
+        "质量保证",
+        "AI编码验证",
+        "verification-loop"
       ],
-      "category": "productivity",
+      "category": "testing",
       "strict": false
     },
     {
@@ -419,13 +533,17 @@
       "description": "验证管线工具箱：提供 Browser MCP / E2E / Runtime 三类按需验证手册 + 可程序化检查脚本（lock 文件、密钥泄漏、3 次熔断计数）。被 dev-flow step-6 在 V4/V5 等场景按需调用。",
       "version": "1.0.0",
       "author": {
-        "name": ""
+        "name": "themusecatcher"
       },
       "keywords": [
-        "verification",
-        "pipeline"
+        "验证管线",
+        "自动化验证",
+        "lock文件检查",
+        "密钥泄漏检查",
+        "熔断计数",
+        "verification-pipeline"
       ],
-      "category": "productivity",
+      "category": "testing",
       "strict": false
     }
   ]

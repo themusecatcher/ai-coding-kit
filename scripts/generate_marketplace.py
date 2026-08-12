@@ -4,11 +4,16 @@
 1) 根目录 .codebuddy-plugin/marketplace.json
 2) 每个 skill 目录下的 plugin.json
 
-数据来源：每个 skills/<name>/SKILL.md 头部的 YAML frontmatter（name + description）。
+数据来源：每个 skills/<name>/SKILL.md 头部的 YAML frontmatter。
+支持字段：name, description, category, keywords（均可在 frontmatter 中覆盖自动检测）。
 """
 
+from __future__ import annotations
+
 import json
+import os
 import re
+import subprocess
 import sys
 from pathlib import Path
 
@@ -16,69 +21,320 @@ ROOT = Path(__file__).resolve().parent.parent
 SKILLS_DIR = ROOT / "skills"
 MARKETPLACE_DIR = ROOT / ".codebuddy-plugin"
 
-MARKET_NAME = "skillhub"
+MARKET_NAME = "ai-coding-kit"
 MARKET_DESCRIPTION = "个人 Skill 集合，包含 dev-flow、code-review、smart-commit 等研发效能工具"
 MARKET_VERSION = "1.0.0"
-OWNER = {"name": "", "email": ""}
-DEFAULT_AUTHOR = {"name": ""}
 DEFAULT_CATEGORY = "productivity"
 
 
+def get_author_info() -> tuple[str, str]:
+    """获取作者名字和邮箱，优先级：org.yaml > git config > 环境变量 > 空字符串。
+
+    返回 (name, email)。"""
+    name = ""
+    email = ""
+
+    # 1) 从 org.yaml 逐行读取（精确匹配，避免注释被误读为值）
+    config_path = ROOT / "config" / "org.yaml"
+    if config_path.exists():
+        try:
+            for line in config_path.read_text(encoding="utf-8").splitlines():
+                stripped = line.strip()
+                if not stripped or stripped.startswith("#"):
+                    continue
+                # user_name: "value" — 提取双引号内的值，排除注释和长字符串
+                m = re.match(r'^user_name:\s*"(.+?)"', stripped)
+                if m:
+                    raw = m.group(1).strip()
+                    if raw and "#" not in raw and len(raw) <= 50:
+                        name = raw
+                    continue
+                # org_email_domain: "value"
+                m = re.match(r'^org_email_domain:\s*"(.+?)"', stripped)
+                if m:
+                    raw = m.group(1).strip()
+                    if raw and "#" not in raw and "." in raw and "@" not in raw \
+                            and raw != "example.com" and len(raw) <= 50:
+                        email = f"{name}@{raw}" if name else raw
+        except Exception:
+            pass
+
+    # 2) 从 git config 读取
+    if not name:
+        try:
+            name = subprocess.check_output(
+                ["git", "config", "user.name"], text=True, stderr=subprocess.DEVNULL
+            ).strip()
+        except Exception:
+            pass
+    if not email:
+        try:
+            email = subprocess.check_output(
+                ["git", "config", "user.email"], text=True, stderr=subprocess.DEVNULL
+            ).strip()
+        except Exception:
+            pass
+
+    # 3) 从环境变量读取
+    if not name:
+        name = os.environ.get("GIT_AUTHOR_NAME", "") or os.environ.get("USER", "")
+    if not email:
+        email = os.environ.get("GIT_AUTHOR_EMAIL", "")
+
+    return name, email
+
+
+# 在模块加载时获取一次，整个脚本共用
+_AUTHOR_NAME, _AUTHOR_EMAIL = get_author_info()
+OWNER = {"name": _AUTHOR_NAME, "email": _AUTHOR_EMAIL}
+DEFAULT_AUTHOR = {"name": _AUTHOR_NAME}
+
+# 分类检测关键词映射（按优先级排序，同分时靠前者优先）
+CATEGORY_RULES = [
+    ("browser", ["浏览器自动化", "网页交互", "页面导航", "表单填写",
+                  "浏览器自动化 CLI", "browser automation", "浏览器兼容"]),
+    ("frontend", ["前端开发", "React", "Next.js", "DOM 定位", "CSS 动画",
+                   "国际化翻译", "i18n", "多语言资源", "前端开发模式"]),
+    ("testing", ["端到端测试", "e2e testing", "Playwright", "验证管线", "验证系统",
+                  "自动化验证", "质量保证"]),
+    ("docs", ["文档生成", "PPT", "PDF 全能", "Word", "Excel", "开发日志",
+              "技术方案文档", "资料搜索", "外网资料", "文档处理"]),
+    ("quality", ["代码审查", "编码规范", "复杂度", "安全审查", "code review",
+                  "安全检查", "最佳实践"]),
+    ("dev-tools", ["开发工作流", "commit message", "先搜索后编码", "AI Agent",
+                    "CLI 工具", "发现技能", "安装技能", "智能 Commit", "AI 辅助编程"]),
+    ("requirements", ["需求输入", "方案分析", "Figma", "避坑指南", "需求理解"]),
+    ("knowledge", ["知识沉淀", "学习系统", "经验回顾", "本能", "规则质量"]),
+    ("troubleshooting", ["根因定位", "调用链追溯", "问题深度"]),
+]
+
+# 弱匹配词（单字或通用词，在无强匹配时才计入，避免误分类）
+WEAK_CATEGORY_KEYWORDS = {
+    "browser": ["浏览器", "browser", "截图"],
+    "frontend": ["前端", "DOM", "动画", "CSS", "国际化", "翻译 key", "样式"],
+    "testing": ["验证", "e2e"],
+    "docs": ["文档", ".pptx", ".pdf", ".docx", "devlog"],
+    "quality": ["安全模式"],
+    "dev-tools": ["commit", "提交信息"],
+    "requirements": ["设计稿", "Figma 设计"],
+    "knowledge": ["知识", "学习", "经验", "记忆"],
+    "troubleshooting": ["根因", "追溯", "定位", "调用链"],
+}
+
+
 def parse_frontmatter(skill_md: Path):
-    """从 SKILL.md 顶部 YAML frontmatter 提取 name 和 description。"""
+    """从 SKILL.md 顶部 YAML frontmatter 提取字段。
+    返回 (name, description, category, keywords, author)，各字段可为 None 表示未定义。"""
     text = skill_md.read_text(encoding="utf-8")
     m = re.match(r"^---\s*\n(.*?)\n---\s*\n", text, re.DOTALL)
     if not m:
-        return None, None
+        return None, None, None, None, None
     fm = m.group(1)
+
     name_m = re.search(r"^name:\s*(.+)$", fm, re.MULTILINE)
     name = name_m.group(1).strip().strip('"').strip("'") if name_m else None
 
-    # description 可能是多种 YAML 格式：
-    # 1) 单行: description: 一些文字
-    # 2) 多行块: description: |  或 description: >
-    # 3) 多行续行: description:\n  缩进行（无 | 或 >）
-    description = ""
+    # description（支持单行/多行块/缩进续行）
+    description = _parse_description(fm)
+
+    # category
+    cat_m = re.search(r"^category:\s*(.+)$", fm, re.MULTILINE)
+    category = cat_m.group(1).strip().strip('"').strip("'") if cat_m else None
+
+    # keywords（支持 YAML 流式列表 [a, b] 和块式列表 - a \n - b）
+    keywords = _parse_keywords_from_frontmatter(fm)
+
+    # author（单个字符串，如 "name <email>" 或纯 name）
+    author = None
+    author_m = re.search(r"^author:\s*(.+)$", fm, re.MULTILINE)
+    if author_m:
+        author_raw = author_m.group(1).strip().strip('"').strip("'")
+        if author_raw and author_raw != "ECC":
+            author = author_raw
+
+    return name, description, category, keywords, author
+
+
+def _parse_description(fm: str) -> str:
+    """从 frontmatter 文本中解析 description 字段。"""
     desc_m = re.search(r"^description:\s*(.*)$", fm, re.MULTILINE)
-    if desc_m:
-        first_line = desc_m.group(1).strip()
-        # 找到 description: 之后的所有缩进行
-        rest_start = desc_m.end()
-        rest_text = fm[rest_start:]
-        # 收集后续缩进行（以空格开头的行）
-        indented_lines = []
-        for line in rest_text.split("\n"):
-            if line and (line[0] == " " or line[0] == "\t"):
-                indented_lines.append(line.strip())
-            elif line.strip() == "":
-                continue  # 跳过空行
-            else:
-                break  # 遇到非缩进行则停止
-
-        if first_line in ("|", ">", "|+", ">+", "|-", ">-"):
-            # 块标量，内容全在缩进行
-            raw = " ".join(indented_lines)
-        elif first_line:
-            # 单行或首行有内容 + 后续缩进续行
-            all_parts = [first_line] + indented_lines
-            raw = " ".join(all_parts)
-        else:
-            # description: 后面直接换行，内容在缩进行
-            raw = " ".join(indented_lines)
-
-        description = raw.strip().strip('"').strip("'")
-    return name, description
-
-
-def truncate(text: str, limit: int = 200) -> str:
-    """市场清单里的描述做长度截断，避免太长。"""
-    if not text:
+    if not desc_m:
         return ""
-    return text if len(text) <= limit else text[: limit - 1] + "…"
+
+    first_line = desc_m.group(1).strip()
+    rest_start = desc_m.end()
+    rest_text = fm[rest_start:]
+
+    indented_lines = []
+    for line in rest_text.split("\n"):
+        if line and (line[0] == " " or line[0] == "\t"):
+            indented_lines.append(line.strip())
+        elif line.strip() == "":
+            continue
+        else:
+            break
+
+    if first_line in ("|", ">", "|+", ">+", "|-", ">-"):
+        raw = " ".join(indented_lines)
+    elif first_line:
+        all_parts = [first_line] + indented_lines
+        raw = " ".join(all_parts)
+    else:
+        raw = " ".join(indented_lines)
+
+    return raw.strip().strip('"').strip("'")
+
+
+def _parse_keywords_from_frontmatter(fm: str) -> list | None:
+    """从 frontmatter 中解析 keywords 字段。支持两种 YAML 列表格式。"""
+    # 流式列表: keywords: [a, b, c]
+    kw_block = re.search(r"^keywords:\s*\[(.*?)\]", fm, re.MULTILINE)
+    if kw_block:
+        kw_text = kw_block.group(1)
+        keywords = [k.strip().strip('"').strip("'") for k in kw_text.split(",") if k.strip()]
+        return keywords if keywords else None
+
+    # 块式列表: keywords:\n  - a\n  - b
+    kw_list_m = re.search(r"^keywords:\s*\n((?:\s+-\s+.+\n?)+)", fm, re.MULTILINE)
+    if kw_list_m:
+        kw_lines = re.findall(r"^\s+-\s+(.+)$", kw_list_m.group(1), re.MULTILINE)
+        keywords = [k.strip().strip('"').strip("'") for k in kw_lines if k.strip()]
+        return keywords if keywords else None
+
+    return None
+
+
+def smart_truncate(text: str, limit: int = 200) -> str:
+    """智能截断：优先在句子边界切断，保留完整语义。"""
+    if not text or len(text) <= limit:
+        return text
+
+    truncated = text[:limit]
+
+    # 按优先级找句子边界
+    for char in ["。", "！", "？"]:
+        idx = truncated.rfind(char)
+        if idx > limit * 0.55:
+            return truncated[:idx + 1] + "…"
+
+    for char in ["；", "）", ")"]:
+        idx = truncated.rfind(char)
+        if idx > limit * 0.55:
+            return truncated[:idx + 1] + "…"
+
+    for char in ["，", "、"]:
+        idx = truncated.rfind(char)
+        if idx > limit * 0.55:
+            return truncated[:idx + 1] + "…"
+
+    # 英文空格
+    idx = truncated.rfind(" ")
+    if idx > limit * 0.55:
+        return truncated[:idx] + "…"
+
+    return truncated.rstrip() + "…"
+
+
+def detect_category(slug: str, name: str, description: str) -> str:
+    """根据 slug + name + description 自动检测分类（打分制，同分时按 CATEGORY_RULES 顺序优先）。
+    优先级：frontmatter category > 描述关键词打分 + slug 加权 > 默认值。"""
+    text = f"{slug} {name} {description}".lower()
+
+    # 强匹配词得分 2，弱匹配词得分 1
+    scores: dict[str, int] = {}
+    for cat, strong_kws in CATEGORY_RULES:
+        strong_hits = sum(1 for kw in strong_kws if kw.lower() in text)
+        if strong_hits > 0:
+            scores[cat] = strong_hits * 2
+
+    for cat, weak_kws in WEAK_CATEGORY_KEYWORDS.items():
+        weak_hits = sum(1 for kw in weak_kws if kw.lower() in text)
+        if weak_hits > 0:
+            scores[cat] = scores.get(cat, 0) + weak_hits
+
+    # slug 匹配加权：若 slug 中包含分类的强/弱关键词，额外 +3
+    slug_lower = slug.lower()
+    for cat, strong_kws in CATEGORY_RULES:
+        for kw in strong_kws:
+            if kw.lower() in slug_lower:
+                scores[cat] = scores.get(cat, 0) + 3
+                break
+    for cat, weak_kws in WEAK_CATEGORY_KEYWORDS.items():
+        for kw in weak_kws:
+            if kw.lower() in slug_lower:
+                scores[cat] = scores.get(cat, 0) + 3
+                break
+
+    if not scores:
+        return "productivity"
+
+    # 返回得分最高的分类；同分时靠前者（CATEGORY_RULES 顺序）优先
+    best_cat = max(CATEGORY_RULES, key=lambda item: scores.get(item[0], 0))
+    return best_cat[0]
+
+
+def extract_keywords(slug: str, description: str) -> list:
+    """从 description 中智能提取中文关键词 + slug 英文词作为补充。
+    优先级：frontmatter keywords > 描述中"触发关键词："段落 > 首句完整中文词 > slug 拆词。"""
+    keywords: list[str] = []
+
+    # 1) 解析"触发关键词："段落
+    m = re.search(r"触发关键词[：:]\s*(.+?)(?:\n|$)", description)
+    if m:
+        kw_text = m.group(1)
+        parts = re.split(r"[，,、；;]", kw_text)
+        for p in parts:
+            p = p.strip().strip('"').strip("'").rstrip("。.等")
+            if p and len(p) >= 2 and p not in keywords:
+                keywords.append(p)
+
+    # 2) 解析"触发场景："段落
+    m = re.search(r"触发场景[：:]\s*(.+?)(?:\n|$)", description)
+    if m:
+        kw_text = m.group(1)
+        parts = re.split(r"[，,、；;]", kw_text)
+        for p in parts:
+            p = p.strip().strip('"').strip("'").rstrip("。.")
+            if p and len(p) >= 2 and p not in keywords:
+                keywords.append(p)
+
+    # 3) 从首句提取关键短语（仅当步骤 1/2 未提取到关键词时作为补充）
+    if not keywords:
+        first_sentence = re.split(r"[。！？\n]", description)[0]
+        # 按逗号/顿号拆段，取有意义的短段（2-12 字）作为关键词
+        segments = re.split(r"[，,、；;]", first_sentence)
+        stop_words = {
+            "用于", "包括", "支持", "提供", "适用", "触发", "通过", "进行",
+            "一个", "这个", "所有", "各种", "可以", "需要", "使用", "以及",
+            "涵盖", "涉及", "包含", "基于", "面向", "帮助", "实现", "作为",
+            "适用于", "检测", "读取", "创建", "编辑", "操作", "生成", "处理",
+            "和设计", "与规则", "与文档", "等格式", "三大", "核心", "不同",
+            "统一", "全面", "完整", "管理", "配置", "系统", "发现", "安装",
+            "查找", "搜索", "总结", "整理", "汇总", "输出", "输入", "调用",
+            "加载", "具有", "集成", "采用", "按照", "分为", "主要", "并将",
+            "能预判", "能预判需求", "并持续", "并持续改进",
+        }
+        seen: set[str] = set()
+        for seg in segments:
+            seg = seg.strip().strip('"').strip("'")
+            # 保留 2-12 字符的有意义短语（覆盖中英文混合词如 "TypeScript"）
+            if 2 <= len(seg) <= 12 and seg not in stop_words and seg not in seen:
+                seen.add(seg)
+                keywords.append(seg)
+                if len(keywords) >= 4:
+                    break
+
+    # 4) 补充 slug 英文关键词
+    en_keywords = [w for w in re.split(r"[-_]+", slug) if w and len(w) > 1]
+    for kw in en_keywords:
+        if kw not in keywords:
+            keywords.append(kw)
+
+    return keywords[:8]
 
 
 def build_keywords(slug: str) -> list:
-    """简单基于 slug 拆分关键词。"""
+    """简单基于 slug 拆分关键词（兼容旧接口）。"""
     return [w for w in re.split(r"[-_]+", slug) if w]
 
 
@@ -86,10 +342,8 @@ def is_low_quality_description(name: str, description: str) -> bool:
     """检测描述是否为低质量占位符。"""
     if not description:
         return True
-    # 匹配 "{name} skill" 这类占位模式
     if re.match(r"^[\w-]+\s+skill$", description, re.IGNORECASE):
         return True
-    # 描述太短（少于 10 个字符）
     if len(description) < 10:
         return True
     return False
@@ -99,6 +353,7 @@ def main():
     plugins_meta = []
     skipped = []
     warnings = []
+    category_stats = {}  # 统计各分类数量
 
     for skill_dir in sorted(SKILLS_DIR.iterdir()):
         if not skill_dir.is_dir():
@@ -108,12 +363,23 @@ def main():
             skipped.append(skill_dir.name)
             continue
 
-        name_in_fm, description = parse_frontmatter(skill_md)
+        fm_name, description, fm_category, fm_keywords, fm_author = parse_frontmatter(skill_md)
         slug = skill_dir.name
-        # 优先用 frontmatter 里的 name；否则用目录名
-        plugin_name = name_in_fm or slug
+
+        # 名称：优先 frontmatter name，否则用目录名
+        plugin_name = fm_name or slug
         if not description:
             description = f"{plugin_name} skill"
+
+        # 作者：优先 frontmatter author，否则用默认作者
+        author = {"name": fm_author} if fm_author else DEFAULT_AUTHOR
+
+        # 分类：优先 frontmatter category，否则自动检测
+        category = fm_category or detect_category(slug, plugin_name, description)
+        category_stats[category] = category_stats.get(category, 0) + 1
+
+        # 关键词：优先 frontmatter keywords，否则从描述中智能提取
+        keywords = fm_keywords or extract_keywords(slug, description)
 
         # 校验 description 质量
         if is_low_quality_description(plugin_name, description):
@@ -127,9 +393,9 @@ def main():
             "name": plugin_name,
             "version": "1.0.0",
             "description": description,
-            "author": DEFAULT_AUTHOR,
-            "keywords": build_keywords(slug),
-            "category": DEFAULT_CATEGORY,
+            "author": author,
+            "keywords": keywords,
+            "category": category,
             "skills": ["./SKILL.md"],
         }
         (skill_dir / "plugin.json").write_text(
@@ -137,15 +403,15 @@ def main():
             encoding="utf-8",
         )
 
-        # 2) 收集到 marketplace.json
+        # 2) 收集到 marketplace.json（描述使用智能截断）
         plugins_meta.append({
             "name": plugin_name,
             "source": f"skills/{slug}",
-            "description": truncate(description, 200),
+            "description": smart_truncate(description, 200),
             "version": "1.0.0",
-            "author": DEFAULT_AUTHOR,
-            "keywords": build_keywords(slug),
-            "category": DEFAULT_CATEGORY,
+            "author": author,
+            "keywords": keywords,
+            "category": category,
             "strict": False,
         })
 
@@ -163,10 +429,14 @@ def main():
         encoding="utf-8",
     )
 
+    # 输出统计
     print(f"✅ Generated {len(plugins_meta)} plugin.json files")
     if skipped:
         print(f"⏭️  Skipped (no SKILL.md): {skipped}")
     print(f"📦 Marketplace: {MARKETPLACE_DIR / 'marketplace.json'}")
+    print(f"\n📊 分类分布：")
+    for cat, count in sorted(category_stats.items(), key=lambda x: -x[1]):
+        print(f"   {cat}: {count}")
 
     # 校验报告
     if warnings:

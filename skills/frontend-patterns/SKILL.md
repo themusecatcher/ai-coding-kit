@@ -2,6 +2,7 @@
 name: frontend-patterns
 description: 前端开发模式，涵盖 React、Next.js、状态管理、性能优化和 UI 最佳实践。
 origin: ECC
+keywords: ["前端模式", "React", "Next.js", "状态管理", "性能优化", "UI最佳实践", "frontend-patterns"]
 ---
 
 # Frontend Development Patterns

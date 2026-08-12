@@ -1,6 +1,7 @@
 ---
 name: complexity-optimizer
 description: 检测TypeScript/JavaScript文件中复杂度超过20的函数，基于ESLint complexity规则。
+keywords: ["代码复杂度", "圈复杂度", "ESLint complexity", "TypeScript", "JavaScript", "复杂度检测"]
 ---
 
 # 复杂度优化助手

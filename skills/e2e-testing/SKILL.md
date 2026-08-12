@@ -2,6 +2,7 @@
 name: e2e-testing
 description: Playwright 端到端测试模式，包括页面对象模型、配置管理、CI/CD 集成、产物管理和不稳定测试处理策略。
 origin: ECC
+keywords: ["端到端测试", "Playwright", "页面对象模型", "CI/CD", "不稳定测试", "e2e-testing"]
 ---
 
 # E2E Testing Patterns

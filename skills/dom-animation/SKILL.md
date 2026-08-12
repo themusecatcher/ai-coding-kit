@@ -1,6 +1,7 @@
 ---
 name: dom-animation
 description: DOM 定位与动画开发规范。适用于涉及 DOM 定位、PopperJS、CSS 动画、transform 的开发场景。涵盖渲染链路分析、调试日志、生命周期管理等核心规则。
+keywords: ["DOM定位", "CSS动画", "PopperJS", "transform", "渲染链路", "动画开发", "dom-animation"]
 ---
 
 # DOM 定位与动画开发规范

@@ -2,6 +2,7 @@
 name: verification-loop
 description: "全面的验证系统，用于 AI 编码会话的质量保证。"
 origin: ECC
+keywords: ["验证系统", "质量保证", "AI编码验证", "verification-loop"]
 ---
 
 # Verification Loop Skill

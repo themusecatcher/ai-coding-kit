@@ -2,6 +2,7 @@
 name: coding-standards
 description: 通用编码规范、最佳实践和设计模式，适用于 TypeScript、JavaScript、React 和 Node.js 开发。
 origin: ECC
+keywords: ["编码规范", "最佳实践", "TypeScript", "JavaScript", "React", "Node.js", "coding-standards"]
 ---
 
 # Coding Standards & Best Practices

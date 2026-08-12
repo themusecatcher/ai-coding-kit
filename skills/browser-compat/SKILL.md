@@ -7,6 +7,7 @@ description: |
   触发关键词：检查兼容性、兼容性审查、浏览器兼容、can I use、caniuse、
   baseline 检查、browserslist 检查、批量扫描兼容性、升级 browserslist、
   这段代码兼容吗、Safari 12 支持吗、检查 diff 兼容性。
+keywords: ["浏览器兼容性", "caniuse", "polyfill", "baseline检查", "browserslist", "browser-compat"]
 ---
 
 # 浏览器兼容性检查 Skill

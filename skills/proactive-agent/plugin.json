@@ -3,13 +3,17 @@
   "version": "1.0.0",
   "description": "将 AI Agent 从被动执行者转变为主动合作伙伴，能预判需求并持续改进。集成 WAL 协议、工作缓冲区、上下文压缩恢复和经过实战验证的安全模式。Hal Stack 🦞 的一部分。",
   "author": {
-    "name": ""
+    "name": "halthelobster"
   },
   "keywords": [
-    "proactive",
-    "agent"
+    "主动Agent",
+    "AI合作伙伴",
+    "预判需求",
+    "上下文压缩",
+    "WAL协议",
+    "proactive-agent"
   ],
-  "category": "productivity",
+  "category": "dev-tools",
   "skills": [
     "./SKILL.md"
   ]

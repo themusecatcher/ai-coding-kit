@@ -3,13 +3,17 @@
   "version": "1.0.0",
   "description": "需求输入与理解工作流。收集、分析、确认需求的完整流程，支持 任务平台 链接、Figma 设计稿、口头描述、截图等多种输入方式。可被 dev-flow 阶段 0 按需调用，也可独立使用。触发关键词：帮我分析这个需求、走需求理解流程、帮我理解下这个 任务平台 单。",
   "author": {
-    "name": ""
+    "name": "themusecatcher"
   },
   "keywords": [
-    "requirement",
-    "intake"
+    "需求分析",
+    "需求理解",
+    "Figma设计稿",
+    "任务平台",
+    "需求确认",
+    "requirement-intake"
   ],
-  "category": "productivity",
+  "category": "requirements",
   "skills": [
     "./SKILL.md"
   ]

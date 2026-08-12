@@ -3,13 +3,18 @@
   "version": "1.0.0",
   "description": "通用编码规范、最佳实践和设计模式，适用于 TypeScript、JavaScript、React 和 Node.js 开发。",
   "author": {
-    "name": ""
+    "name": "themusecatcher"
   },
   "keywords": [
-    "coding",
-    "standards"
+    "编码规范",
+    "最佳实践",
+    "TypeScript",
+    "JavaScript",
+    "React",
+    "Node.js",
+    "coding-standards"
   ],
-  "category": "productivity",
+  "category": "quality",
   "skills": [
     "./SKILL.md"
   ]

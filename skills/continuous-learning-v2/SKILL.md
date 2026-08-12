@@ -3,6 +3,7 @@ name: continuous-learning-v2
 description: "基于本能的学习系统，通过钩子观察会话，创建带置信度评分的原子本能，并将其演化为技能/命令/Agent。v2.1 新增项目级本能隔离，防止跨项目污染。"
 origin: ECC
 version: 2.1.0
+keywords: ["持续学习", "本能学习", "知识演化", "技能自生成", "项目级隔离", "continuous-learning"]
 ---
 
 # Continuous Learning v2.1 - Instinct

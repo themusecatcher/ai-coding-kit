@@ -1,6 +1,7 @@
 ---
 name: find-skills
 description: 帮助用户发现和安装 Agent 技能。当用户询问"怎么做 X"、"找一个做 X 的技能"、"有没有能...的技能"或表示想扩展能力时使用。适用于用户寻找可能已有可安装技能的功能场景。
+keywords: ["发现技能", "安装技能", "技能推荐", "扩展能力", "find-skills"]
 ---
 
 # Find Skills

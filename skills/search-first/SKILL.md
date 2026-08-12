@@ -2,6 +2,7 @@
 name: search-first
 description: 先搜索后编码的工作流。在编写自定义代码前先搜索已有工具、库和模式，调用研究者 Agent。
 origin: ECC
+keywords: ["先搜索后编码", "工具复用", "查找已有实现", "search-first"]
 ---
 
 # /search-first — Research Before You Code

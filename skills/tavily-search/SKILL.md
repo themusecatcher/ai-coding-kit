@@ -3,6 +3,7 @@ name: tavily-search
 description: 通过 Tavily API 进行 AI 优化的网页搜索，为 AI Agent 返回简洁、相关的搜索结果。
 homepage: https://tavily.com
 metadata: {"clawdbot":{"emoji":"🔍","requires":{"bins":["node"],"env":["TAVILY_API_KEY"]},"primaryEnv":"TAVILY_API_KEY"}}
+keywords: ["Tavily API", "网页搜索", "AI搜索", "外网搜索", "tavily-search"]
 ---
 
 # Tavily 搜索
