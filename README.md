@@ -23,7 +23,7 @@ ai-coding-kit/
 
 AI 技能集合，每个 Skill 是一个独立目录，包含 `SKILL.md` 主文件及可选的 `references/`、`scripts/`、`templates/` 等子目录。
 
-仓库共托管 **28 个 Skills**，完整清单：
+仓库共托管 **29 个 Skills**，完整清单：
 
 | Skill | 简介 |
 |-------|------|
@@ -55,6 +55,7 @@ AI 技能集合，每个 Skill 是一个独立目录，包含 `SKILL.md` 主文�
 | `tavily-search` | AI 优化的网页搜索 |
 | `continuous-learning-v2` | 基于本能的学习系统 |
 | `proactive-agent` | 主动式 AI Agent |
+| `dev-comp` | vue-amazing-ui 组件库开发迭代工作流 |
 
 > 排名不分先后。前 15 个（`dev-flow` ~ `browser-toolkit`）为默认安装项，其余为独立 Skill，通过 `--all-repo` 安装。
 
