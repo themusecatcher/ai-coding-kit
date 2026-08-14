@@ -8,7 +8,7 @@
 **状态**：自建（借设计不借模板）。
 
 - dev-flow 模板 400+ 行，绑 TAPD/iWiki/跨项目/门控字段，对开源组件库基本不适用
-- dev-comp 自建精简版（40 行），只留：组件名/phase/参考源/进度/接续指引/决策记录/可复用资产索引
+- dev-comp 自建精简版（40 行），只留：组件名/phase/参考源/进度/接续指引/决策记录/可复用资产索引/对齐清单（API 四维 + Demo 用例）/naive 差异登记/项目特有需求
 - 命名沿用 `vaui-{组件名}-{YYYYMMDD}.md`，存储沿用 `~/.codebuddy/working-context/`
 - 不调 `validate-working-context.sh`，不做 JSON Schema 校验
 
@@ -50,10 +50,19 @@
 
 **降级**：smart-commit 未安装→AI 手写 message 供用户复制，不自动提交。
 
+## 交互验收 e2e
+
+**状态**：直接调用 `use_skill('e2e-testing')`（独立 skill），可选增强。
+
+- 阶段 5 浏览器实测后，对关键交互用例（展开收起/受控更新/键盘操作等）跑 playwright 用例
+- 基线仍是手动「交互操作清单」（`references/checklists.md` §交互操作清单），e2e 只是增强，不替代基线
+
+**降级**：e2e-testing 未安装→跳过并提示「e2e-testing 未安装，交互验收按操作清单手动勾销，建议安装以自动化关键交互用例」。
+
 ## 分享 skill 时
 
 其他人复用本 skill 需：
 
 1. 修改 `SKILL.md` §个人化配置区（项目根/参考源本地路径）
-2. 确保以下独立 skill 已安装（或接受降级）：`tech-doc` / `knowledge-loop` / `smart-commit`
+2. 确保以下独立 skill 已安装（或接受降级）：`tech-doc` / `knowledge-loop` / `smart-commit` / `e2e-testing`（可选）
 3. 本 skill 本身只需复制 `~/.codebuddy/skills/dev-comp/` 目录即可，无需改任何配置

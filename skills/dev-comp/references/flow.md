@@ -13,15 +13,16 @@
    - 命中 → 读取该文件，恢复 phase/进度/决策，跳到「下一步动作」继续，**不新建**
    - 未命中 → 用 `templates/working-context-lite.tpl.md` 新建（命名：`vaui-{组件名}-{YYYYMMDD}.md`）
 2. **复杂度与分阶段决策**：
-   - 简单组件（单文件、无子组件、API < 8个）→ 一次做完，不分阶段
+   - 简单组件（单文件、无子组件、API < 8个）→ 单轮做完，不分 P（Gate 仍逐阶段确认，不因单轮而跳过）
    - 复杂组件（多子组件/递归/多模式，如 Menu/Table/Cascader）→ **必须分阶段 P1-Pn**，本轮只做一个 P，避免半成品
    - 分阶段时在工作上下文「阶段规划」表里写清每个 P 的范围
 3. **列 plan**：用 `todo_write` 把本轮要做的事拆成 todo（对应阶段 1-5 的具体动作）
 4. **确认参考源与 API 风格**：读 `references/reference-sources.md`，确定主参考（antdv/naive）与 API 风格，写入工作上下文
+5. **项目特有需求确认**：向用户确认参考库没有、但项目需要的额外功能/属性/行为，登记到工作上下文「项目特有需求」区——**验收基准 = 对齐清单 + 项目特有需求**，两源合并，避免「参考库没有的功能」成为盲区
 
 **产出**：工作上下文文件 + todo plan + 分阶段决策。
 
-**🚦 Gate 0**：输出阶段 0 报告（组件名 / 分阶段计划 / 主参考源）→ 弹 `ask_followup_question`（✅ 继续 / ⏸️ 暂停 / ⬅️ 回退）→ 用户确认后进入阶段 1。未确认不得继续。
+**🚦 Gate 0**：输出阶段 0 报告（组件名 / 分阶段计划 / 主参考源 / 项目特有需求）→ 弹 `ask_followup_question`（✅ 继续 / ⏸️ 暂停 / ⬅️ 回退）→ 用户确认后进入阶段 1。未确认不得继续。
 
 ---
 
@@ -52,12 +53,16 @@
 
 **目标**：实现组件功能，对齐参考库，最大化复用项目资产。
 
-1. **先搜索后编码（红线）**：读 `references/reusable-assets.md`，需要的能力（动画/浮层/主题/尺寸监听/工具函数）**先查项目已有**，有则复用，无则再造。必要时 `use_skill('knowledge-loop')` 检索历史组件经验。
+1. **先搜索后编码（红线）**：读 `references/reusable-assets.md`，需要的**功能/样式/布局/逻辑**（动画/浮层/主题/尺寸监听/工具函数/滚动条/暂无数据/清除按钮等）**先查项目已有**，有则直接复用（引用组件或抽取逻辑），无则按复用优先级参考实现，**禁止重复开发**。必要时 `use_skill('knowledge-loop')` 检索历史组件经验。
+   **实现方式复用优先级**（读 `references/reference-sources.md` §实现方式复用优先级）：项目已有组件/功能/样式/布局/逻辑 > antdv 源码实现 > naive 源码实现 > 自研，逐级确认无可用实现后才允许自研。
 2. **对照参考库**（读 `references/reference-sources.md`）：
    a) 读取源码：`{REF_ANTDV_LOCAL}/components/{组件名}/src/*.tsx` 与 `interface.ts`（API/Props/默认值/字段名权威源；Menu 例：`Menu.tsx` / `interface.ts` / `SubMenu.tsx`）
    b) 读取**全部 demo**：`{REF_ANTDV_LOCAL}/components/{组件名}/demo/*.vue`（用户视角用例，逐个理解数据与交互）
-   c) 生成两份清单：API Props 对比清单 + Demo 用例对齐清单
-   d) 对齐顺序：先 API 接口（Props/Events/默认值/字段名）→ 再逐个 Demo 用例
+   c) 生成完备性基线（**写入工作上下文「对齐清单」区**，`templates/working-context-lite.tpl.md` 已含该区域；接续时直接读取，不重做）：
+      - **API 四维对比清单**：Props / Events（事件名 + 回调参数结构）/ Slots（插槽名 + 参数）/ Expose（暴露方法 + 签名），逐项对比类型/默认值/必填/字段名
+      - **Demo 用例对齐清单**：官网全部展示用例逐一列出（顺序与官网一致）
+      - **naive 差异登记**（读 `references/reference-sources.md` §naive 差异登记）：naive 也有该组件时，登记「naive 有而 antdv 无」的特性到工作上下文「naive 差异登记」区，逐项给出决策（对齐 / 不覆盖（理由）/ 待用户确认）
+   d) 对齐顺序：先 API 四维接口（Props/Events/Slots/Expose/默认值/字段名）→ 再逐个 Demo 用例
    e) 复杂功能参考源码算法思路（改写为项目风格，禁整段拷贝带版权代码）
 3. **编码红线**：
    - 主题 **light/dark 双份**（沿用 `useInject('组件名')` + ConfigProvider）
@@ -68,23 +73,28 @@
 
 **产出**：功能完整的组件本体 + 类型。
 
-**🚦 Gate 2**：输出阶段 2 报告（改动文件清单 + **API Props 对比清单** + **Demo 用例对齐清单** + 默认值/字段名对齐检查 + vue-tsc/ESLint 结果）→ 弹 `ask_followup_question`（✅ 继续 / ⏸️ 暂停 / ⬅️ 回退）→ 用户确认后进入阶段 3。未确认不得继续。
+**🚦 Gate 2**：输出阶段 2 报告（改动文件清单 + **API 四维对比清单** + **Demo 用例对齐清单** + **naive 差异登记** + 默认值/字段名对齐检查 + vue-tsc/ESLint 结果）→ 弹 `ask_followup_question`（✅ 继续 / ⏸️ 暂停 / ⬅️ 回退）→ 用户确认后进入阶段 3。未确认不得继续。
 
 ---
 
 ## 阶段 3 · 演示用例
 
-**目标**：在 `src/views` 建演示页，作为验收基准（阶段 4 文档会复用它）。
+**目标**：在 `src/views` 建演示页，作为验收基准（阶段 4 文档会复用它）。演示页 = **antdv 官网展示用例的完整复制 + 本项目组件对照**。
 
 1. 建 `src/views/{组件名}/`：
-   - `Index.vue`：用 `templates/demo.tpl.vue` 作骨架，覆盖组件主要用法
+   - `Index.vue`：用 `templates/demo.tpl.vue` 作骨架（结构要求见下）
    - `index.ts`：`export default { title: '{中文名}' }`（路由自动注册，无需改 router）
-2. **并排真身对照**：演示页中把antdv `<a-xxx>` 或 naive `<n-xxx>` 真身与本项目 `<Xxx>` 并排放，视觉/交互 1:1 对照——这是**验收标准**
-3. 覆盖用例：基础用法、各props、各事件、边界（禁用/空数据/极值）、主题切换
+2. **用例结构（核心要求）**：
+   - **完整复制 antdv 官网全部展示用例**：官网组件页（如 `https://www.antdv.com/components/{组件名}-cn/`）的每个展示用例都要在演示页中有对应分区，**分区顺序与官网展示用例顺序一致**（1、2、3… 按官网原序编号），只保留**用例标题 + 必要描述**（仿照项目其他组件演示页的写法，不复制大段官网文案）
+   - **每个分区两个组件对照**：①「本项目组件」——本项目 `<Xxx>` 实现同一场景（**左/上**）；②「antd 官网组件」——原样复制官网该用例的代码与数据（**右/下**）
+   - 两组件并排对照，行为/视觉 1:1 一致——这是**验收标准**
+   - 项目特有场景（主题切换 light/dark 等官网没有的用例）单独追加分区
+3. **引入真身**：演示页 dev 环境直接 `import { Xxx as AXxx } from 'ant-design-vue'`（项目 devDependencies 已有），本地 clone 不存在时同样可用
+4. 覆盖要求：官网全部用例（不遗漏、**顺序一致**）+ 边界（禁用/空数据/极值）+ 主题切换
 
 **产出**：可在 `pnpm dev` 中访问的演示页。
 
-**🚦 Gate 3**：输出阶段 3 报告（演示页用例清单 + 与 antdv demo 的覆盖对照表 + 浏览器实测截图）→ 弹 `ask_followup_question`（✅ 继续 / ⏸️ 暂停 / ⬅️ 回退）→ 用户确认后进入阶段 4。未确认不得继续。
+**🚦 Gate 3**：输出阶段 3 报告（演示页分区清单 + antdv 官网用例完整复制对照表 + 每分区双组件对照检查 + 顺序一致性检查 + 浏览器实测截图）→ 弹 `ask_followup_question`（✅ 继续 / ⏸️ 暂停 / ⬅️ 回退）→ 用户确认后进入阶段 4。未确认不得继续。
 
 ---
 
@@ -94,6 +104,7 @@
 
 1. **组件文档**：`docs/guide/components/{组件名}.md`
    - **关键：复用演示页**——docs 与 `src/views/{组件名}/Index.vue` 的 script+template 高度同源，直接迁移并加 vitepress 说明块（何时使用/API 表格）
+   - ⚠️ **迁移时剔除对照内容**：docs 仅保留本项目 `<Xxx>` 用例，**剔除「antd 官网组件」分区及 `ant-design-vue` 真身 import**（对照只存在于演示页 `src/views`，不进文档）
    - API 表格：Props/Events/Slots/暴露方法，参照 antdv 文档结构
 2. **周边文档联动**（读 `references/checklists.md` §周边文档）：
    - vitepress 侧边栏配置（新增组件入口）
@@ -114,18 +125,21 @@
 1. **质量验证**（读 `references/checklists.md` §验收）：
    - `pnpm lint:check`（ESLint，须 EXIT 0）
    - `pnpm type-check`（vue-tsc，须无本组件错误）
-   - **浏览器实测**：`pnpm dev` 打开演示页，与真身 1:1 对照，覆盖多实例/边界/交互/主题切换，控制台 0 error/warning
+   - **浏览器实测**：`pnpm dev` 打开演示页，与真身 1:1 对照；按 `checklists.md` §交互操作清单逐项勾销（每个用例的可枚举操作点）；控制台 0 error/warning
+   - **交互验收 e2e（可选软复用）**：`e2e-testing` skill 可用时跑关键交互用例，缺失则降级为手动勾销并一句话提示
    - ⚠️ 后台 watch 进程会干扰终端输出 → 复杂命令重定向到文件再 `read_file` 读取；验证后关端口
-2. **能力沉淀**（软复用，缺失则降级跳过，读 `references/capability-reuse.md`）：
+2. **基线全量勾销（核心红线）**：把工作上下文「对齐清单」区（API 四维 + Demo 用例）+「naive 差异登记」+「项目特有需求」**全量回显**到 Gate 5 报告，逐行标注 ✅/❌；❌ 项必须带处置码（`延后 P{n}` / `不覆盖（理由）` / `待用户确认`）；**禁止摘要式报告**（清单与验收同源，杜绝漏项）
+   - **API 四维对账以 antdv 官网 API 属性列表为最终对照源**（官网组件文档页的 API 表格 + 本地源码 `interface.ts` 双源核对），确认每个属性/事件/插槽/暴露方法都已覆盖
+3. **能力沉淀**（软复用，缺失则降级跳过，读 `references/capability-reuse.md`）：
    - devlog：`use_skill('tech-doc')` 生成开发日志
    - metrics：按 `templates/metrics-lite.tpl.yaml` 写一份到 `CAP_METRICS_DIR`
    - knowledge：`use_skill('knowledge-loop')` 沉淀组件经验（接口/易错点）
-3. **提交**：`use_skill('smart-commit')` 生成 `feat: ...` message（无 scope）→ **等用户确认才提交**
-4. **收尾**：更新工作上下文 status（本P 完成 → 若还有下一 P，标注接续指引；全部完成 → 可归档）
+4. **提交**：`use_skill('smart-commit')` 生成 `feat: ...` message（无 scope）→ **等用户确认才提交**
+5. **收尾**：更新工作上下文 status（本P 完成 → 若还有下一 P，标注接续指引；全部完成 → 可归档）
 
 **产出**：验收通过 + devlog/metrics/knowledge + commit（待用户确认）。
 
-**🚦 Gate 5**：输出阶段 5 报告（lint / type-check / 浏览器实测结果 + 完整验收对照表 + commit message 预览）→ 弹 `ask_followup_question`（📦 确认提交 / 🔧 继续修复 / ⏸️ 暂停）→ 用户确认后由 smart-commit 执行提交。**未经用户明确选择「确认提交」不得 `git commit`**。
+**🚦 Gate 5**：输出阶段 5 报告（基线全量勾销表 + lint / type-check / 浏览器实测结果 + 交互操作清单勾销结果 + commit message 预览）→ **「待用户确认」项须在报告中单独汇总，用户逐项决策后验收才算通过** → 弹 `ask_followup_question`（📦 确认提交 / 🔧 继续修复 / ⏸️ 暂停）→ 用户确认后由 smart-commit 执行提交。**未经用户明确选择「确认提交」不得 `git commit`**。
 
 ---
 
@@ -151,23 +165,37 @@
 | 文件 | 改动行数 | 说明 |
 |------|---------|------|
 
-### 与 antdv 对齐检查（阶段 2/3 适用）
-| antdv Demo | 覆盖 | 缺失 |
-|-----------|:--:|------|
+### 与 antdv 对齐检查（阶段 2/3 适用，顺序与官网一致）
+| 官网用例（按官网顺序） | 本项目用例 | antd 官网用例复制 | 缺失处置 |
+|-----------|:--:|:--:|---------|
+（缺失处置码：`延后 P{n}` / `不覆盖（理由）` / `待用户确认`）
 
-### API 对比检查（阶段 2 适用）
-| 属性 | antdv | 本实现 | 对齐 |
-|------|-------|--------|:--:|
+### API 四维对账（阶段 2 适用）
+| 类别 | 项 | antdv | 本实现 | 对齐 |
+|------|----|-------|--------|:--:|
+| Props | | | | |
+| Events | | | | |
+| Slots | | | | |
+| Expose | | | | |
+
+### naive 差异登记对账（阶段 5 适用）
+| 特性 | 决策 | 状态 |
+|------|------|:--:|
+
+### 项目特有需求对账（阶段 5 适用）
+| 需求 | 状态 |
+|------|:--:|
 
 ### 验证结果
 - [ ] vue-tsc 通过
 - [ ] ESLint 通过
 - [ ] 浏览器实测截图
+- [ ] 交互操作清单逐项勾销（含 e2e 软复用结果，可选）
 
 ### 👉 请确认
 ```
 
-紧跟 `ask_followup_question`（选项标签与描述固定为 A/B/C 三项）：
+紧跟 `ask_followup_question`（**Gate 0-4** 选项固定为 A/B/C 三项：✅ 继续 / ⏸️ 暂停 / ⬅️ 回退；**Gate 5 例外**——涉及提交红线，选项为 📦 确认提交 / 🔧 继续修复 / ⏸️ 暂停）：
 
 ```json
 {

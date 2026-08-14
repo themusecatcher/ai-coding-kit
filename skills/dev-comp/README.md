@@ -18,9 +18,14 @@ L3 模板层    templates/（组件/演示/工作上下文/度量 骨架模板�
 软复用层    use_skill('tech-doc')    → devlog
             use_skill('knowledge-loop') → 知识沉淀/检索
             use_skill('smart-commit') → 提交信息生成
+            use_skill('e2e-testing')  → 关键交互验收（可选增强）
 ```
 
 **核心理念**：领域专注 + 能力软引用。不进入 dev-flow 状态机与门控，只借用其生态中**独立存在**的 skill 作为能力模块。大组件支持分阶段交付（P1-Pn），参考 Ant Design Vue 与 Naive UI（官网 + 本地 clone 源码）。
+
+**完备性保障**：清单即验收基线——阶段 2 产出对齐清单（API 四维 Props/Events/Slots/Expose + Demo 用例）、naive 差异登记与阶段 0 项目特有需求，构成阶段 5 验收的唯一对账标准；Gate 5 全量回显勾销，缺失项必带处置码（`延后 P{n}` / `不覆盖（理由）` / `待用户确认`）。
+
+**术语约定**：**antd = Ant Design Vue**（官网 https://www.antdv.com/ ），全仓库统一用 antdv 指代，非 React 版 ant.design。
 
 ## 与 dev-flow 的关系
 
@@ -28,7 +33,7 @@ L3 模板层    templates/（组件/演示/工作上下文/度量 骨架模板�
 |:--|:--|:--|
 | 定位 | 通用跨项目开发工作流 | vue-amazing-ui 组件开发专项 |
 | 流程复杂度 | 阶段 0 + 步骤 1~10 + 门控 + 脚本校验 | 6 阶段，无门控，无脚本 |
-| 能力依赖 | 编排 10+ 关联 skill | 软复用 3 个独立 skill（tech-doc/knowledge-loop/smart-commit） |
+| 能力依赖 | 编排 10+ 关联 skill | 软复用 4 个独立 skill（tech-doc/knowledge-loop/smart-commit/e2e-testing（可选）） |
 | 对 dev-flow 依赖 | — | **零硬依赖**。删掉 dev-flow 不影响运行 |
 | 共存 | 互斥激活。`dev-flow` 命令与 `dc:` 命令二选一 | 同左 |
 
@@ -43,17 +48,17 @@ L3 模板层    templates/（组件/演示/工作上下文/度量 骨架模板�
   ↓
 阶段 2  组件本体      → 对照 antdv/naive 源码开发（先搜索复用项目资产）
   ↓
-阶段 3  演示用例      → src/views/xxx/Index.vue + index.ts
+阶段 3  演示用例      → 完整复制官网用例（顺序一致）+ 双组件对照（src/views/xxx/Index.vue + index.ts）
   ↓
 阶段 4  文档          → docs 复用演示页 + 周边文档联动
   ↓
-阶段 5  验收收尾      → lint+type-check+浏览器对照 → devlog+metrics+knowledge → commit
+阶段 5  验收收尾      → 基线全量勾销 + lint+type-check+浏览器对照 → devlog+metrics+knowledge → commit
 ```
 
 | 组件复杂度 | 策略 |
 |:--|:--|
-| 简单（单文件、API < 8） | 一次性走完 6 阶段 |
-| 复杂（多子组件/递归/多模式） | **分阶段 P1-Pn**，每次只走一个 P |
+| 简单（单文件、API < 8） | 单轮走完 6 阶段（Gate 仍逐阶段确认，不跳步） |
+| 复杂（多子组件/递归/多模式） | **分阶段 P1-Pn**，每次只走一个 P（每个 P 内 Gate 逐阶段确认） |
 
 ## 目录结构
 
@@ -96,6 +101,7 @@ dev-comp 在以下环节调用独立 Skill（缺失则降级跳过，不阻断�
 阶段 2 ──→ knowledge-loop     （检索历史组件经验，可选）
 阶段 5 ──→ tech-doc           （devlog 生成）
            knowledge-loop     （沉淀组件知识，可选）
+           e2e-testing        （关键交互验收，可选增强）
            smart-commit       （Commit 信息生成）
 ```
 
@@ -130,6 +136,7 @@ cp -r dev-comp ~/.codebuddy/skills/
 # - tech-doc（devlog 生成）
 # - knowledge-loop（知识沉淀，可选）
 # - smart-commit（提交信息生成）
+# - e2e-testing（关键交互验收，可选）
 ```
 
 ## 触发命令
