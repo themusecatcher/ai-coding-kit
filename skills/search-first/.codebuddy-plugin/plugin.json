@@ -1,0 +1,15 @@
+{
+  "name": "search-first",
+  "version": "1.0.0",
+  "description": "先搜索后编码的工作流。在编写自定义代码前先搜索已有工具、库和模式，调用研究者 Agent。",
+  "author": {
+    "name": "themusecatcher"
+  },
+  "keywords": [
+    "先搜索后编码",
+    "工具复用",
+    "查找已有实现",
+    "search-first"
+  ],
+  "category": "dev-tools"
+}

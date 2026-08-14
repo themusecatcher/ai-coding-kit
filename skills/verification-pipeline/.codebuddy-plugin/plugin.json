@@ -1,0 +1,17 @@
+{
+  "name": "verification-pipeline",
+  "version": "1.0.0",
+  "description": "验证管线工具箱：提供 Browser MCP / E2E / Runtime 三类按需验证手册 + 可程序化检查脚本（lock 文件、密钥泄漏、3 次熔断计数）。被 dev-flow step-6 在 V4/V5 等场景按需调用。",
+  "author": {
+    "name": "themusecatcher"
+  },
+  "keywords": [
+    "验证管线",
+    "自动化验证",
+    "lock文件检查",
+    "密钥泄漏检查",
+    "熔断计数",
+    "verification-pipeline"
+  ],
+  "category": "testing"
+}

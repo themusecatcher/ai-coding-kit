@@ -1,0 +1,18 @@
+{
+  "name": "security-review",
+  "version": "1.0.0",
+  "description": "在添加认证、处理用户输入、管理密钥、创建 API 端点或实现支付/敏感功能时使用。提供全面的安全检查清单和安全模式。",
+  "author": {
+    "name": "themusecatcher"
+  },
+  "keywords": [
+    "安全审查",
+    "认证",
+    "密钥管理",
+    "XSS防护",
+    "注入检测",
+    "安全模式",
+    "security-review"
+  ],
+  "category": "quality"
+}

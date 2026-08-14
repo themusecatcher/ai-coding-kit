@@ -1,0 +1,18 @@
+{
+  "name": "pdf-reader",
+  "version": "1.0.0",
+  "description": "PDF 全能工具包。读取/提取文本和表格、PDF 转图片、OCR 识别、提取嵌入图片、合并/拆分/旋转/水印/裁剪 PDF、创建新 PDF。当用户提到 .pdf 文件或需要处理 PDF 时自动加载。",
+  "author": {
+    "name": "themusecatcher"
+  },
+  "keywords": [
+    "PDF",
+    "读取PDF",
+    "PDF转图片",
+    "OCR",
+    "合并PDF",
+    "水印",
+    "pdf-reader"
+  ],
+  "category": "docs"
+}

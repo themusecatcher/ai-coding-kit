@@ -34,11 +34,12 @@ COMMON_EXCLUDES=(
 # 排除策略：
 #   - 运行时/缓存数据（.clawhub）
 #   - 私有 skill（`_` 前缀）— 不随仓库公开
-#   - 仓库独有文件（plugin.json, _platform-integrations.yaml）— ~/.codebuddy 中不存在，需保护不被 --delete 删除
+#   - 仓库独有文件/目录（plugin.json, .codebuddy-plugin, _platform-integrations.yaml）— ~/.codebuddy 中不存在，需保护不被 --delete 删除
 SKILLS_EXCLUDES=(
   "--exclude=.clawhub"
   "--exclude=_private"
   "--exclude=plugin.json"
+  "--exclude=.codebuddy-plugin"
   "--exclude=_platform-integrations.yaml"
 )
 

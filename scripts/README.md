@@ -71,7 +71,9 @@ npm run mp
 | 产物 | 路径 | 说明 |
 |------|------|------|
 | 市场清单 | `.codebuddy-plugin/marketplace.json` | 所有 skill 的汇总元数据 |
-| 插件清单 | `skills/<name>/plugin.json` | 每个 skill 目录下的独立清单 |
+| 插件清单 | `skills/<name>/.codebuddy-plugin/plugin.json` | 每个 skill 目录下的独立清单 |
+
+> 📌 插件清单位置遵循 CodeBuddy 插件市场规范：`<plugin>/.codebuddy-plugin/plugin.json`，且不声明 `skills` 字段（由系统自动发现 plugin 根的平铺 `SKILL.md`）。
 
 ### 校验规则
 

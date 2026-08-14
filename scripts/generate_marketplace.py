@@ -2,10 +2,16 @@
 """
 为 ai-coding-kit 仓库生成 CodeBuddy 市场源所需的：
 1) 根目录 .codebuddy-plugin/marketplace.json
-2) 每个 skill 目录下的 plugin.json
+2) 每个 skill 目录下 .codebuddy-plugin/plugin.json
 
 数据来源：每个 skills/<name>/SKILL.md 头部的 YAML frontmatter。
 支持字段：name, description, category, keywords（均可在 frontmatter 中覆盖自动检测）。
+
+说明：CodeBuddy 插件市场规范要求插件清单位于 <plugin>/.codebuddy-plugin/plugin.json，
+且不声明 skills 字段（由系统自动发现 plugin 根的平铺 SKILL.md，技能名取 frontmatter name）。
+历史版本把清单生成在 skills/<name>/plugin.json 平铺位置且 skills 字段指向文件，
+导致插件市场安装后无法识别技能。旧产物需手动删除：
+  find skills -maxdepth 2 -name plugin.json -delete
 """
 
 from __future__ import annotations
@@ -388,7 +394,8 @@ def main():
                 f"      → 请在 skills/{slug}/SKILL.md frontmatter 中补充完整的中文描述"
             )
 
-        # 1) 写入 skills/<slug>/plugin.json
+        # 1) 写入 skills/<slug>/.codebuddy-plugin/plugin.json
+        #    不声明 skills 字段：由 CodeBuddy 自动发现 plugin 根的平铺 SKILL.md
         plugin_json = {
             "name": plugin_name,
             "version": "1.0.0",
@@ -396,9 +403,10 @@ def main():
             "author": author,
             "keywords": keywords,
             "category": category,
-            "skills": ["./SKILL.md"],
         }
-        (skill_dir / "plugin.json").write_text(
+        plugin_meta_dir = skill_dir / ".codebuddy-plugin"
+        plugin_meta_dir.mkdir(exist_ok=True)
+        (plugin_meta_dir / "plugin.json").write_text(
             json.dumps(plugin_json, ensure_ascii=False, indent=2) + "\n",
             encoding="utf-8",
         )
