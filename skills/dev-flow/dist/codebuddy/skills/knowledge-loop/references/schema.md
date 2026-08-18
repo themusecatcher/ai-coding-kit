@@ -50,7 +50,7 @@ auto_upgrade:                     # 可选（人工 verified / pending / draft �
   upgraded_at: "YYYY-MM-DD"      # 本次自动升级时间
   upgraded_by: "step-1-arbitration"  # step-1-arbitration | dev:kb-sync | dev:kb-scan
   code_anchor: "src/x.ts::foo"    # 佐证使用的代码锚点
-  source_ref: "remote-kb/wiki/..." # 原始 wiki / doc_platform / mr 引用
+  source_ref: "知识库平台/wiki/..." # 原始 wiki / doc_platform / mr 引用
   ttl_days: 90                    # 默认 90 天未被检索命中 → 衰减为 archived
 
 # 创建分支追踪（pending 级别必填，其他级别可选）

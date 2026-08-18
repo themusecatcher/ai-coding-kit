@@ -1,0 +1,9 @@
+/* Standard fixture: 验证档位过滤 */
+.card:has(.icon) {              /* :has 被 .browser-compat.json 的 ignore 显式豁免 → 不报 */
+  color: red;
+}
+
+.modal {
+  inset: 0;                     /* standard 档位下应被 baseline 过滤跳过 */
+  accent-color: blue;           /* standard 仍启用 → 应报 */
+}

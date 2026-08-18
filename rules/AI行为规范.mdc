@@ -110,7 +110,7 @@ provider:
 - 经验教训优先 `create_rule` 固化，**禁止 `update_memory`**
 - 修改规则/Skill 前**必须先读取最新内容**，禁止凭记忆修改
 - 禁止擅自删除或覆盖用户已有规则内容
-- **agents/skills/rules 修改路径**：一律修改 `~/.codebuddy/` 目录下的对应文件
+- **agents/skills/rules 修改路径**：一律修改 `~/myGithub/ai-coding-kit/` 源码仓库下的对应文件（`agents` → `ai-coding-kit/agents/`、`skills` → `ai-coding-kit/skills/`、`rules` → `ai-coding-kit/rules/`）；禁止修改 `~/.codebuddy/plugins/marketplaces/` 下的同步产物（改后会被覆盖）
 - **修改后的交互式提醒**：详细格式见按需规则 `按需-交互式提醒格式规范`
 - **修改 dev-flow 依赖 Skill/规则后**：提醒用户执行 `package.sh` 同步到 dist → `skills/dev-flow/references/dist-sync.md`
 

@@ -45,11 +45,16 @@
 
 - 🎯 **必须使用中文**，简洁准确表达需求语义（通常 4-15 个汉字）
 - ✅ 允许嵌入必要的英文专有名词/术语（如 `FeatureX`、`i18n`、`App`、`Tag`）——不强制全中文，关键是**以中文为主**
-- ❌ 禁止纯英文短横线命名——那是 working-context 文件名规范，不是 dev-logs 目录名规范
-- ❌ 禁止附加项目缩写后缀
+- ❌ 禁止纯英文短横线命名（如 `mobile-menu-close-on-tag-click`）——那是 working-context 文件名规范，不是 dev-logs 目录名规范
+- ❌ 禁止附加项目缩写后缀（如 `_user-project`、`_collab-project`、`_myComponent`）
 - ❌ 禁止**机械翻译** working-context 英文简述段——必须基于 working-context `## 需求` 章节或 任务平台 标题的**语义**重新组织中文简述，从**用户感知视角**（非内部根因视角）表达
 - 📏 命名正则：`^\d{8}_(feat|fix|opt|refactor)_[^\s/\\]+$` 且简述段至少包含 1 个中文字符（`[\u4e00-\u9fa5]`）
 - 🔗 与 working-context 的映射关系：**不是"去扩展名复制"**——working-context 文件名用英文简述段（便于 grep/URL），dev-logs 目录用中文简述段（便于归档浏览），两者**需分别生成，不可机械替换**
+
+**文件夹命名示例**：
+
+- ✅ 正确：`20260307_feat_字幕多语言支持`、`20260306_fix_详情页白屏`、`20260423_fix_地区页切换英文无响应`、`20260422_fix_头像卡片英文环境i18n`
+- ❌ 错误：`20260422_fix_mobile-menu-close-on-tag-click`（纯英文）、`20260421_fix_headwear-vertical-tip-text_collab-project`（纯英文 + 项目后缀）
 
 ## 二、日志模板（devlog.md）
 
@@ -267,11 +272,11 @@ git branch --show-current
 **示例**：
 
 ```markdown
-### Round 3：线上 Bug 修复 — 列表分页参数越界导致白屏（2026-04-15）
+### Round 3：线上 Bug 修复 — 个人直升企业灰度查询参数修正（2026-04-15）
 
-> Bug: [10000000000000001](https://example.com/tracker/10000000/bug/detail/10000000000000001)
-> 影响范围：翻到最后一页的用户，页面白屏
-> 根因：pageIndex 超过总页数时未做边界校验，接口返回空数组后渲染崩溃
+> Bug: [1020375092156897870](https://example.com/tracker/20375092/bug/detail/1020375092156897870)
+> 影响范围：个人直升企业用户，禁止共享屏幕配置项不展示
+> 根因：getBanScreenShareGray 使用 corpId 而非 accountCorpId，个人直升企业场景下两者不同
 
 #### 涉及文件
 | 文件 | 操作 | 改动说明 |

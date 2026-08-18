@@ -1,6 +1,6 @@
 {
   "$schema": ".codebuddy/skills/browser-compat/schema.json",
-  "_comment": "用户 schema 风格 — 推荐 my-project / project-a / user-project 等已有项目沿用。详见 SKILL.md §「配置文件 Schema 兼容」。",
+  "_comment": "用户 schema 风格 — 推荐 my-project / record-project / user-project 等已有项目沿用。详见 SKILL.md §「配置文件 Schema 兼容」。",
 
   "_targets_comment": "[必填] 目标浏览器最低主版本号；ios → 自动映射为 safari，android → 自动映射为 chrome（取较小者）。版本号字符串如 '9.1' 会归一化为 9。",
   "targets": {

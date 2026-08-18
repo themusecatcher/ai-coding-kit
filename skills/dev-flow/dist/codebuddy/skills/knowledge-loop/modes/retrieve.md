@@ -119,9 +119,9 @@
 3. 仅加载匹配的章节内容（包含标题行到下一个同级标题行之间的内容）
 4. 未匹配到具体章节时，回退为加载全文
 
-**示例**：改动了 `handleToggleSetting` 函数
+**示例**：改动了 `handleMeetingSwitchSetting` 函数
 
-- 读取 `logic.md` 标题结构 → 发现 `### handleToggleSetting(name, isOpen, type?)` 章节
+- 读取 `logic.md` 标题结构 → 发现 `### handleMeetingSwitchSetting(name, isOpen, type?)` 章节
 - 仅加载该章节（~20 行），而非整个 `logic.md`（~70 行）
 
 > 主题文件 ≤100 行时直接全文加载（章节匹配的开销反而更大）。

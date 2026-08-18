@@ -107,7 +107,7 @@
 
 1. **组件文档**：`docs/guide/components/{组件名}.md`
    - **关键：复用演示页**——docs 与 `src/views/{组件名}/Index.vue` 的 script+template 高度同源，直接迁移并加 vitepress 说明块（何时使用/API 表格）
-   - ⚠️ **迁移时剔除对照内容**：docs 仅保留本项目 `<Xxx>` 用例，**剔除「antd 官网组件」分区及 `ant-design-vue` 真身 import**（对照只存在于演示页 `src/views`，不进文档）
+   - ⚠️ **迁移时剔除对照内容**：docs 仅保留本项目 `<Xxx>` 用例，**剔除「antd 官网组件」分区及 `ant-design-vue` 真身 import**（对照仅验收期存在于演示页 `src/views`，阶段 5 收尾清除，不进文档）
    - API 表格：Props/Events/Slots/暴露方法，参照 antdv 文档结构
 2. **周边文档联动**（读 `references/checklists.md` §周边文档）：
    - vitepress 侧边栏配置（新增组件入口）
@@ -138,7 +138,8 @@
    - metrics：按 `templates/metrics-lite.tpl.yaml` 写一份到 `CAP_METRICS_DIR`
    - knowledge：`use_skill('knowledge-loop')` 沉淀组件经验（接口/易错点）
 4. **提交**：`use_skill('smart-commit')` 生成 `feat: ...` message（无 scope）→ **等用户确认才提交**
-5. **收尾**：更新工作上下文 status（本P 完成 → 若还有下一 P，标注接续指引；全部完成 → 可归档）
+5. **清除演示页对照（红线）**：删除演示页全部 antdv/naive 真身组件、对应数据（如 `avalue*`/`aoptions*`）、`ant-design-vue` 相关 import 及 antdv 专属图标（本库用例仍使用的图标保留）；`components.d.ts` 中 antdv 组件声明随使用删除自动消失；验收前确保 `git diff` 中演示页仅剩本库用例。⚠️ 清除后需再跑一次 `lint:check` + `type-check` + `pnpm dev` 确认演示页无孤儿引用
+6. **收尾**：更新工作上下文 status（本P 完成 → 若还有下一 P，标注接续指引；全部完成 → 可归档）
 
 **产出**：验收通过 + devlog/metrics/knowledge + commit（待用户确认）。
 

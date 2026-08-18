@@ -84,7 +84,7 @@ AI 在沉淀模式的跨模块检查（步骤 5）后，额外执行跨项目检
 ```text
 🌐 发现跨项目通用模式：
 ├── 模式：Token 过期处理（error_code 判断 → 触发重新登录）
-├── 出现项目：my-common-lib（pitfalls.md）、my-project（logic.md）
+├── 出现项目：my-sdk-tool（pitfalls.md）、my-project（logic.md）
 └── 建议：提升为全局模式 _global/_patterns/token-expiry-handling.md
 ```
 
@@ -149,7 +149,7 @@ applies_to: [project-a/{module}, project-b/{module}]
 
 ## 跨仓库双向链接维护
 
-> 当参数/字段/标识符跨越多个仓库传递时（如 `client_token` 从 B 仓库 `project-b` 发起，经 A 仓库 `project-a` 的 `service.ts` → `transport.js` 两层处理），两个仓库的知识库必须建立双向链接，确保从任意一侧都能完整追溯整个链路。
+> 当参数/字段/标识符跨越多个仓库传递时（如 `c_app_version` 从 B 仓库 `my-log-component` 发起，经 A 仓库 `my-record` 的 `request.ts` → `http.js` 两层处理），两个仓库的知识库必须建立双向链接，确保从任意一侧都能完整追溯整个链路。
 
 ### 核心原则
 
@@ -164,7 +164,7 @@ applies_to: [project-a/{module}, project-b/{module}]
 |------|---------|------|
 | **首次沉淀** | 步骤 5.6 识别到跨仓库参数链路 | 按 deposit.md §5.6 完整流程建立双向链接 |
 | **单侧更新** | 修改了链路中某一仓库的知识内容 | 检查对侧仓库的引用是否正确 → 若不正确则同步更新 |
-| **仓库重命名** | knowledge 下的项目名变更（如 `project-a` → `project-a-v2`） | 批量替换所有引用该仓库的绝对路径 |
+| **仓库重命名** | knowledge 下的项目名变更（如 `my-record` → `my-record-v2`） | 批量替换所有引用该仓库的绝对路径 |
 | **链路扩展** | 参数链路新增中间仓库（A→B→C 变为 A→B→C→D） | 为新相邻对（C↔D）建立双向链接；A、B 的链接无需调整 |
 | **知识归档** | 某仓库知识标记为 deprecated | 在对侧仓库引用处追加"⚠️ 对方知识已归档"标注，不删除链接 |
 | **dev:kb health** | 全局健康检查 | 扫描所有 `_index.md` 的「跨仓库知识」章节，检查引用路径是否可达 |
@@ -181,7 +181,7 @@ applies_to: [project-a/{module}, project-b/{module}]
 ### {参数名} 被以下仓库调用
 | 调用方 | 用途 |
 |--------|------|
-| project-b | 通过 sendRequest 传入客户端标识 |
+| my-log-component | 通过 makePostPromise 传入客户端版本号 |
 | （其他调用方） | ... |
 ```
 

@@ -17,7 +17,7 @@
 | 级别 | 含义 | 来源 | AI 行为 |
 |------|------|------|---------|
 | `draft` ⚫ | 草稿/初次记录 | 手动临时补充 | 仅作参考，加载时提示二次确认 |
-| `scanned` ⚪ | 自动扫描提取 | `dev:kb scan` / 远程知识反哺（remote-kb/wiki / doc_platform / web_search） | 低置信度，加载时提示“自动提取，建议验证”；**在步骤 1 多源仲裁中可被自动升级为 `auto-verified` 或降为 `auto-stale`**（详见下文§scanned 自动升级规则） |
+| `scanned` ⚪ | 自动扫描提取 | `dev:kb scan` / 远程知识反哺（知识库平台/wiki / doc_platform / web_search） | 低置信度，加载时提示“自动提取，建议验证”；**在步骤 1 多源仲裁中可被自动升级为 `auto-verified` 或降为 `auto-stale`**（详见下文§scanned 自动升级规则） |
 | `pending` 🟡 | 本地 feature 分支沉淀 | dev-flow 步骤 7/10 在 feature 分支上沉淀 | **仅本分支生效**；跨分支不采纳；`git pull` 后合入 base 分支自动升级为 `verified` |
 | `verified` 🔵 | 已合入 base 分支，跨分支可信 | `dev:kb sync` 识别到 feature 合入 / 用户确认 / base 分支上沉淀 | 直接采纳，排序优先 |
 | `stale` 🔴 | 漂移状态，代码已变更但知识未更新 | 漂移检测 / **`dev:kb sync` 检测到他人改动** | **不采纳**，加载时警告并提示重新验证 |
@@ -100,7 +100,7 @@ confidence_score = clamp(base + bonus, 0, 100)
 
 ## scanned 自动升级规则（混合策略）
 
-> 针对 P3 类远程知识（remote-kb/wiki / doc_platform / web_search）反哺产生的 `scanned` 条目，在**步骤 1 多源仲裁阶段**并调用本规则 → **默认 AI 自动升级不打断用户** + **异步审计补足信任**。整体走「严格条件自动 + 异步审计 + 90 天衰减」三重防护。
+> 针对 P3 类远程知识（知识库平台/wiki / doc_platform / web_search）反哺产生的 `scanned` 条目，在**步骤 1 多源仲裁阶段**并调用本规则 → **默认 AI 自动升级不打断用户** + **异步审计补足信任**。整体走「严格条件自动 + 异步审计 + 90 天衰减」三重防护。
 
 ### 升级决策矩阵
 
@@ -126,7 +126,7 @@ auto_upgrade:
   upgraded_at: YYYY-MM-DD            # 本次自动升级时间
   upgraded_by: step-1-arbitration    # 触发源：step-1-arbitration / dev:kb-sync / dev:kb-scan
   code_anchor: "src/x.ts::foo"        # 佐证使用的代码锚点（函数/类/常量完全限定名）
-  source_ref: "remote-kb/wiki/..."     # 原始 wiki / doc_platform / mr 引用
+  source_ref: "知识库平台/wiki/..."     # 原始 wiki / doc_platform / mr 引用
   ttl_days: 90                        # 默认 90 天未被检索命中 → 衰减为 archived
 ```
 

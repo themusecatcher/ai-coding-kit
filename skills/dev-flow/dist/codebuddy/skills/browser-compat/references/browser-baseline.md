@@ -53,7 +53,7 @@ node ~/.codebuddy/skills/browser-compat/scripts/compat-check.js --print-baseline
 - `browserslist` 含 `safari >= 12` / `Safari >= 12`
 - `browserslist` 含 `last 4 years` 或更长时间
 - `browserslist` 含 `>= 0.5%` 且 `not dead`
-- 项目是 **C 端面向普通用户的 Web 应用**（门户、电商、企业客户端）
+- 项目是 **C 端面向普通用户的 Web 应用**（会议、门户、企业客户端）
 
 对应配置示例：
 
@@ -106,7 +106,7 @@ node ~/.codebuddy/skills/browser-compat/scripts/compat-check.js --print-baseline
 | 项目类型 | 推荐基线 | 关键考虑 |
 |---------|---------|---------|
 | C 端 Web（门户/电商/SaaS）| 保守型 | 用户浏览器版本分布广 |
-| 企业客户端 Web（协作/IM）| 保守型 | 部分企业用户环境受 IT 策略限制 |
+| 企业客户端 Web（会议/IM）| 保守型 | 部分企业用户环境受 IT 策略限制 |
 | 管理后台 / 内部工具 | 标准型 | 用户为员工，浏览器可要求升级 |
 | 开发者工具 / 设计师工具 | 标准型 | 用户技术栈较新 |
 | Electron 桌面应用 | 激进型 | 浏览器版本固定，可使用最新 API |
