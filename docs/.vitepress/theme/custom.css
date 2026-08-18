@@ -1,0 +1,73 @@
+/**
+ * AI Coding Kit 文档站自定义样式（轻量增强，不重写默认主题）。
+ */
+
+:root {
+  /* 品牌主色：沿用 VitePress 青绿系，与 dev-flow 旗舰气质统一 */
+  --vp-c-brand-1: #3c8772;
+  --vp-c-brand-2: #4a9d85;
+  --vp-c-brand-3: #5bb39a;
+  --vp-c-brand-soft: rgba(60, 135, 114, 0.14);
+}
+
+/* 首页 Hero 名称渐变 */
+.VPHero .name {
+  background: linear-gradient(120deg, #3c8772 30%, #41b883);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* 首页 Hero logo 放大：默认容器 192px、图片被约束偏小，这里放大并去掉默认光晕背景，
+   让品牌 logo 更醒目（图片本身是青绿圆角方块，无需额外背景）。 */
+.VPHero .image-container {
+  padding: 0;
+}
+
+.VPHero .image-bg {
+  display: none; /* 隐藏默认的模糊光晕背景 */
+}
+
+.VPHero .image-container .VPImage {
+  width: 100%;
+  height: 100%;
+  max-width: 100%;
+  max-height: 100%;
+}
+
+@media (min-width: 640px) {
+  .VPHero .image-container {
+    width: 256px;
+    height: 256px;
+  }
+}
+
+@media (min-width: 960px) {
+  .VPHero .image-container {
+    width: 300px;
+    height: 300px;
+  }
+}
+
+/* dev-flow 等大文件表格多、内容长：适度加宽正文阅读区，减少表格换行。
+   用 :where 提升组合特异性覆盖默认主题，避免 !important。 */
+.VPDoc .container .content .content-container {
+  max-width: 820px;
+}
+
+/* 表格：长表格横向可滚动，避免撑破布局 */
+.vp-doc table {
+  display: table;
+  width: 100%;
+  overflow-x: auto;
+}
+
+/* 「源文件投影」提示块弱化为浅色信息条，不喧宾夺主 */
+.vp-doc blockquote:first-of-type {
+  border-left-color: var(--vp-c-brand-2);
+}
+
+/* 代码块在大文件中较多，压缩上下外边距让页面更紧凑 */
+.vp-doc div[class*='language-'] {
+  margin: 14px 0;
+}

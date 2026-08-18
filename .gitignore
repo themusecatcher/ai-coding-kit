@@ -25,3 +25,25 @@ desktop.ini
 
 # ---- 安装器备份目录（sync 未排除，可能被带入仓库）----
 **/.backup/
+
+# ---- Playwright MCP 运行时快照 ----
+.playwright-mcp/
+
+# ---- 非 pnpm 的 lock 文件（本仓库统一使用 pnpm）----
+package-lock.json
+yarn.lock
+
+# ---- 文档站（VitePress）----
+node_modules/
+docs/.vitepress/cache/
+docs/.vitepress/dist/
+# VitePress 编译 config 时产生的临时文件
+docs/.vitepress/*.timestamp-*.mjs
+# 脚本生成的侧边栏（构建时自动生成，无需入库）
+docs/.vitepress/sidebar.generated.mjs
+# gen-docs.mjs 投影生成的内容目录（构建产物，单一权威源在 skills/ rules/ agents/）
+# 手写页面 docs/index.md 与 docs/guide/ 不忽略
+docs/skills/
+docs/rules/
+docs/agents/
+docs/dev-flow/

@@ -134,10 +134,58 @@ npm run sync:rules  # 仅同步 rules
 
 ```bash
 npm run mp               # 生成 marketplace.json 和各 skill 的 plugin.json
+npm run mp:check         # 校验市场元数据是否过期（改了 frontmatter / 增删 skill 后未执行 mp 时提示）
+npm run hooks:install    # 安装 pre-commit hook（提交时自动拦截过期元数据）
 npm run config:check     # 检查当前生效的配置文件路径
 ```
 
+> ⚠️ 改了 skill 的 frontmatter（描述/关键词/分类等）或增删 skill 后，**必须**执行 `npm run mp` 再提交，否则插件市场看不到更新。只改 SKILL.md 正文或子文件则无需执行。
 > 脚本详细说明见 [scripts/README.md](scripts/README.md)。
+
+## 📖 文档站（VitePress）
+
+本仓库内置一个可视化文档网站，以 `dev-flow` 为核心旗舰，自动整合全部 Skills、Rules、Agents，形成「AI 辅助编程方法论门户」。
+
+```bash
+pnpm install         # 首次运行前安装依赖（VitePress 需 Node 18+，包管理器统一用 pnpm）
+pnpm docs:gen        # 从 skills/ rules/ agents/ 生成文档站内容 + 侧边栏
+pnpm docs:dev        # 本地启动（热更新，默认 http://localhost:5173）
+pnpm docs:build      # 构建静态站点到 docs/.vitepress/dist
+pnpm docs:preview    # 预览构建产物
+pnpm docs:deploy "docs: xxx"  # 一键部署到 GitHub Pages（需传 commit 描述）
+```
+
+| 命令 | 作用 |
+|------|------|
+| `pnpm docs:gen` | 扫描源文件 frontmatter，把内容「投影」到 `docs/`（含 dev-flow 多级板块、Mermaid 流程图、按主题分组侧边栏）|
+| `pnpm docs:dev` | 本地开发服务器 |
+| `pnpm docs:build` | 生产构建（先自动 `docs:gen` 再构建，含死链检测）|
+| `pnpm docs:preview` | 预览已构建的静态站点 |
+| `pnpm docs:deploy "<type>: <描述>"` | 构建 → 强推 `gh-pages` 分支 → 提交并推送主仓库源码，发布到 GitHub Pages |
+
+> **单一权威源**：文档站通过构建时脚本 `scripts/gen-docs.mjs` 把源文件投影到 `docs/`，绝不复制维护第二份。`docs/{skills,rules,agents,dev-flow}/` 与侧边栏均为生成产物（已在 `.gitignore` 忽略），改动源文件后重新 `docs:gen` 即同步。手写页面仅 `docs/index.md`（首页）、`docs/guide/`（指南）与 `docs/public/`（logo 等静态资源）。
+
+### 🌐 部署到 GitHub Pages
+
+文档站可一键部署到 GitHub Pages，效果类似 [vue-amazing-ui 文档站](https://themusecatcher.github.io/vue-amazing-ui/)：
+
+```bash
+pnpm docs:deploy "docs: update site"   # 必须传入语义化 commit 描述
+```
+
+该命令（`scripts/deploy.sh`）会自动完成：`docs:gen` 生成内容 → 以 `DOCS_BASE=/ai-coding-kit/` 构建 → 在 `docs/.vitepress/dist` 内初始化临时 git 仓库并**强制推送**到远程 `gh-pages` 分支 → 清理临时 git → **提交并推送主仓库源码**（commit 描述用你传入的参数）。发布地址：**https://themusecatcher.github.io/ai-coding-kit/**。
+
+> - 首次部署后，需到 GitHub 仓库 **Settings → Pages** 将 Source 设为 `Deploy from a branch`、分支选 `gh-pages` / `/ (root)`。
+> - 与本地参考仓库 `vue-amazing-ui/scripts/deploy.sh` 保持一致：先部署 dist 产物，再提交源码；缺少 commit 描述会直接报错拦截。
+> - 部署地址子路径为 `/ai-coding-kit/`（对应仓库名），如仓库改名或用自定义域名，需同步调整 `scripts/deploy.sh` 中的 base 与远程地址。
+
+### 🚀 一键提交推送
+
+日常改动后一键 `git add . && commit && push`：
+
+```bash
+pnpm push "<type>: <描述>"   # 例：pnpm push "docs: update readme"
+```
 
 ## 🎯 核心特性
 

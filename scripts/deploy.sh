@@ -1,0 +1,53 @@
+#!/bin/bash
+
+# ============================================================
+# AI Coding Kit 文档站部署脚本（GitHub Pages）
+# 用法：pnpm docs:deploy "<type>: <描述>"
+#   例：pnpm docs:deploy "docs: update guide"
+# 效果：构建 VitePress 静态站点 → 强推到 gh-pages 分支 → 提交并推送主仓库源码
+# 发布地址：https://themusecatcher.github.io/ai-coding-kit/
+# ============================================================
+
+# 确保脚本遇到错误立即退出
+set -e
+
+commitDesc=$1
+
+# 强制要求传入语义化的提交描述，避免产生无信息量的 commit
+if [ -z "$commitDesc" ]; then
+  echo "❌ 缺少提交描述。用法: pnpm docs:deploy \"<type>: <描述>\"（如 pnpm docs:deploy \"docs: update guide\"）"
+  exit 1
+fi
+
+# 生成文档内容（从 skills/ rules/ agents/ 投影）
+pnpm docs:gen
+
+# 以 GitHub Pages 子路径 /ai-coding-kit/ 为 base 打包生成静态文件
+DOCS_BASE=/ai-coding-kit/ vitepress build docs
+
+# 进入待发布的 dist/ 目录
+cd docs/.vitepress/dist
+
+# GitHub Pages 默认走 Jekyll，加 .nojekyll 跳过（保留下划线开头的资源目录）
+touch .nojekyll
+
+# 提交打包静态网站到 gh-pages 分支
+git init
+git branch -M main
+git add .
+git commit -m 'docs: deploy site'
+
+# 部署到 https://themusecatcher.github.io/ai-coding-kit/
+git push -f git@github.com:themusecatcher/ai-coding-kit.git main:gh-pages
+
+# 回到仓库根，清理临时 git 仓库，避免嵌套 .git 干扰主仓库
+rm -rf .git
+cd ../../../
+
+# 提交所有源码到 github
+git add .
+git commit -m "$commitDesc"
+git push
+
+echo ✅ "部署完成：https://themusecatcher.github.io/ai-coding-kit/"
+echo ⏰ "$(date '+%Y-%m-%d %H:%M:%S')"

@@ -9,6 +9,30 @@
     "sync:agents": "bash scripts/sync.sh agents",
     "sync:rules": "bash scripts/sync.sh rules",
     "mp": "python3 scripts/generate_marketplace.py",
-    "config:check": "python3 -c \"import sys; sys.path.insert(0, 'scripts/lib'); lc = __import__('load-config', fromlist=['get_config']); print(f'配置路径: {lc.config_file_path()}')\""
+    "mp:check": "python3 scripts/generate_marketplace.py --check",
+    "hooks:install": "bash scripts/hooks/install.sh",
+    "config:check": "python3 -c \"import sys; sys.path.insert(0, 'scripts/lib'); lc = __import__('load-config', fromlist=['get_config']); print(f'配置路径: {lc.config_file_path()}')\"",
+    "push": "sh scripts/push.sh",
+    "docs:gen": "node scripts/gen-docs.mjs",
+    "docs:dev": "vitepress dev docs",
+    "docs:build": "pnpm docs:gen && vitepress build docs",
+    "docs:preview": "vitepress preview docs",
+    "docs:deploy": "sh scripts/deploy.sh"
+  },
+  "packageManager": "pnpm@10.34.4",
+  "engines": {
+    "node": ">=18",
+    "pnpm": ">=9"
+  },
+  "devDependencies": {
+    "debug": "^4.4.0",
+    "mermaid": "^11.16.1",
+    "vitepress": "^1.6.4",
+    "vitepress-plugin-mermaid": "^2.0.17"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild"
+    ]
   }
 }
