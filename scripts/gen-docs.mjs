@@ -36,11 +36,16 @@ const OUT = {
 // 通用工具
 // ------------------------------------------------------------------
 
-/** 解析 YAML frontmatter（仅支持本仓库用到的简单标量 / 内联数组，无需引第三方库） */
+/**
+ * 解析 YAML frontmatter（仅支持本仓库用到的简单标量 / 内联数组，无需引第三方库）
+ * @param {string} raw
+ * @returns {{ data: Record<string, string | boolean | string[]>, body: string, hasFrontmatter: boolean }}
+ */
 function parseFrontmatter(raw) {
   const m = raw.match(/^---\r?\n([\s\S]*?)\r?\n---\r?\n?/)
   if (!m) return { data: {}, body: raw, hasFrontmatter: false }
 
+  /** @type {Record<string, string | boolean | string[]>} */
   const data = {}
   const lines = m[1].split(/\r?\n/)
   for (const line of lines) {
@@ -66,7 +71,11 @@ function parseFrontmatter(raw) {
   return { data, body: raw.slice(m[0].length), hasFrontmatter: true }
 }
 
-/** slug 归一化：处理空格、中文、特殊字符，生成 URL 安全片段 */
+/**
+ * slug 归一化：处理空格、中文、特殊字符，生成 URL 安全片段
+ * @param {string} name
+ * @returns {string}
+ */
 function toSlug(name) {
   return name
     .trim()
@@ -79,22 +88,35 @@ function toSlug(name) {
     .replace(/^-|-$/g, '')
 }
 
-/** 转义用于 VitePress frontmatter 的 YAML 字符串值 */
+/**
+ * 转义用于 VitePress frontmatter 的 YAML 字符串值
+ * @param {string | null | undefined} s
+ * @returns {string}
+ */
 function yamlString(s) {
-  if (s == null) return '""'
+  if (s === null || s === undefined) return '""'
   const needQuote = /[:#\[\]{}&*!|>'"%@`]/.test(s) || /^\s|\s$/.test(s)
   const escaped = String(s).replace(/"/g, '\\"')
   return needQuote ? `"${escaped}"` : `"${escaped}"`
 }
 
-/** 截断描述用于 feature 卡片 / 索引摘要 */
+/**
+ * 截断描述用于 feature 卡片 / 索引摘要
+ * @param {unknown} s
+ * @param {number} [n]
+ * @returns {string}
+ */
 function truncate(s, n = 90) {
   if (!s) return ''
   const clean = String(s).replace(/\s+/g, ' ').trim()
   return clean.length > n ? clean.slice(0, n) + '…' : clean
 }
 
-/** 生成投影页顶部的「源文件」提示块 */
+/**
+ * 生成投影页顶部的「源文件」提示块
+ * @param {string} relPath
+ * @returns {string}
+ */
 function sourceBanner(relPath) {
   return `> 📄 本页由源文件 \`${relPath}\` 自动投影生成（单一权威源）。请勿直接编辑本页。\n\n`
 }
@@ -104,6 +126,8 @@ function sourceBanner(relPath) {
  *  1. 跳过 body 开头的前导空白 + HTML 注释块，移除紧随其后的「文档主标题」H1。
  *  2. 将正文中剩余的所有 H1 降级为 H2（源文件正文中段偶用 H1 作章节标题的情况），
  *     保护 fenced code block 内的 `#`（shell 注释）不动。
+ * @param {string} body
+ * @returns {string}
  */
 function stripLeadingH1(body) {
   // 1) 移除开头主标题：允许前导空白与若干 HTML 注释块在 H1 之前
@@ -133,6 +157,8 @@ const HTML_TAG_WHITELIST = new Set([
  * 等占位符或泛型当成未闭合 HTML 标签导致构建失败。
  * 保护 fenced code block（``` ```）与 inline code（`code`），仅处理其余文本。
  * 白名单内的合法 HTML 标签保留渲染。
+ * @param {string} body
+ * @returns {string}
  */
 function escapeBareAngles(body) {
   // 以 fenced code block 为分隔切段，奇数段为代码块（保护）
@@ -210,6 +236,9 @@ const DEVFLOW_ROUTES = new Set()
  * 把 dev-flow 源文件相对链接映射为 docs 站路由，并校验目标页面已生成。
  * 依据 ctxDir（当前文件目录）+ 相对 url 解析出目标在 dev-flow 内的位置。
  * 无法识别或目标未生成时返回 null（交由上层去链接化）。
+ * @param {string} url
+ * @param {string} ctxDir
+ * @returns {string | null}
  */
 function mapDevFlowLink(url, ctxDir) {
   if (!/\.md(#|$)/i.test(url)) return null // 仅处理 .md 链接（.html/.sh 等去链接化）
@@ -247,18 +276,32 @@ function mapDevFlowLink(url, ctxDir) {
   return null
 }
 
-/** 写文件（自动建目录） */
+/**
+ * 写文件（自动建目录）
+ * @param {string} path
+ * @param {string} content
+ */
 function writeFile(path, content) {
   mkdirSync(dirname(path), { recursive: true })
   writeFileSync(path, content, 'utf8')
 }
 
-/** 投影正文统一处理：去 H1 → 重写链接（消除死链）→ 转义裸尖括号 */
+/**
+ * 投影正文统一处理：去 H1 → 重写链接（消除死链）→ 转义裸尖括号
+ * @param {string} body
+ * @param {'devflow' | 'other'} [kind]
+ * @param {string} [ctxDir]
+ * @returns {string}
+ */
 function processBody(body, kind = 'other', ctxDir = '') {
   return escapeBareAngles(rewriteLinks(stripLeadingH1(body), kind, ctxDir))
 }
 
-/** 生成带 VitePress frontmatter 的投影页 */
+/**
+ * 生成带 VitePress frontmatter 的投影页
+ * @param {{ title: string, description: string, sourceRel: string, body: string }} options
+ * @returns {string}
+ */
 function projectionPage({ title, description, sourceRel, body }) {
   const fm = [
     '---',
@@ -307,13 +350,14 @@ function generateSkills() {
     .filter((name) => statSync(join(SRC.skills, name)).isDirectory())
     .filter((name) => existsSync(join(SRC.skills, name, 'SKILL.md')))
 
+  /** @type {Record<string, { name: string, slug: string, description: string }>} */
   const meta = {} // slug -> { name, slug, description }
   for (const name of entries) {
     const srcPath = join(SRC.skills, name, 'SKILL.md')
     const raw = readFileSync(srcPath, 'utf8')
     const { data, body } = parseFrontmatter(raw)
-    const title = data.name || name
-    const description = data.description || ''
+    const title = typeof data.name === 'string' ? data.name : name
+    const description = typeof data.description === 'string' ? data.description : ''
     const slug = toSlug(name)
     meta[name] = { name: title, slug, description }
 
@@ -377,11 +421,13 @@ function generateSkills() {
 function generateRules() {
   const files = readdirSync(SRC.rules).filter((f) => f.endsWith('.mdc'))
 
+  /** @type {Record<string, { text: string, items: { text: string, link: string }[] }>} */
   const groups = {
     core: { text: '核心红线（alwaysApply）', items: [] },
     official: { text: '官方规范', items: [] },
     onDemand: { text: '按需规范', items: [] },
   }
+  /** @type {Record<string, { title: string, slug: string, description: string, cat: 'core' | 'official' | 'onDemand' }>} */
   const meta = {}
 
   for (const file of files) {
@@ -391,9 +437,10 @@ function generateRules() {
     const baseName = file.replace(/\.mdc$/, '')
     const slug = toSlug(baseName)
     const title = baseName
-    const description = data.description || ''
+    const description = typeof data.description === 'string' ? data.description : ''
 
     // 分类：alwaysApply=true → 核心红线；官方规范/编程指南 → 官方；其余 → 按需
+    /** @type {'core' | 'official' | 'onDemand'} */
     let cat = 'onDemand'
     if (data.alwaysApply === true) cat = 'core'
     else if (/官方规范$/.test(baseName) || /^(TypeScript|CSS|SQL)_/.test(baseName)) cat = 'official'
@@ -448,8 +495,8 @@ function generateAgents() {
     const baseName = file.replace(/\.md$/, '')
     const slug = toSlug(baseName)
 
-    let title = data.name || baseName
-    let description = data.description || ''
+    let title = typeof data.name === 'string' ? data.name : baseName
+    let description = typeof data.description === 'string' ? data.description : ''
 
     // step-gate 无 frontmatter：从首个 # 标题 + 引用块提取
     if (!hasFrontmatter) {
@@ -566,7 +613,10 @@ const DEVFLOW_REF_GROUPS = [
   },
 ]
 
-/** 读取源 md 并投影为 dev-flow 子页（复用 escape / stripH1 / banner） */
+/**
+ * 读取源 md 并投影为 dev-flow 子页（复用 escape / stripH1 / banner）
+ * @param {{ srcAbs: string, sourceRel: string, title: string, outAbs: string, ctxDir?: string }} options
+ */
 function projectDevFlowDoc({ srcAbs, sourceRel, title, outAbs, ctxDir = '' }) {
   const raw = readFileSync(srcAbs, 'utf8')
   const { body } = parseFrontmatter(raw)
@@ -640,6 +690,7 @@ function generateDevFlow() {
   // 5) 参考规范 references/（含 cross-project 子目录）
   const refDir = join(D, 'references')
   const refFiles = readdirSync(refDir).filter((f) => f.endsWith('.md') && f !== '_index.md')
+  /** @type {Record<string, { title: string, slug: string }>} */
   const refMeta = {} // baseName -> { title, slug }
   for (const file of refFiles) {
     const srcAbs = join(refDir, file)
