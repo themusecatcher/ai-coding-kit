@@ -9,7 +9,8 @@
 
 - dev-flow 模板 400+ 行，绑 TAPD/iWiki/跨项目/门控字段，对开源组件库基本不适用
 - dev-comp 自建精简版（40 行），只留：组件名/phase/参考源/进度/接续指引/决策记录/可复用资产索引/对齐清单（API 四维 + Demo 用例）/naive 差异登记/项目特有需求
-- 命名沿用 `vaui-{组件名}-{YYYYMMDD}.md`，存储沿用 `~/.codebuddy/working-context/`
+- 命名沿用 `vaui-{组件名}-{YYYYMMDD}.md`，存储改用 dev-comp 专属目录 `~/.codebuddy/dev-comp/working-context/`（与 dev-flow 产物物理隔离，不被 dev-flow lint/dashboard 扫描误伤）
+- 写前 `mkdir -p ~/.codebuddy/dev-comp/working-context/`（首次使用目录不存在，禁止假设已存在）
 - 不调 `validate-working-context.sh`，不做 JSON Schema 校验
 
 ## plan
@@ -30,14 +31,14 @@
 
 - dev-flow metrics schema（Tier 1/2/3）绑定 TAPD/iWiki/codewiki/跨项目，对组件库不适用
 - dev-comp 自建精简版 `templates/metrics-lite.tpl.yaml`，字段：component / phase / files_changed / lines_added / lines_deleted / first_time_right / lint_pass_first_try / browser_verified / devlog_generated / knowledge_updated
-- 写入 `~/.codebuddy/.metrics/reports/`（与 dev-flow 同一目录，但独立文件）
+- 写入 `~/.codebuddy/dev-comp/metrics/`（dev-comp 专属，不混入 dev-flow 的 `.metrics/reports/`，避免 lite schema 被 dev-flow 度量闸门误校验）；写前 `mkdir -p ~/.codebuddy/dev-comp/metrics/`
 
 ## 知识沉淀 knowledge
 
 **状态**：直接调用 `use_skill('knowledge-loop')`（独立 skill）。
 
-- 阶段 2 检索：搜索先前组件开发经验（`knowledge/projects/ui-components/`）
-- 阶段 5 沉淀：组件接口/数据模型/易错点等写入 `ui-components/` / `error-prone/`
+- 阶段 2 检索：搜索先前组件开发经验（`~/.codebuddy/knowledge/vue-amazing-ui/`）
+- 阶段 5 沉淀：组件接口/数据模型/易错点等写入 `~/.codebuddy/knowledge/vue-amazing-ui/{组件模块}/`（knowledge-loop 按项目名存储，实际路径以该 skill 的 schema 为准）
 
 **降级**：knowledge-loop 未安装→跳过并提示用户可安装。
 

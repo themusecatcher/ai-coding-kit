@@ -29,10 +29,20 @@ description: 面向 vue-amazing-ui 组件库的单组件开发迭代工作流。
 | `REF_NAIVE_GH` | https://github.com/tusen-ai/naive-ui | Naive UI GitHub |
 | `REF_ANTDV_DOC` | https://www.antdv.com/components/overview-cn/ | antdv 官网 |
 | `REF_NAIVE_DOC` | https://www.naiveui.com/zh-CN/os-theme/docs/introduction | naive 官网 |
-| `CAP_WORKING_CONTEXT_DIR` | `~/.codebuddy/working-context/` | 工作上下文目录 |
-| `CAP_METRICS_DIR` | `~/.codebuddy/.metrics/reports/` | 度量报告目录 |
+| `CAP_WORKING_CONTEXT_DIR` | `~/.codebuddy/dev-comp/working-context/` | 工作上下文目录（dev-comp 专属） |
+| `CAP_METRICS_DIR` | `~/.codebuddy/dev-comp/metrics/` | 度量报告目录（dev-comp 专属） |
 
 > 本地 clone 不存在时：降级为仅用官网（web_fetch）参考，并提示用户可clone 以获得源码级复用。
+
+## 📦 产物存储设计原则（2026-08-18 固化）
+
+> 决策背景：深入评估过「产物入仓库」方案，被开源仓库 git 污染 + dev-flow 生态路径硬绑定否决。产物全部留在 `~/.codebuddy/`，本小节固化三条原则，防止后续迭代被顺手改回。
+
+1. **产物不入仓库**：vue-amazing-ui 是开源项目，工作上下文/对齐清单/决策记录/度量是个人私有开发过程，进 git 污染公开历史，进 `.gitignore` 污染所有 fork 者
+2. **软复用产物沿用固有约定**：devlog（`~/.codebuddy/dev-logs/<项目>/<分支>/`）、knowledge（`~/.codebuddy/knowledge/vue-amazing-ui/`）路径由被软复用的 tech-doc / knowledge-loop skill 硬编码，改不得也不该改（零硬依赖原则）
+3. **自建产物物理隔离**：工作上下文、metrics 放 dev-comp 专属根目录 `~/.codebuddy/dev-comp/`（`working-context/` + `metrics/` 子目录）。不与 dev-flow 混放，避免被 dev-flow 的 lint 全量扫描 / dashboard 统计 / 度量闸门校验误伤
+4. **命名前缀不变**：`vaui-` 前缀保留，专属目录内按组件检索不受影响
+5. **目录自举（写前必建）**：`~/.codebuddy/dev-comp/` 专属目录首次使用不存在，阶段 0 初始化与阶段 5 写 metrics 前必须 `mkdir -p` 兜底，禁止假设目录已存在
 
 ## 触发规则
 

@@ -109,10 +109,10 @@ dev-comp 在以下环节调用独立 Skill（缺失则降级跳过，不阻断�
 
 | 目录 | 用途 | 哪个阶段写入 |
 |:--|:--|:--|
-| `~/.codebuddy/working-context/` | 工作上下文（命名 `vaui-{组件}-{日期}.md`） | 阶段 0 创建，各阶段更新 |
+| `~/.codebuddy/dev-comp/working-context/` | 工作上下文（命名 `vaui-{组件}-{日期}.md`，dev-comp 专属） | 阶段 0 创建，各阶段更新 |
 | `~/.codebuddy/dev-logs/` | 开发日志（由 tech-doc 生成） | 阶段 5 |
-| `~/.codebuddy/.metrics/reports/` | 度量报告（精简 YAML） | 阶段 5 |
-| `~/.codebuddy/knowledge/projects/ui-components/` | 组件知识沉淀 | 阶段 5 |
+| `~/.codebuddy/dev-comp/metrics/` | 度量报告（精简 YAML，dev-comp 专属） | 阶段 5 |
+| `~/.codebuddy/knowledge/vue-amazing-ui/` | 组件知识沉淀 | 阶段 5 |
 
 ## 个人化配置
 

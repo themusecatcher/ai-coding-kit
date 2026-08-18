@@ -9,7 +9,9 @@
 
 **目标**：判断是新组件还是接续已有组件，建立/恢复工作上下文，列出计划。
 
-1. **扫描已有工作上下文**：`ls ~/.codebuddy/working-context/ | grep -i {组件名}`
+1. **目录自举 + 扫描已有工作上下文**（首次使用专属目录不存在，禁止假设已存在）：
+   - 先建目录：`mkdir -p ~/.codebuddy/dev-comp/working-context ~/.codebuddy/dev-comp/metrics`
+   - 再扫描：`ls ~/.codebuddy/dev-comp/working-context/ | grep -i {组件名}`
    - 命中 → 读取该文件，恢复 phase/进度/决策，跳到「下一步动作」继续，**不新建**
    - 未命中 → 用 `templates/working-context-lite.tpl.md` 新建（命名：`vaui-{组件名}-{YYYYMMDD}.md`）
 2. **复杂度与分阶段决策**：
@@ -135,7 +137,7 @@
    - **API 四维对账以 antdv 官网 API 属性列表为最终对照源**（官网组件文档页的 API 表格 + 本地源码 `interface.ts` 双源核对），确认每个属性/事件/插槽/暴露方法都已覆盖
 3. **能力沉淀**（软复用，缺失则降级跳过，读 `references/capability-reuse.md`）：
    - devlog：`use_skill('tech-doc')` 生成开发日志
-   - metrics：按 `templates/metrics-lite.tpl.yaml` 写一份到 `CAP_METRICS_DIR`
+   - metrics：`mkdir -p ~/.codebuddy/dev-comp/metrics` 后按 `templates/metrics-lite.tpl.yaml` 写一份到 `CAP_METRICS_DIR`
    - knowledge：`use_skill('knowledge-loop')` 沉淀组件经验（接口/易错点）
 4. **提交**：`use_skill('smart-commit')` 生成 `feat: ...` message（无 scope）→ **等用户确认才提交**
 5. **清除演示页对照（红线）**：删除演示页全部 antdv/naive 真身组件、对应数据（如 `avalue*`/`aoptions*`）、`ant-design-vue` 相关 import 及 antdv 专属图标（本库用例仍使用的图标保留）；`components.d.ts` 中 antdv 组件声明随使用删除自动消失；验收前确保 `git diff` 中演示页仅剩本库用例。⚠️ 清除后需再跑一次 `lint:check` + `type-check` + `pnpm dev` 确认演示页无孤儿引用
@@ -231,4 +233,4 @@
 
 ## dc:st / dc:status 子命令
 
-读取当前组件的工作上下文，输出：组件名/当前 phase/进度/下一步/未完成的 P。
+从 `~/.codebuddy/dev-comp/working-context/` 扫描 `vaui-{组件名}-*.md`，读取当前组件的工作上下文，输出：组件名/当前 phase/进度/下一步/未完成的 P。
