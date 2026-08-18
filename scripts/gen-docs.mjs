@@ -6,7 +6,7 @@
  *      VitePress 侧边栏（docs/.vitepress/sidebar.generated.mjs）与各分组索引页。
  *
  * 设计哲学：单一权威源。源文件保持原位，生成物是构建产物（已在 .gitignore 忽略），
- *          绝不复制维护第二份。每次 `npm run docs:gen` 全量重建。
+ *          绝不复制维护第二份。每次 `pnpm docs:gen` 全量重建。
  *
  * 用法：node scripts/gen-docs.mjs
  */
@@ -795,7 +795,7 @@ function main() {
   const sidebarFile = join(DOCS, '.vitepress', 'sidebar.generated.mjs')
   const content =
     `// ⚠️ 本文件由 scripts/gen-docs.mjs 自动生成，请勿手动编辑。\n` +
-    `// 运行 \`npm run docs:gen\` 重新生成。\n\n` +
+    `// 运行 \`pnpm docs:gen\` 重新生成。\n\n` +
     `export const sidebar = ${JSON.stringify(sidebar, null, 2)}\n\n` +
     `export default sidebar\n`
   writeFile(sidebarFile, content)

@@ -22,20 +22,20 @@
 
 ### 使用方式
 
-在仓库根目录（`ai-coding-kit/`）下通过 npm scripts 调用：
+在仓库根目录（`ai-coding-kit/`）下通过 pnpm scripts 调用：
 
 ```bash
 # 同步全部（skills + agents + rules）
-npm run sync
+pnpm sync
 
 # 仅同步 skills
-npm run sync:skills
+pnpm sync:skills
 
 # 仅同步 agents
-npm run sync:agents
+pnpm sync:agents
 
 # 仅同步 rules
-npm run sync:rules
+pnpm sync:rules
 
 # 查看帮助
 bash scripts/sync.sh -h
@@ -51,7 +51,7 @@ bash scripts/sync.sh -h
 - **交互式提交** — 确认后才提交，支持自定义 commit message
 - **二次确认推送** — 提交和推送分开确认，避免误操作
 
-> ⚠️ 与 pre-commit hook 联动：若同步的变更涉及 skill frontmatter（`SKILL.md` 头部元数据）或 skill 增删，交互式提交会被已安装的 hook 拦截，需先执行 `npm run mp` 生成市场元数据（见下方 hooks 章节）。
+> ⚠️ 与 pre-commit hook 联动：若同步的变更涉及 skill frontmatter（`SKILL.md` 头部元数据）或 skill 增删，交互式提交会被已安装的 hook 拦截，需先执行 `pnpm mp` 生成市场元数据（见下方 hooks 章节）。
 
 ### 同步流程
 
@@ -70,8 +70,8 @@ bash scripts/sync.sh -h
 从各 skill 的 `SKILL.md` frontmatter 中提取名称和描述，生成 CodeBuddy 市场源所需的元数据文件。
 
 ```bash
-npm run mp           # 生成
-npm run mp:check     # 只校验磁盘元数据是否与 frontmatter 一致，不写入
+pnpm mp           # 生成
+pnpm mp:check     # 只校验磁盘元数据是否与 frontmatter 一致，不写入
 ```
 
 ### 生成产物
@@ -83,9 +83,9 @@ npm run mp:check     # 只校验磁盘元数据是否与 frontmatter 一致，�
 
 > 📌 插件清单位置遵循 CodeBuddy 插件市场规范：`<plugin>/.codebuddy-plugin/plugin.json`，且不声明 `skills` 字段（由系统自动发现 plugin 根的平铺 `SKILL.md`）。
 
-### 何时需要执行 `npm run mp`
+### 何时需要执行 `pnpm mp`
 
-| 改动类型 | 需要执行 `npm run mp` 吗 |
+| 改动类型 | 需要执行 `pnpm mp` 吗 |
 |---------|------------------------|
 | 只改 `SKILL.md` 正文（frontmatter 之后的内容） | 不需要 |
 | 改 `references/`、`scripts/`、`templates/` 等子文件 | 不需要 |
@@ -98,20 +98,20 @@ npm run mp:check     # 只校验磁盘元数据是否与 frontmatter 一致，�
 
 ## 🪝 hooks/（元数据过期自动拦截）
 
-防止「改了 frontmatter / 增删 skill 却忘了执行 `npm run mp`」导致市场元数据过期。
+防止「改了 frontmatter / 增删 skill 却忘了执行 `pnpm mp`」导致市场元数据过期。
 
 ```bash
 # 一次性安装 pre-commit hook（复制到 .git/hooks/pre-commit）
-npm run hooks:install
+pnpm hooks:install
 ```
 
-安装后，`git commit` 时若 staged 变更涉及 `skills/` 或 `.codebuddy-plugin/`，会自动执行 `npm run mp:check`：
+安装后，`git commit` 时若 staged 变更涉及 `skills/` 或 `.codebuddy-plugin/`，会自动执行 `pnpm mp:check`：
 
 - 元数据与 frontmatter **一致** → 放行
-- 元数据**过期** → 阻止提交，提示执行 `npm run mp`
+- 元数据**过期** → 阻止提交，提示执行 `pnpm mp`
 - 确认无误可强制跳过：`git commit --no-verify`
 
-> `scripts/hooks/pre-commit` 有更新时，需重新执行 `npm run hooks:install`。
+> `scripts/hooks/pre-commit` 有更新时，需重新执行 `pnpm hooks:install`。
 
 ## ⚙️ lib/（配置加载工具）
 
@@ -119,5 +119,5 @@ npm run hooks:install
 
 | 文件 | 语言 | 调用方 |
 |------|------|--------|
-| `load-config.py` | Python 3 | `npm run config:check`、Python 脚本 |
+| `load-config.py` | Python 3 | `pnpm config:check`、Python 脚本 |
 | `load-config.sh` | Bash | Shell 脚本、skill 内部脚本 |

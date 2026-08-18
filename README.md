@@ -11,9 +11,9 @@ ai-coding-kit/
 ├── rules/         # 编码规范与项目规则
 ├── config/        # 环境配置（org.yaml，首次使用需填写）
 ├── scripts/       # 同步与构建脚本（含 lib/ 配置加载工具，详见 scripts/README.md）
-├── .codebuddy-plugin/  # 市场源文件（marketplace.json，由 npm run mp 生成）
+├── .codebuddy-plugin/  # 市场源文件（marketplace.json，由 pnpm mp 生成）
 ├── CONFIG.md      # 配置指南
-├── package.json   # npm scripts 配置
+├── package.json   # pnpm scripts 配置
 └── README.md
 ```
 
@@ -124,22 +124,22 @@ vim ~/.codebuddy/config/org.yaml
 修改 `~/.codebuddy/` 下的 skills、agents、rules 后，同步回本仓库：
 
 ```bash
-npm run sync        # 同步全部（skills + agents + rules）
-npm run sync:skills # 仅同步 skills
-npm run sync:agents # 仅同步 agents
-npm run sync:rules  # 仅同步 rules
+pnpm sync        # 同步全部（skills + agents + rules）
+pnpm sync:skills # 仅同步 skills
+pnpm sync:agents # 仅同步 agents
+pnpm sync:rules  # 仅同步 rules
 ```
 
 ### 5. 检查与维护
 
 ```bash
-npm run mp               # 生成 marketplace.json 和各 skill 的 plugin.json
-npm run mp:check         # 校验市场元数据是否过期（改了 frontmatter / 增删 skill 后未执行 mp 时提示）
-npm run hooks:install    # 安装 pre-commit hook（提交时自动拦截过期元数据）
-npm run config:check     # 检查当前生效的配置文件路径
+pnpm mp               # 生成 marketplace.json 和各 skill 的 plugin.json
+pnpm mp:check         # 校验市场元数据是否过期（改了 frontmatter / 增删 skill 后未执行 mp 时提示）
+pnpm hooks:install    # 安装 pre-commit hook（提交时自动拦截过期元数据）
+pnpm config:check     # 检查当前生效的配置文件路径
 ```
 
-> ⚠️ 改了 skill 的 frontmatter（描述/关键词/分类等）或增删 skill 后，**必须**执行 `npm run mp` 再提交，否则插件市场看不到更新。只改 SKILL.md 正文或子文件则无需执行。
+> ⚠️ 改了 skill 的 frontmatter（描述/关键词/分类等）或增删 skill 后，**必须**执行 `pnpm mp` 再提交，否则插件市场看不到更新。只改 SKILL.md 正文或子文件则无需执行。
 > 脚本详细说明见 [scripts/README.md](scripts/README.md)。
 
 ## 📖 文档站（VitePress）
@@ -173,7 +173,7 @@ pnpm docs:deploy "docs: xxx"  # 一键部署到 GitHub Pages（需传 commit 描
 pnpm docs:deploy "docs: update site"   # 必须传入语义化 commit 描述
 ```
 
-该命令（`scripts/deploy.sh`）会自动完成：`docs:gen` 生成内容 → 以 `DOCS_BASE=/ai-coding-kit/` 构建 → 在 `docs/.vitepress/dist` 内初始化临时 git 仓库并**强制推送**到远程 `gh-pages` 分支 → 清理临时 git → **提交并推送主仓库源码**（commit 描述用你传入的参数）。发布地址：**https://themusecatcher.github.io/ai-coding-kit/**。
+该命令（`scripts/deploy.sh`）会自动完成：`docs:gen` 生成内容 → 以 `DOCS_BASE=/ai-coding-kit/` 构建 → 在 `docs/.vitepress/dist` 内初始化临时 git 仓库并**强制推送**到远程 `gh-pages` 分支 → 清理临时 git → **提交并推送主仓库源码**（commit 描述用你传入的参数）。发布地址：<https://themusecatcher.github.io/ai-coding-kit/>。
 
 > - 首次部署后，需到 GitHub 仓库 **Settings → Pages** 将 Source 设为 `Deploy from a branch`、分支选 `gh-pages` / `/ (root)`。
 > - 与本地参考仓库 `vue-amazing-ui/scripts/deploy.sh` 保持一致：先部署 dist 产物，再提交源码；缺少 commit 描述会直接报错拦截。
