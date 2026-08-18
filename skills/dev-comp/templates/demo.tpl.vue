@@ -6,8 +6,12 @@
 //   2. 每个分区两个组件对照：①本项目组件（左/上）②antd 官网组件（右/下），行为 1:1 一致
 //   3. 项目特有场景（主题切换等官网没有的用例）单独追加分区
 import { ref } from 'vue'
+// 引入真身两种方式（按项目配置择一，详见 references/flow.md 阶段 3）：
+//   方式 A（优先）：项目已配 unplugin-vue-components 的 AntDesignVueResolver 时，
+//     template 直接用 <a-xxx> 全局标签（如 <a-auto-complete>），无需手动 import
+//   方式 B：项目未配 resolver 时，显式 import 如下
 // import { Xxx } from 'vue-amazing-ui'                 // 本项目组件
-// import { Xxx as AXxx } from 'ant-design-vue'         // antdv 真身（项目 devDependencies 已有，用于对照）
+// import { Xxx as AXxx } from 'ant-design-vue'         // antdv 真身（方式 B；项目 devDependencies 已有，用于对照）
 // 或 naive 对照：import { NXxx } from 'naive-ui'
 
 // ============ 演示数据（官网各用例数据原样复制于此，逐个分区声明） ============
@@ -35,7 +39,8 @@ function handleClick(info: unknown) {
       <div class="demo-col">
         <h3>antd 官网组件</h3>
         <!-- 原样复制官网该用例代码与数据 -->
-        <!-- <AXxx :items="items" @click="handleClick" /> -->
+        <!-- 方式 A（优先，已配 resolver）：<a-xxx :items="items" @click="handleClick" /> -->
+        <!-- 方式 B（显式 import）：<AXxx :items="items" @click="handleClick" /> -->
       </div>
     </div>
 

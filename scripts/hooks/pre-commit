@@ -1,0 +1,55 @@
+#!/bin/bash
+# ==============================================================================
+# pre-commit hook — 插件市场元数据过期拦截
+#
+# 当 staged 变更涉及 skills/ 或 .codebuddy-plugin/ 时，校验
+# marketplace.json / plugin.json 是否与各 SKILL.md frontmatter 一致；
+# 过期则阻止提交，提示执行 npm run mp 重新生成。
+#
+# 安装：bash scripts/hooks/install.sh
+# 跳过：git commit --no-verify（不推荐）
+# ==============================================================================
+
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+STAGED="$(git diff --cached --name-only)"
+
+# 无 staged 变更时放行（如空提交）
+[ -z "$STAGED" ] && exit 0
+
+# staged 变更不涉及 skills/ 或 .codebuddy-plugin/ → 无需校验
+if ! echo "$STAGED" | grep -qE '^(skills/|\.codebuddy-plugin/)'; then
+  exit 0
+fi
+
+echo "🔍 检测到 skills / 插件市场元数据变更，校验元数据是否过期..."
+
+if ! command -v python3 >/dev/null 2>&1; then
+  echo ""
+  echo "❌ 提交被拦截：未找到 python3，无法校验插件市场元数据"
+  echo "   请安装 Python 3 后重试，或确认无误后 git commit --no-verify"
+  exit 1
+fi
+
+# 清除 git 运行 hook 时注入的环境变量，保证校验与「shell 下执行 npm run mp」环境一致：
+# 1) GIT_AUTHOR_* / GIT_COMMITTER_*：本次 commit 的作者信息（get_author_info 的环境变量回退会读到）
+# 2) GIT_CONFIG_*：git -c 参数的进程间传递机制（hook 内 git config 子进程会读到，污染 git config 回退）
+# 若不清除，author 字段会被注入值污染，与 mp 生成结果不一致，造成永久误拦截。
+unset GIT_AUTHOR_NAME GIT_AUTHOR_EMAIL GIT_COMMITTER_NAME GIT_COMMITTER_EMAIL 2>/dev/null || true
+for _hook_var in $(env | grep -E '^GIT_CONFIG_' | cut -d= -f1); do
+  unset "$_hook_var" 2>/dev/null || true
+done
+
+cd "$REPO_ROOT"
+
+if python3 scripts/generate_marketplace.py --check; then
+  exit 0
+fi
+
+echo ""
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "❌ 提交被拦截：插件市场元数据已过期"
+echo "   请先执行：npm run mp"
+echo "   然后 git add 重新生成的文件并再次提交"
+echo "   （确认无误可强制跳过：git commit --no-verify）"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+exit 1

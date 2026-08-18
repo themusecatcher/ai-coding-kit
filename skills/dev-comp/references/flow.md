@@ -89,7 +89,10 @@
    - **每个分区两个组件对照**：①「本项目组件」——本项目 `<Xxx>` 实现同一场景（**左/上**）；②「antd 官网组件」——原样复制官网该用例的代码与数据（**右/下**）
    - 两组件并排对照，行为/视觉 1:1 一致——这是**验收标准**
    - 项目特有场景（主题切换 light/dark 等官网没有的用例）单独追加分区
-3. **引入真身**：演示页 dev 环境直接 `import { Xxx as AXxx } from 'ant-design-vue'`（项目 devDependencies 已有），本地 clone 不存在时同样可用
+3. **引入真身**（两种方式，按项目配置择一）：
+   - **方式 A（自动按需，优先）**：项目 `vite.config.ts` 已配 `unplugin-vue-components` 的 `AntDesignVueResolver`（vue-amazing-ui 即此配置）时，模板中直接用 `<a-xxx>` 全局标签（如 `<a-auto-complete>`），插件自动按需导入，**无需手动 import**
+   - **方式 B（显式 import）**：项目未配 resolver 时，演示页 dev 环境显式 `import { Xxx as AXxx } from 'ant-design-vue'`（项目 devDependencies 已有）
+   - ⚠️ 先确认项目是否配置 resolver（`grep AntDesignVueResolver vite.config.ts`）再择一；两种方式本地 clone 不存在时同样可用
 4. 覆盖要求：官网全部用例（不遗漏、**顺序一致**）+ 边界（禁用/空数据/极值）+ 主题切换
 
 **产出**：可在 `pnpm dev` 中访问的演示页。

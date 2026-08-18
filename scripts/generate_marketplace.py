@@ -7,6 +7,11 @@
 数据来源：每个 skills/<name>/SKILL.md 头部的 YAML frontmatter。
 支持字段：name, description, category, keywords（均可在 frontmatter 中覆盖自动检测）。
 
+用法：
+  python3 scripts/generate_marketplace.py            # 生成（默认）
+  python3 scripts/generate_marketplace.py --check    # 只校验磁盘元数据是否与 frontmatter 一致，不写入
+  npm run mp:check                                   # 同上（npm 快捷方式）
+
 说明：CodeBuddy 插件市场规范要求插件清单位于 <plugin>/.codebuddy-plugin/plugin.json，
 且不声明 skills 字段（由系统自动发现 plugin 根的平铺 SKILL.md，技能名取 frontmatter name）。
 历史版本把清单生成在 skills/<name>/plugin.json 平铺位置且 skills 字段指向文件，
@@ -355,8 +360,12 @@ def is_low_quality_description(name: str, description: str) -> bool:
     return False
 
 
-def main():
+def collect_plugins():
+    """遍历 skills/ 目录收集插件元数据（不写磁盘）。
+
+    返回 (plugins_meta, plugin_json_map, skipped, warnings, category_stats)。"""
     plugins_meta = []
+    plugin_json_map = {}
     skipped = []
     warnings = []
     category_stats = {}  # 统计各分类数量
@@ -394,7 +403,7 @@ def main():
                 f"      → 请在 skills/{slug}/SKILL.md frontmatter 中补充完整的中文描述"
             )
 
-        # 1) 写入 skills/<slug>/.codebuddy-plugin/plugin.json
+        # 1) skills/<slug>/.codebuddy-plugin/plugin.json
         #    不声明 skills 字段：由 CodeBuddy 自动发现 plugin 根的平铺 SKILL.md
         plugin_json = {
             "name": plugin_name,
@@ -404,14 +413,9 @@ def main():
             "keywords": keywords,
             "category": category,
         }
-        plugin_meta_dir = skill_dir / ".codebuddy-plugin"
-        plugin_meta_dir.mkdir(exist_ok=True)
-        (plugin_meta_dir / "plugin.json").write_text(
-            json.dumps(plugin_json, ensure_ascii=False, indent=2) + "\n",
-            encoding="utf-8",
-        )
+        plugin_json_map[slug] = plugin_json
 
-        # 2) 收集到 marketplace.json（描述使用智能截断）
+        # 2) marketplace.json 条目（描述使用智能截断）
         plugins_meta.append({
             "name": plugin_name,
             "source": f"skills/{slug}",
@@ -423,19 +427,107 @@ def main():
             "strict": False,
         })
 
-    # 3) 写入根 .codebuddy-plugin/marketplace.json
-    MARKETPLACE_DIR.mkdir(exist_ok=True)
-    marketplace = {
+    return plugins_meta, plugin_json_map, skipped, warnings, category_stats
+
+
+def build_marketplace(plugins_meta) -> dict:
+    """构造根 .codebuddy-plugin/marketplace.json 的内容。"""
+    return {
         "name": MARKET_NAME,
         "description": MARKET_DESCRIPTION,
         "version": MARKET_VERSION,
         "owner": OWNER,
         "plugins": plugins_meta,
     }
+
+
+def write_outputs(plugin_json_map, plugins_meta):
+    """将插件元数据写入磁盘（各 plugin.json + marketplace.json）。"""
+    for slug, plugin_json in plugin_json_map.items():
+        plugin_meta_dir = SKILLS_DIR / slug / ".codebuddy-plugin"
+        plugin_meta_dir.mkdir(exist_ok=True)
+        (plugin_meta_dir / "plugin.json").write_text(
+            json.dumps(plugin_json, ensure_ascii=False, indent=2) + "\n",
+            encoding="utf-8",
+        )
+
+    MARKETPLACE_DIR.mkdir(exist_ok=True)
     (MARKETPLACE_DIR / "marketplace.json").write_text(
-        json.dumps(marketplace, ensure_ascii=False, indent=2) + "\n",
+        json.dumps(build_marketplace(plugins_meta), ensure_ascii=False, indent=2) + "\n",
         encoding="utf-8",
     )
+
+
+def check_outputs(plugin_json_map, plugins_meta) -> list:
+    """对比生成结果与磁盘现有元数据文件，返回过期/缺失/多余的描述列表（空列表表示一致）。"""
+    issues = []
+
+    # 1) 各 skill 的 plugin.json
+    for slug in sorted(plugin_json_map):
+        plugin_path = SKILLS_DIR / slug / ".codebuddy-plugin" / "plugin.json"
+        if not plugin_path.exists():
+            issues.append(f"缺失 skills/{slug}/.codebuddy-plugin/plugin.json（新增 skill 未生成元数据）")
+            continue
+        try:
+            disk = json.loads(plugin_path.read_text(encoding="utf-8"))
+        except json.JSONDecodeError:
+            issues.append(f"无法解析 skills/{slug}/.codebuddy-plugin/plugin.json")
+            continue
+        if disk != plugin_json_map[slug]:
+            issues.append(f"过期 skills/{slug}/.codebuddy-plugin/plugin.json（frontmatter 变更未同步）")
+
+    # 2) 磁盘上多余 plugin.json（skill 已删除但元数据残留）
+    for skill_dir in sorted(SKILLS_DIR.iterdir()):
+        if not skill_dir.is_dir():
+            continue
+        slug = skill_dir.name
+        plugin_path = skill_dir / ".codebuddy-plugin" / "plugin.json"
+        if slug not in plugin_json_map and plugin_path.exists():
+            issues.append(f"多余 skills/{slug}/.codebuddy-plugin/plugin.json（skill 已删除，元数据未清理）")
+
+    # 3) 根 marketplace.json
+    marketplace_path = MARKETPLACE_DIR / "marketplace.json"
+    if not marketplace_path.exists():
+        issues.append("缺失 .codebuddy-plugin/marketplace.json")
+    else:
+        try:
+            disk = json.loads(marketplace_path.read_text(encoding="utf-8"))
+        except json.JSONDecodeError:
+            issues.append("无法解析 .codebuddy-plugin/marketplace.json")
+        else:
+            if disk != build_marketplace(plugins_meta):
+                issues.append("过期 .codebuddy-plugin/marketplace.json")
+
+    return issues
+
+
+def main():
+    # --check 模式：只校验不写入（供 pre-commit hook / 手动自查使用）
+    check_mode = "--check" in sys.argv
+
+    plugins_meta, plugin_json_map, skipped, warnings, category_stats = collect_plugins()
+
+    if check_mode:
+        issues = check_outputs(plugin_json_map, plugins_meta)
+
+        # description 不合格时 npm run mp 会报错退出，提前提示避免二次往返
+        if warnings:
+            print("⚠️  以下 skill 的 description 不合格（执行 npm run mp 会报错，需先修复 frontmatter）：")
+            for w in warnings:
+                print(w.rstrip())
+            print("")
+
+        if issues:
+            print("❌ 插件市场元数据过期（与 SKILL.md frontmatter 不一致）：")
+            for issue in issues:
+                print(f"   - {issue}")
+            print("")
+            print("   → 请执行 npm run mp 重新生成后再提交")
+            sys.exit(1)
+        print("✅ 插件市场元数据与 SKILL.md frontmatter 一致")
+        sys.exit(0)
+
+    write_outputs(plugin_json_map, plugins_meta)
 
     # 输出统计
     print(f"✅ Generated {len(plugins_meta)} plugin.json files")
