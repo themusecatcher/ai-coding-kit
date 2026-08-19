@@ -6,7 +6,7 @@
 
 - **Node** 18+（本文档站基于 VitePress，需 Node 18+）
 - **git** + **bash**（skill 核心功能依赖）
-- **Python 3**（仅维护脚本 `npm run mp` / `mp:check` / `config:check` 需要）
+- **Python 3**（仅维护脚本 `pnpm mp` / `pnpm mp:check` / `pnpm config:check` 需要）
 
 ## 1. 克隆仓库
 
@@ -31,7 +31,7 @@ bash install.sh   # 默认：dev-flow + 全部 14 依赖 + 规则 + Agents
 | 命令 | 内容 |
 |------|------|
 | `bash install.sh` | 默认安装：dev-flow + 全部 14 依赖（共 **15 个 Skill**）+ **2 条核心规则** + 10 个 Agents |
-| `bash install.sh --all-repo` | 整仓全量：仓库根 `skills/` 下**全部 28 个 Skill** + 全部 **16 条规则** + 10 Agents |
+| `bash install.sh --all-repo` | 整仓全量：仓库根 `skills/` 下**全部 29 个 Skill** + 全部 **16 条规则** + 10 Agents |
 
 > **远程安装**（无需预先 clone）：`bash <(curl -sSL <your-repo-url>/raw/main/skills/dev-flow/dist/remote-install.sh)`。
 >
@@ -64,7 +64,7 @@ vim ~/.codebuddy/config/org.yaml
 ### 验证配置
 
 ```bash
-npm run config:check   # 检查当前生效的配置文件路径
+pnpm config:check   # 检查当前生效的配置文件路径
 ```
 
 ## 4. 从本地同步回仓库（维护者）
@@ -72,19 +72,19 @@ npm run config:check   # 检查当前生效的配置文件路径
 修改 `~/.codebuddy/` 下的 skills、agents、rules 后，同步回本仓库：
 
 ```bash
-npm run sync        # 同步全部（skills + agents + rules）
-npm run sync:skills # 仅同步 skills
-npm run sync:agents # 仅同步 agents
-npm run sync:rules  # 仅同步 rules
+pnpm sync        # 同步全部（skills + agents + rules）
+pnpm sync:skills # 仅同步 skills
+pnpm sync:agents # 仅同步 agents
+pnpm sync:rules  # 仅同步 rules
 ```
 
-> 改动 skill 的 frontmatter 或增删 skill 后，提交前需执行 `npm run mp` 重新生成插件市场元数据；建议执行一次 `npm run hooks:install`，让 pre-commit hook 自动拦截过期元数据。
+> 改动 skill 的 frontmatter 或增删 skill 后，提交前需执行 `pnpm mp` 重新生成插件市场元数据；建议执行一次 `pnpm hooks:install`，让 pre-commit hook 自动拦截过期元数据。
 
 ## 5. 本地运行文档站
 
 ```bash
-npm install         # 安装 VitePress 等依赖
-npm run docs:dev     # 本地启动文档站（热更新）
-npm run docs:build   # 构建静态站点
-npm run docs:preview # 预览构建产物
+pnpm install         # 安装 VitePress 等依赖
+pnpm docs:dev     # 本地启动文档站（热更新）
+pnpm docs:build   # 构建静态站点
+pnpm docs:preview # 预览构建产物
 ```

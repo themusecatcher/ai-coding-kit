@@ -177,7 +177,7 @@ A: **不会丢失**。若目标位置已有非本安装器的实体目录，安�
 
 ### Q: 在 ~/.codebuddy/ 下修改 skill 会影响 clone 仓库吗？
 
-A: **不会**。安装采用**复制**（独立实体副本），`~/.codebuddy/` 下的内容与 clone 仓库完全隔离——改动任一方都不影响另一方。如需把 `~/.codebuddy/` 下的改动同步回仓库，在 ai-coding-kit 项目下运行 `npm run sync`。
+A: **不会**。安装采用**复制**（独立实体副本），`~/.codebuddy/` 下的内容与 clone 仓库完全隔离——改动任一方都不影响另一方。如需把 `~/.codebuddy/` 下的改动同步回仓库，在 ai-coding-kit 项目下运行 `pnpm sync`。
 
 ### Q: 默认安装 与 --all-repo 的区别？
 
@@ -252,7 +252,7 @@ dist/codebuddy/skills/xxx      → ~/.codebuddy/skills/xxx（独立副本）
 - 卸载时受管副本先备份到 `.backup/` 再移除，非本安装器的实体目录会跳过保护
 
 > 更新方式：`git pull` 后重新运行 `install.sh`（覆盖受管副本，旧副本自动备份）。
-> 如需把本地改动回流到仓库，在 ai-coding-kit 项目下运行 `npm run sync`。
+> 如需把本地改动回流到仓库，在 ai-coding-kit 项目下运行 `pnpm sync`。
 
 ### 系统要求
 

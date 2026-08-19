@@ -7,7 +7,7 @@
 #
 # 快速开始：
 #   bash install.sh              # 默认：全部关联 Skill（15 个）+ 2 条核心规则 + Agents
-#   bash install.sh --all-repo   # 整仓全量（仓库 skills/ 全部 28 个 + rules/ 全部 16 条 + all Agents）
+#   bash install.sh --all-repo   # 整仓全量（仓库 skills/ 全部 29 个 + rules/ 全部 16 条 + all Agents）
 #
 # 完整用法（管理命令 / 示例）见：
 #   bash install.sh --help

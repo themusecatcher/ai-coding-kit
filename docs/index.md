@@ -65,6 +65,6 @@ bash install.sh   # 默认：dev-flow + 全部依赖 + 核心规则 + Agents
 | 命令 | 内容 |
 |------|------|
 | `bash install.sh` | 默认安装：dev-flow + 全部 14 依赖（共 **15 个 Skill**）+ **2 条核心规则** + 10 个 Agents |
-| `bash install.sh --all-repo` | 整仓全量：**全部 28 个 Skill** + 全部 **16 条规则** + 10 Agents |
+| `bash install.sh --all-repo` | 整仓全量：**全部 29 个 Skill** + 全部 **16 条规则** + 10 Agents |
 
 > 安装器为**复制**式独立副本，与本仓库完全隔离 —— 改动 `~/.codebuddy/` 下的内容不会影响本仓库，反之亦然。详见 [安装与配置](/guide/installation)。
