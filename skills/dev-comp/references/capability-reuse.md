@@ -8,7 +8,7 @@
 **状态**：自建（借设计不借模板）。
 
 - dev-flow 模板 400+ 行，绑 TAPD/iWiki/跨项目/门控字段，对开源组件库基本不适用
-- dev-comp 自建精简版（40 行），只留：组件名/phase/参考源/进度/接续指引/决策记录/可复用资产索引/对齐清单（API 四维 + Demo 用例）/naive 差异登记/项目特有需求
+- dev-comp 自建精简版，只留：组件名/phase/参考源/进度/接续指引/决策记录/可复用资产索引/对齐清单（API 四维 + Demo 用例）/naive 差异登记/项目特有需求
 - 命名沿用 `vaui-{组件名}-{YYYYMMDD}.md`，存储改用 dev-comp 专属目录 `~/.codebuddy/dev-comp/working-context/`（与 dev-flow 产物物理隔离，不被 dev-flow lint/dashboard 扫描误伤）
 - 写前 `mkdir -p ~/.codebuddy/dev-comp/working-context/`（首次使用目录不存在，禁止假设已存在）
 - 不调 `validate-working-context.sh`，不做 JSON Schema 校验

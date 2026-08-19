@@ -5,6 +5,7 @@ phase: P1
 phases_total: {N}
 status: in_progress
 branch: ""
+release: pending
 ref_primary: antdv
 api_style: ""
 start_date: "{YYYY-MM-DD}"
@@ -40,7 +41,7 @@ artifacts:
 | Props | | | | | | |
 | Events | | | | | | |
 | Slots | | | | | | |
-| Expose | | | | | | |
+| Expose（文档标题 Methods） | | | | | | |
 
 ### Demo 用例对齐清单（顺序与官网一致）
 | antdv 官网用例 | 本项目用例 | antd 官网用例复制 | 缺失处置 |
@@ -60,6 +61,7 @@ artifacts:
 - 上次（yesterday）：{做了什么}
 - 下一步（next_action）：{具体动作}
 - 待确认：{有则填}
+- 发布状态（release）：pending（未发布）/ released: {版本号}（{日期}）；验收完成后若未发布，此处必填「待发布：合入 main + 发布」（见 `references/release-flow.md`）
 
 ## 决策记录
 - [{HH:mm}] {决策内容}

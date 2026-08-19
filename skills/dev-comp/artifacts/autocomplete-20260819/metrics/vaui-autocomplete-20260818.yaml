@@ -1,0 +1,20 @@
+# dev-comp 精简度量报告
+# 每个组件/阶段完成时，写入 ~/.codebuddy/dev-comp/metrics/vaui-{组件名}-{日期}.yaml
+# 仅保留对组件开发有意义的核心字段
+
+component: autoComplete
+phase: P1
+requirement_type: feature                    # feature | bugfix
+files_changed: 22
+lines_added: 2291
+lines_deleted: 711
+rollback_count: 1
+user_corrections: 1
+first_time_right: false
+lint_pass_first_try: true
+type_check_pass: true
+browser_verified: true
+devlog_generated: true
+knowledge_updated: true
+start_date: "2026-08-14"
+complete_date: "2026-08-19"

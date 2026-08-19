@@ -10,6 +10,7 @@ components/{组件名}/                # ① 组件本体
   ├─ index.ts                           # withInstall + 类型导出
   └─ {子组件}/{Sub}.vue + index.ts      # 多子组件时（如 menu/menuitem）
 components/components.ts                 # ← 手动追加导出（注册点A）
+components/utils/resolver.ts             # ← 手动追加样式映射（注册点B，⭐易遗漏：componentsMap + componentDependencies）
 components/index.ts# 自动 install 循环（无需手改）
 
 src/views/{组件名}/                      # ② 演示用例
@@ -18,7 +19,8 @@ src/views/{组件名}/                      # ② 演示用例
 src/router/index.ts# import.meta.glob 自动扫描（无需手改）
 
 docs/guide/components/{组件名}.md        # ③ vitepress 文档
-docs 侧边栏配置                # ← 手动追加入口（注册点 B）
+docs 侧边栏配置                # ← 手动追加入口（注册点 C）
+components.d.ts                 # ← 自动生成；验收清理幽灵声明（⭐易遗漏，见 linkage-map §⑭）
 ```
 
 ## 注册点真实写法（实证）

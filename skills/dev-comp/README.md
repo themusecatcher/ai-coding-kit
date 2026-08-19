@@ -23,7 +23,9 @@ L3 模板层    templates/（组件/演示/工作上下文/度量 骨架模板�
 
 **核心理念**：领域专注 + 能力软引用。不进入 dev-flow 状态机与门控，只借用其生态中**独立存在**的 skill 作为能力模块。大组件支持分阶段交付（P1-Pn），参考 Ant Design Vue 与 Naive UI（官网 + 本地 clone 源码）。
 
-**完备性保障**：清单即验收基线——阶段 2 产出对齐清单（API 四维 Props/Events/Slots/Expose + Demo 用例）、naive 差异登记与阶段 0 项目特有需求，构成阶段 5 验收的唯一对账标准；Gate 5 全量回显勾销，缺失项必带处置码（`延后 P{n}` / `不覆盖（理由）` / `待用户确认`）。
+**完备性保障**：清单即验收基线——阶段 2 产出对齐清单（API 四维 Props/Events/Slots/Expose + Demo 用例）、naive 差异登记与阶段 0 项目特有需求，构成阶段 5 验收的唯一对账标准；Gate 5 全量回显勾销，缺失项必带处置码（`延后 P{n}` / `不覆盖（理由）` / `待用户确认`）。另有「发布前配置项终检」（`checklists.md` §发布前配置项终检）作为固定配置项唯一权威源。
+
+**发布闭环**：验收完成 ≠ 任务结束——阶段 5 末按 `references/release-flow.md` 引导「合入 main（GitHub PR）→ main 上构建发布 → 发布后清理」；版本号升级规则见 `references/changelog-spec.md`。
 
 **术语约定**：**antd = Ant Design Vue**（官网 https://www.antdv.com/ ），全仓库统一用 antdv 指代，非 React 版 ant.design。
 
@@ -52,7 +54,7 @@ L3 模板层    templates/（组件/演示/工作上下文/度量 骨架模板�
   ↓
 阶段 4  文档          → docs 复用演示页 + 周边文档联动
   ↓
-阶段 5  验收收尾      → 基线全量勾销 + lint+type-check+浏览器对照 → devlog+metrics+knowledge → commit
+阶段 5  验收收尾      → 配置项终检 + 基线全量勾销 + lint+type-check+浏览器对照 → devlog+metrics+knowledge → commit → 引导发布（合入 main + 构建发布）
 ```
 
 | 组件复杂度 | 策略 |
@@ -71,12 +73,16 @@ dev-comp/
 │   ├── project-map.md               #   项目结构地图（三件套 + 注册链路 + 脚本）
 │   ├── reference-sources.md         #   antdv/naive 参考源 + API 对齐决策规则
 │   ├── reusable-assets.md           #   项目可复用资产清单（动画/浮层/主题/utils）
-│   ├── checklists.md                #   开发全链路 checklist（分支/注册/主题/SSR/验收）
+│   ├── checklists.md                #   开发全链路 checklist + 发布前配置项终检
+│   ├── linkage-map.md               #   新增组件联动配置地图（⭐易遗漏点全集）
+│   ├── demo-description.md          #   用例标题/简介描述规范（权威源 + 同步）
+│   ├── changelog-spec.md            #   changelog 编写规范（版本号升级 + 双处同步）
+│   ├── release-flow.md              #   发布流程（合入 main + 构建发布 + 清理）
 │   └── capability-reuse.md          #   软复用 dev-flow 能力策略 + 降级
 └── templates/                     # 骨架模板
     ├── component.tpl.vue            #   组件本体骨架
     ├── demo.tpl.vue                 #   演示页骨架（含并排对照结构）
-    ├── working-context-lite.tpl.md  #   精简工作上下文模板（40 行）
+    ├── working-context-lite.tpl.md  #   精简工作上下文模板
     └── metrics-lite.tpl.yaml        #   精简度量报告模板
 ```
 
@@ -89,7 +95,11 @@ dev-comp/
 | `references/project-map.md` | 项目结构、注册链路、脚本、门禁 | AI | 阶段 1/3/4 |
 | `references/reference-sources.md` | 参考源路径 + antdv/naive 取舍规则 | AI | 阶段 0/2 |
 | `references/reusable-assets.md` | 项目可复用的动画/浮层/主题/utils | AI | 阶段 2（先搜索后编码） |
-| `references/checklists.md` | 开发全链路检查清单 | AI | 阶段 1/2/4/5 |
+| `references/checklists.md` | 开发全链路检查清单 + 发布前配置项终检（唯一权威源） | AI | 阶段 1/2/4/5 |
+| `references/linkage-map.md` | 新增组件全量联动点地图（⭐易遗漏点全集） | AI | 阶段 1/4/5 |
+| `references/demo-description.md` | 用例标题/简介描述规范（权威源 + 同步） | AI | 阶段 3/4 |
+| `references/changelog-spec.md` | changelog 编写规范（版本号升级 + 双处同步） | AI | 阶段 4/5 |
+| `references/release-flow.md` | 发布流程（合入 main + 构建发布 + 清理） | AI | 阶段 5（验收通过后） |
 | `references/capability-reuse.md` | 软复用策略 + 降级方案 | AI | 阶段 5（能力沉淀时） |
 | `templates/*` | 组件/演示/上下文/度量 骨架模板 | AI | 建新文件时 |
 

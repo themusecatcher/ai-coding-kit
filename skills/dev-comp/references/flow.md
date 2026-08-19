@@ -40,9 +40,10 @@
    - 单组件：`components/{组件名}/` → `{Xxx}.vue` + `index.ts`
    - 多子组件：`components/{组件名}/{子}/` 各自 `.vue` + `index.ts`，外层 `index.ts` 聚合
    - 用 `templates/component.tpl.vue` 作骨架
-3. **注册占位**（读 `references/checklists.md` §注册同步）：
+3. **注册占位**（读 `references/checklists.md` §注册同步 + `references/linkage-map.md` §④）：
    - `components/{组件名}/index.ts`：`withInstall` + 类型导出
    - `components/components.ts`：追加 `export type {...}` + `export { default as Xxx }`
+   - **⭐ `components/utils/resolver.ts`**：`componentsMap` 映射 + `componentDependencies` 依赖（组件 `.vue` 内实际 `import` 的组件逐一列出）——**这是功能缺陷级联动点，漏配会导致按需引入缺样式**
    - 顶层 `components/index.ts` 与 router **无需手改**（自动）
 
 **产出**：可import 的组件骨架 + 注册完成。
@@ -61,7 +62,7 @@
    a) 读取源码：`{REF_ANTDV_LOCAL}/components/{组件名}/src/*.tsx` 与 `interface.ts`（API/Props/默认值/字段名权威源；Menu 例：`Menu.tsx` / `interface.ts` / `SubMenu.tsx`）
    b) 读取**全部 demo**：`{REF_ANTDV_LOCAL}/components/{组件名}/demo/*.vue`（用户视角用例，逐个理解数据与交互）
    c) 生成完备性基线（**写入工作上下文「对齐清单」区**，`templates/working-context-lite.tpl.md` 已含该区域；接续时直接读取，不重做）：
-      - **API 四维对比清单**：Props / Events（事件名 + 回调参数结构）/ Slots（插槽名 + 参数）/ Expose（暴露方法 + 签名），逐项对比类型/默认值/必填/字段名
+      - **API 四维对比清单**：Props / Events（事件名 + 回调参数结构）/ Slots（插槽名 + 参数）/ Expose（暴露方法 + 签名，⚠️ 内部分析术语，文档章节标题对应 `## Methods`），逐项对比类型/默认值/必填/字段名
       - **Demo 用例对齐清单**：官网全部展示用例逐一列出（顺序与官网一致）
       - **naive 差异登记**（读 `references/reference-sources.md` §naive 差异登记）：naive 也有该组件时，登记「naive 有而 antdv 无」的特性到工作上下文「naive 差异登记」区，逐项给出决策（对齐 / 不覆盖（理由）/ 待用户确认）
    d) 对齐顺序：先 API 四维接口（Props/Events/Slots/Expose/默认值/字段名）→ 再逐个 Demo 用例
@@ -88,6 +89,7 @@
    - `index.ts`：`export default { title: '{中文名}' }`（路由自动注册，无需改 router）
 2. **用例结构（核心要求）**：
    - **完整复制 antdv 官网全部展示用例**：官网组件页（如 `https://www.antdv.com/components/{组件名}-cn/`）的每个展示用例都要在演示页中有对应分区，**分区顺序与官网展示用例顺序一致**（1、2、3… 按官网原序编号），只保留**用例标题 + 必要描述**（仿照项目其他组件演示页的写法，不复制大段官网文案）
+   - **简介描述规范**：读 `references/demo-description.md`（标题纯场景名 / 信息增量评估 / 代码标记 / 权威源=演示页 / 改动即同步）。核心红线：**演示页是简介描述的唯一权威源，docs 是派生副本，任何改动先改演示页再同步 docs，禁止单边修改**
    - **每个分区两个组件对照**：①「本项目组件」——本项目 `<Xxx>` 实现同一场景（**左/上**）；②「antd 官网组件」——原样复制官网该用例的代码与数据（**右/下**）
    - 两组件并排对照，行为/视觉 1:1 一致——这是**验收标准**
    - 项目特有场景（主题切换 light/dark 等官网没有的用例）单独追加分区
@@ -109,13 +111,16 @@
 
 1. **组件文档**：`docs/guide/components/{组件名}.md`
    - **关键：复用演示页**——docs 与 `src/views/{组件名}/Index.vue` 的 script+template 高度同源，直接迁移并加 vitepress 说明块（何时使用/API 表格）
+   - **简介描述同源**：读 `references/demo-description.md` §4 同步机制——docs 描述**从演示页逐字复制**（仅 `<code>` ↔ 反引号转换、docs 加 `<br/>`、演示页无 `<br/>`），段落数一致，禁止单边改写
    - ⚠️ **迁移时剔除对照内容**：docs 仅保留本项目 `<Xxx>` 用例，**剔除「antd 官网组件」分区及 `ant-design-vue` 真身 import**（对照仅验收期存在于演示页 `src/views`，阶段 5 收尾清除，不进文档）
    - API 表格：Props/Events/Slots/暴露方法，参照 antdv 文档结构
-2. **周边文档联动**（读 `references/checklists.md` §周边文档）：
+   - **API 章节标题四件套（强制）**：`## APIs`（含 Props 表 + 类型定义子表）/ `## Events` / `## Slots` / `## Methods`（对外暴露方法）——⚠️ 内部术语「Expose」**禁止直接作标题**，落地为 `## Methods`；命名不一致时以项目 ≥2 个同类组件文档的实际命名为准（先 grep 确认再落笔）
+2. **周边文档联动**（读 `references/checklists.md` §周边文档 + `references/linkage-map.md` §⑩⑪⑫）：
    - vitepress 侧边栏配置（新增组件入口）
    - `docs/index.md`（若有组件清单）
-   - `docs/guide/changelog.md`（新增变更记录）
+   - `docs/guide/changelog.md`（新增变更记录，**先读 `references/changelog-spec.md`**：版本号升级规则 + 双处同步 `package.json` version + 条目格式）
    - `README.md` + `README.zh-CN.md`（组件清单，中英双份）
+   - **⭐ 组件总数数字 +1（4 处）**：`docs/guide/features.md` / `docs/index.md` hero `details` / `README.zh-CN.md` / `README.md`，逐一 +1，改完 grep 自检数字一致
 
 **产出**：可在 `pnpm docs:dev` 中访问的组件文档 + 周边同步。
 
@@ -140,12 +145,14 @@
    - metrics：`mkdir -p ~/.codebuddy/dev-comp/metrics` 后按 `templates/metrics-lite.tpl.yaml` 写一份到 `CAP_METRICS_DIR`
    - knowledge：`use_skill('knowledge-loop')` 沉淀组件经验（接口/易错点）
 4. **提交**：`use_skill('smart-commit')` 生成 `feat: ...` message（无 scope）→ **等用户确认才提交**
-5. **清除演示页对照（红线）**：删除演示页全部 antdv/naive 真身组件、对应数据（如 `avalue*`/`aoptions*`）、`ant-design-vue` 相关 import 及 antdv 专属图标（本库用例仍使用的图标保留）；`components.d.ts` 中 antdv 组件声明随使用删除自动消失；验收前确保 `git diff` 中演示页仅剩本库用例。⚠️ 清除后需再跑一次 `lint:check` + `type-check` + `pnpm dev` 确认演示页无孤儿引用
-6. **收尾**：更新工作上下文 status（本P 完成 → 若还有下一 P，标注接续指引；全部完成 → 可归档）
+5. **清除演示页对照（红线）**：删除演示页全部 antdv/naive 真身组件、对应数据（如 `avalue*`/`aoptions*`）、`ant-design-vue` 相关 import 及 antdv 专属图标（本库用例仍使用的图标保留）；⚠️ **`components.d.ts` 中 antdv 组件声明不会自动消失**——清除对照后必须显式 `grep` 确认无幽灵声明并手动删除、**随本次 commit 一起提交**（`linkage-map.md` §⑭；幽灵声明已提交进 git，删除不随 commit 提交会「复活」）；同时检查 `src/App.vue` 是否有全局配置迁移残留的孤儿变量（`linkage-map.md` §⑬）；验收前确保 `git diff` 中演示页仅剩本库用例。⚠️ 清除后需再跑一次 `lint:check` + `type-check` + `pnpm dev` 确认演示页无孤儿引用
+6. **发布前配置项终检（核心红线）**：读 `references/checklists.md` §发布前配置项终检，把新增组件的全部固定配置项（A 代码注册链路 / B 文档联动链路 / C 残留清理 / E 一致性）**逐项勾销 + grep 自检实测**。⚠️ 埋入阶段（1/4）的检查不能替代本终检——埋入后文件可能再被改动，发布前必须全量回检。勾销结果逐项回显到 Gate 5 报告「发布前配置项终检」区块，❌ 项必带处置码，禁止摘要式报告。
+7. **引导发布（组件全部 P 完成且验收通过时）**：读 `references/release-flow.md`，向用户呈现「合入 main（GitHub PR）→ main 上构建发布 → 发布后清理」完整链路并引导执行；若用户本轮不发布，将「待发布：合入 main + 发布」写入工作上下文接续指引，**验收完成 ≠ 任务结束**（历史事故：AutoComplete 验收后停 8 个提交在 feat 分支，npm 与源码脱节）
+8. **收尾**：更新工作上下文 status + `release` 字段（本 P 完成 → 标注下一 P 接续指引；全部 P 完成但未发布 → `release: pending` + 接续指引标注「待发布」；本轮已完成发布 → `release: released: {版本号}` + 可归档）
 
 **产出**：验收通过 + devlog/metrics/knowledge + commit（待用户确认）。
 
-**🚦 Gate 5**：输出阶段 5 报告（基线全量勾销表 + lint / type-check / 浏览器实测结果 + 交互操作清单勾销结果 + commit message 预览）→ **「待用户确认」项须在报告中单独汇总，用户逐项决策后验收才算通过** → 弹 `ask_followup_question`（📦 确认提交 / 🔧 继续修复 / ⏸️ 暂停）→ 用户确认后由 smart-commit 执行提交。**未经用户明确选择「确认提交」不得 `git commit`**。
+**🚦 Gate 5**：输出阶段 5 报告（发布前配置项终检表 + 基线全量勾销表 + lint / type-check / 浏览器实测结果 + 交互操作清单勾销结果 + commit message 预览）→ **「待用户确认」项须在报告中单独汇总，用户逐项决策后验收才算通过** → 弹 `ask_followup_question`（📦 确认提交 / 🔧 继续修复 / ⏸️ 暂停）→ 用户确认后由 smart-commit 执行提交。**未经用户明确选择「确认提交」不得 `git commit`**。
 
 ---
 
@@ -182,7 +189,7 @@
 | Props | | | | |
 | Events | | | | |
 | Slots | | | | |
-| Expose | | | | |
+| Expose（文档标题 Methods） | | | | |
 
 ### naive 差异登记对账（阶段 5 适用）
 | 特性 | 决策 | 状态 |
@@ -191,6 +198,28 @@
 ### 项目特有需求对账（阶段 5 适用）
 | 需求 | 状态 |
 |------|:--:|
+
+### 发布前配置项终检（Gate 5 适用，权威源 checklists.md §发布前配置项终检，逐项勾销）
+| 类 | 配置项 | 状态 | 自检证据 |
+|----|--------|:--:|---------|
+| A | withInstall + 类型导出 | | |
+| A | components.ts 类型+组件导出 | | |
+| A | ⭐ resolver componentsMap | | grep 命中 |
+| A | ⭐ resolver componentDependencies | | grep 逐一对上 |
+| A | 自动注册（index.ts / router 未手改） | | git diff 无痕迹 |
+| B | 组件文档 {组件名}.md | | |
+| B | vitepress 侧边栏入口 | | grep 命中 |
+| B | changelog 变更记录 | | grep 命中 |
+| B | ⭐ 组件总数 4 处 +1 | | grep 数字一致 |
+| B | API 章节标题四件套（APIs/Events/Slots/Methods） | | grep 四件套齐全 |
+| C | ⭐ components.d.ts 幽灵声明 | | grep 0 匹配 |
+| C | App.vue 孤儿变量（仅涉及时） | | 不涉及 N/A 或 grep |
+| C | 演示页对照清除 | | git diff 仅本库用例 |
+| C | 调试代码清理 | | |
+| E | 组件总数 4 处数字一致 | | grep 数字一致 |
+| E | 演示页 ↔ docs 描述同源 | | grep 双向一致 |
+
+（❌ 项必带处置码，同基线勾销规则；禁止摘要式报告）
 
 ### 验证结果
 - [ ] vue-tsc 通过
@@ -233,4 +262,4 @@
 
 ## dc:st / dc:status 子命令
 
-从 `~/.codebuddy/dev-comp/working-context/` 扫描 `vaui-{组件名}-*.md`，读取当前组件的工作上下文，输出：组件名/当前 phase/进度/下一步/未完成的 P。
+从 `~/.codebuddy/dev-comp/working-context/` 扫描 `vaui-{组件名}-*.md`，读取当前组件的工作上下文，输出：组件名/当前 phase/进度/下一步/未完成的 P/发布状态（`release` 字段：pending → 提示「待发布：合入 main + 发布」，released → 显示已发布版本号）。

@@ -70,10 +70,10 @@ description: 面向 vue-amazing-ui 组件库的单组件开发迭代工作流。
 阶段 2  组件本体      → 对照antdv/naive 源码开发（先搜索复用项目资产）
 阶段 3  演示用例      → 完整复制官网用例（顺序一致）+ 双组件对照（src/views/xxx/Index.vue + index.ts）（⚠️ 对照为验收期临时结构，阶段 5 收尾清除）
 阶段 4  文档          → docs 复用演示页 + 周边文档联动
-阶段 5  验收收尾      → 基线全量勾销 + lint+type-check+浏览器对照 → devlog+metrics+knowledge → smart-commit
+阶段 5  验收收尾      → 配置项终检 + 基线全量勾销 + lint+type-check+浏览器对照 → devlog+metrics+knowledge → smart-commit → 引导发布（合入 main + 构建发布）
 ```
 
-**各阶段对应 Gate**：Gate 0 确认组件名/分阶段计划/参考源/项目特有需求 · Gate 1 确认分支/目录/注册骨架 · Gate 2 确认功能 + API 四维/Demo 用例对齐清单 · Gate 3 确认演示页完整复制官网用例（顺序一致）+ 双组件对照 · Gate 4 确认文档完整 · Gate 5 基线全量勾销 + 确认验收结果 + 提交。
+**各阶段对应 Gate**：Gate 0 确认组件名/分阶段计划/参考源/项目特有需求 · Gate 1 确认分支/目录/注册骨架 · Gate 2 确认功能 + API 四维/Demo 用例对齐清单 · Gate 3 确认演示页完整复制官网用例（顺序一致）+ 双组件对照 · Gate 4 确认文档完整 · Gate 5 配置项终检 + 基线全量勾销 + 确认验收结果 + 提交。
 
 > Gate 报告模板 + 交互式选项定义 → `references/flow.md` §Gate 门控机制
 > 完整执行规范 → `read_file("references/flow.md")`
@@ -82,7 +82,7 @@ description: 面向 vue-amazing-ui 组件库的单组件开发迭代工作流。
 
 | 能力 | 复用方式 | 何时用 | 详见 |
 |:--|:--|:--|:--|
-| 工作上下文 | 自建精简版（模板 40 行） | 阶段 0 建/接续 | `templates/working-context-lite.tpl.md` |
+| 工作上下文 | 自建精简版模板 | 阶段 0 建/接续 | `templates/working-context-lite.tpl.md` |
 | plan | `todo_write` 工具 | 阶段 0 列计划 | — |
 | 开发日志 | `use_skill('tech-doc')` | 阶段 5 收尾 | `references/capability-reuse.md` |
 | 度量采集 | 自建精简 YAML | 阶段 5 收尾 | `templates/metrics-lite.tpl.yaml` |
@@ -100,7 +100,11 @@ description: 面向 vue-amazing-ui 组件库的单组件开发迭代工作流。
 | 项目结构/注册链路 | `references/project-map.md` |
 | 参考源路径 + antdv/naive 取舍 | `references/reference-sources.md` |
 | 找可复用的项目已有资产 | `references/reusable-assets.md` |
-| 注册/主题/SSR/周边文档 checklist | `references/checklists.md` |
+| 注册/主题/SSR/周边文档 checklist + 发布前配置项终检 | `references/checklists.md` |
+| 新增组件联动配置地图（⭐易遗漏点全集） | `references/linkage-map.md` |
+| 用例标题/简介描述规范（权威源 + 同步） | `references/demo-description.md` |
+| changelog 编写规范（版本号升级 + 双处同步） | `references/changelog-spec.md` |
+| 发布流程（合入 main + 构建发布 + 清理） | `references/release-flow.md` |
 | 如何软复用 dev-flow 能力 + 降级 | `references/capability-reuse.md` |
 
 ## 核心红线（继承项目规范）
@@ -113,3 +117,6 @@ description: 面向 vue-amazing-ui 组件库的单组件开发迭代工作流。
 - ✅ 大组件分阶段交付（P1-Pn），避免半成品
 - ✅ 验收标准：演示页与antdv/naive 真身并排 1:1 对照（本项目组件在左/上，官网组件在右/下）+ 用例顺序与官网一致 + 浏览器实测（⚠️ 对照仅为验收手段：阶段 3 引入 → 阶段 5 浏览器实测验收 → **验收完成后由阶段 5 第 5 步清除**，演示页回归纯本库组件）
 - ✅ 清单即验收基线：阶段 2 对齐清单（API 四维 + Demo 用例）+ naive 差异登记 + 阶段 0 项目特有需求 = 阶段 5 验收唯一对账标准，Gate 5 全量回显勾销，❌ 项必带处置码（`延后 P{n}` / `不覆盖（理由）` / `待用户确认`），禁止摘要式报告
+- ✅ **联动清单即注册基线**：`references/linkage-map.md` 是「新增组件全量联动点」唯一权威源（含 ⭐ 易遗漏点：resolver 依赖映射 / 组件总数 4 处 / components.d.ts 幽灵声明 / App.vue 孤儿变量）。阶段 1/4/5 逐项勾销，**禁止靠记忆「顺手补几处」**；每处易遗漏点配 grep 自检，宣告完成前必须实测
+- ✅ **配置项终检即发布基线**：`references/checklists.md` §发布前配置项终检 是阶段 5 验收时固定配置项（代码注册/文档联动/残留清理/一致性）的唯一权威源，Gate 5 必须全量逐项回显勾销 + grep 自检实测；**埋入阶段（1/4）的检查不能替代终检**，发布前必须全量回检
+- ✅ **验收完成 ≠ 任务结束**：验收通过后按 `references/release-flow.md` 引导「合入 main（GitHub PR）→ main 上构建发布（`pnpm pub`，执行前用户逐条确认）→ 发布后清理（删 feat 分支）」；❌ 严禁在 feat 分支上执行发布；用户本轮不发布则写入工作上下文接续指引

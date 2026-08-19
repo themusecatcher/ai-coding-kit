@@ -5,6 +5,10 @@
 //      只保留「用例标题 + 必要描述」，用例顺序与官网保持一致（1、2、3… 按官网原序编号）
 //   2. 每个分区两个组件对照：①本项目组件（左/上）②antd 官网组件（右/下），行为 1:1 一致
 //   3. 项目特有场景（主题切换等官网没有的用例）单独追加分区
+//   4. 简介描述规范：读 references/demo-description.md
+//      - 权威源 = 演示页（本文件）；docs 是派生副本，任何改动先改这里再同步 docs
+//      - 仅信息增量时添加；代码标记原生 <code>（引用组件前 search_file 确认存在）
+//      - ⚠️ 演示页 <p> 自带间距，描述与组件之间【无需 <br/>】（<br/> 是 docs 才需要）
 import { ref } from 'vue'
 // 引入真身两种方式（按项目配置择一，详见 references/flow.md 阶段 3）：
 //   方式 A（优先）：项目已配 unplugin-vue-components 的 AntDesignVueResolver 时，
@@ -30,7 +34,9 @@ function handleClick(info: unknown) {
   <div class="demo-container">
     <!-- 用例 1 · 基础用法（官网用例名：xxx） -->
     <h2>1. 基础用法</h2>
-    <p class="demo-desc">基础用法描述（官网该用例的必要说明）</p>
+    <!-- 简介描述（可选）：仅信息增量时添加；代码标记原生 <code>；演示页 <p> 自带间距，【无需 <br/>】；
+         class 落地到项目时替换为目标项目既有间距 class（vue-amazing-ui 为 mb10，.demo-desc 仅骨架占位） -->
+    <p class="demo-desc">通过 <code>xxx</code> 控制 xxx（隐藏行为/区分点的必要说明）</p>
     <div class="demo-row">
       <div class="demo-col">
         <h3>本项目组件</h3>
@@ -45,8 +51,8 @@ function handleClick(info: unknown) {
     </div>
 
     <!-- 用例 2 · 禁用（官网用例名：xxx） -->
+    <!-- 标题「禁用」已自解释，无需简介描述（反例：禁止给自解释标题加描述） -->
     <h2>2. 禁用</h2>
-    <p class="demo-desc">禁用用例描述</p>
     <div class="demo-row">
       <div class="demo-col">
         <h3>本项目组件</h3>
