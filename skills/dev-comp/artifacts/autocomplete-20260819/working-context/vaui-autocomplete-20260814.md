@@ -3,11 +3,13 @@ component: autoComplete
 mode: component-dev
 phase: P1
 phases_total: 1
-status: completed
+status: released
 branch: feat/auto-complete
 ref_primary: antdv
 api_style: "v-model:value（antdv 风格，雏形已用）"
 start_date: "2026-08-14"
+released_version: "2.5.0"
+released_date: "2026-08-19"
 artifacts:
   component: components/autocomplete/
   demo: src/views/autoComplete/Index.vue
@@ -33,6 +35,7 @@ artifacts:
 | P4 | 文档（autocomplete.md + 侧边栏 + changelog + README×2） | ✅ 完成 |
 | P5 | 验收（lint/type-check/浏览器实测/devlog/commit） | ✅ 完成 |
 | P5.5 | 清除演示页 antd 对照 + 修正遗漏（未提交，待 commit） | ✅ 完成（2026-08-19 复核） |
+| 发布 | 合入 main + npm 发布 + 文档站部署 | ✅ 完成（2026-08-19） |
 
 ## 可复用项目资产（先搜索后编码）
 | 需求 | 项目已有 | 位置 |
@@ -47,10 +50,10 @@ artifacts:
 - P1+P2+P3 已完成：组件本体全量能力 + 演示页 19 分区（全部分区含 antd 真身双组件对照）
 - P4 已完成：组件文档 + 周边文档联动（侧边栏/changelog 2.5.0/README×2/package.json/components.ts 补导出）
 - P5 已完成：type-check/ESLint 通过 + 基线清单勾销（API 四维 + 9 个 antdv demo 用例全对齐）+ 浏览器实测（分组缩进/键盘循环/清除按钮）+ devlog/metrics/knowledge 沉淀
-- commit：3491d54b `feat: 新增自动完成组件`（12 files, +2219/-307）
-- 状态：✅ 主体已提交；另有「清除演示页 antd 对照 + 修正遗漏 + 版本号 2.5.0 修正」12 文件改动在工作区待提交（2026-08-19 复核确认）
-- 遗留：docs:build 全量构建在 image.md L89 失败——已在待提交改动中修复（`<Image loop` 标签断行导致的 Invalid end tag）；filterOption 默认 false（antdv 为 true）待用户裁决
-- 下一步（next_action）：生成待提交改动的 commit message → 用户确认后提交 → 等待合入 main
+- commit：3491d54b `feat: 新增自动完成组件`（12 files, +2219/-307）+ 583fb076 `fix: 修正自动完成组件版本号与收尾遗漏`（12 files, +74/-406）
+- 状态：✅ 已全部提交并发布（2026-08-19）：PR #46 合入 main → npm 发布 2.5.0（latest）→ gh-pages 文档站部署完成
+- 遗留：filterOption 默认 false（antdv 源码实为 false，官网文档写 true 有误）待用户裁决
+- 下一步（next_action）：无（已发布）；feat/auto-complete 分支按用户决策保留（2026-08-19）
 - 验证红线：浏览器验证用 snapshot/evaluate，**禁止截图**（本模型无图像能力）；阶段收尾清理产物并反向验证；报告可详细，交付物必须简洁
 - 待确认：API 风格已定 v-model:value
 - ⚠️ 失效引用已清理：`.codebuddy/autocomplete-improvement-plan.md` 已不存在（此前误记，2026-08-17 复核确认）
@@ -83,6 +86,7 @@ artifacts:
 - [2026-08-19] 版本号规范修正：初版误升 patch（2.4.28），按 `changelog-spec.md`「新增组件 → minor+1 patch 归 0」规则修正为 **2.5.0**（package.json 与 changelog 双处同步，历史先例 2.3.0/2.4.0）
 - [2026-08-19] changelog「future」区清理：删除已完成的「新增 自动完成 AutoComplete 组件」条目（其余 6 项 layout/menu/transfer/tour/comment/dropdown 组件目录不存在，保留）
 - [2026-08-19] 流程复核（用户发起深度审查）：发现阶段 5 四处收尾缺口并补齐——① metrics 缺失→补写 `~/.codebuddy/dev-comp/metrics/vaui-autocomplete-20260818.yaml`；② 清除演示页 antd 对照红线动作在 commit 3491d54b 之后才执行且未提交（commit 时演示页仍含 26 处 a-auto-complete）→ 清除已做（Index.vue -380 行），待提交；③ 工作上下文/devlog 状态与实际不符→已更新；④ 清除后未跑验证→代跑 lint exit 0 / vue-tsc exit 0 / 浏览器实测 19 分区全渲染、控制台 0 error/warning。另核实待提交 12 文件全部合理必要（含 resolver.ts 补 AutoComplete→Scrollbar 依赖声明、README 组件数 67→68、image.md 修复 Invalid end tag、package.json/changelog 版本号 2.5.0 规范修正）
+- [2026-08-19] 发布完成：收尾 commit 583fb076 提交 → PR #46 合入 main（用户手动操作）→ `pnpm pub` 发布 2.5.0（npm latest = 2.5.0）→ gh-pages 文档站部署成功（autocomplete.html 可访问）。发布前踩坑：本地 main 残留旧开发幽灵改动（components.d.ts 含 AConfigProvider 等 antd 声明）阻塞 pull，`git restore` 丢弃后 fast-forward 同步；npm 登录曾失效（401），用户 npm login 后发布。feat/auto-complete 分支按用户决策保留未删；产物归档到 skill artifacts/autocomplete-20260819/（运行时无副本，无双份）；Git tag v2.5.0 未打（历史惯例部分版本有 tag，可后续手动补）
 
 
 ## 对齐基线清单（Gate 5 验收基准，2026-08-18 由 antdv 4.2.6 官方 API 文档 + demo 源码生成）
