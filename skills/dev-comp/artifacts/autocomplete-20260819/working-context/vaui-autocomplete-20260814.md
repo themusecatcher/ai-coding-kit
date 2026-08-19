@@ -81,6 +81,7 @@ artifacts:
 - [2026-08-18] 键盘导航循环移动：边界（最后一项按↓/第一项按↑）无响应。改环形查找（direction*step+len)%len），仅一项可用或全禁用时保持不动。实测循环通过
 - [2026-08-18] 阶段 4 文档完成：docs/guide/components/autocomplete.md（19 用例剔除 antd 对照 + 何时使用 + APIs Props/Option/GroupOption/Events/Slots/Expose）+ 侧边栏（Alert 与 Avatar 之间）+ changelog 2.5.0 + package.json 2.5.0 + README×2 组件清单整表重排（字母序）+ components.ts 补导出 AutoCompleteOption/AutoCompleteGroupOption（对齐 SelectOption 惯例）。dist 重新构建后 vitepress 页面实测：19 用例 21 组件实例全渲染、远程搜索交互正常、0 error
 - [2026-08-19] 版本号规范修正：初版误升 patch（2.4.28），按 `changelog-spec.md`「新增组件 → minor+1 patch 归 0」规则修正为 **2.5.0**（package.json 与 changelog 双处同步，历史先例 2.3.0/2.4.0）
+- [2026-08-19] changelog「future」区清理：删除已完成的「新增 自动完成 AutoComplete 组件」条目（其余 6 项 layout/menu/transfer/tour/comment/dropdown 组件目录不存在，保留）
 - [2026-08-19] 流程复核（用户发起深度审查）：发现阶段 5 四处收尾缺口并补齐——① metrics 缺失→补写 `~/.codebuddy/dev-comp/metrics/vaui-autocomplete-20260818.yaml`；② 清除演示页 antd 对照红线动作在 commit 3491d54b 之后才执行且未提交（commit 时演示页仍含 26 处 a-auto-complete）→ 清除已做（Index.vue -380 行），待提交；③ 工作上下文/devlog 状态与实际不符→已更新；④ 清除后未跑验证→代跑 lint exit 0 / vue-tsc exit 0 / 浏览器实测 19 分区全渲染、控制台 0 error/warning。另核实待提交 12 文件全部合理必要（含 resolver.ts 补 AutoComplete→Scrollbar 依赖声明、README 组件数 67→68、image.md 修复 Invalid end tag、package.json/changelog 版本号 2.5.0 规范修正）
 
 

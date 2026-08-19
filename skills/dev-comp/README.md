@@ -44,7 +44,7 @@ L3 模板层    templates/（组件/演示/工作上下文/度量 骨架模板�
 ```text
 用户输入 dc: / 开发 xxx 组件
   ↓
-阶段 0  接续/初始化   → 读/建精简工作上下文 + todo plan + 分阶段决策
+阶段 0  接续/初始化   → 两级扫描读/建精简工作上下文（运行时目录优先 → artifacts 兜底）+ todo plan + 分阶段决策
   ↓
 阶段 1  准备          → 分支 + 建目录/配置 + 注册占位
   ↓
@@ -54,7 +54,7 @@ L3 模板层    templates/（组件/演示/工作上下文/度量 骨架模板�
   ↓
 阶段 4  文档          → docs 复用演示页 + 周边文档联动
   ↓
-阶段 5  验收收尾      → 配置项终检 + 基线全量勾销 + lint+type-check+浏览器对照 → devlog+metrics+knowledge → commit → 引导发布（合入 main + 构建发布）
+阶段 5  验收收尾      → 配置项终检 + 基线全量勾销 + lint+type-check+浏览器对照 → devlog+metrics+knowledge → commit → 产物归档决策（可选）→ 引导发布（合入 main + 构建发布）
 ```
 
 | 组件复杂度 | 策略 |
@@ -79,6 +79,7 @@ dev-comp/
 │   ├── changelog-spec.md            #   changelog 编写规范（版本号升级 + 双处同步）
 │   ├── release-flow.md              #   发布流程（合入 main + 构建发布 + 清理）
 │   └── capability-reuse.md          #   软复用 dev-flow 能力策略 + 降级
+├── artifacts/                       # 产物归档兜底目录（用户主动归档时写入，两级扫描第二级）
 └── templates/                     # 骨架模板
     ├── component.tpl.vue            #   组件本体骨架
     ├── demo.tpl.vue                 #   演示页骨架（含并排对照结构）
@@ -123,6 +124,7 @@ dev-comp 在以下环节调用独立 Skill（缺失则降级跳过，不阻断�
 | `~/.codebuddy/dev-logs/` | 开发日志（由 tech-doc 生成） | 阶段 5 |
 | `~/.codebuddy/dev-comp/metrics/` | 度量报告（精简 YAML，dev-comp 专属） | 阶段 5 |
 | `~/.codebuddy/knowledge/vue-amazing-ui/` | 组件知识沉淀 | 阶段 5 |
+| `{ARTIFACTS_FALLBACK_DIR}`（skill 内 `artifacts/`） | 产物归档快照（working-context/metrics/devlog/knowledge），阶段 0 接续两级扫描第二级兜底 | 阶段 5 收尾用户选择归档时 |
 
 ## 个人化配置
 
@@ -133,6 +135,7 @@ dev-comp 在以下环节调用独立 Skill（缺失则降级跳过，不阻断�
 | `PROJECT_ROOT` | vue-amazing-ui 项目根路径 |
 | `REF_ANTDV_LOCAL` | Ant Design Vue 本地 clone 路径 |
 | `REF_NAIVE_LOCAL` | Naive UI 本地 clone 路径 |
+| `ARTIFACTS_FALLBACK_DIR` | 产物归档兜底目录（可留空，留空则仅扫运行时目录） |
 
 其余流程、checklist、模板均为项目通用，无需改动。
 

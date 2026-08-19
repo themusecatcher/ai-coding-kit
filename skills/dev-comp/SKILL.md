@@ -11,15 +11,16 @@ description: 面向 vue-amazing-ui 组件库的单组件开发迭代工作流。
 
 ## ⚙️ 个人化配置区（复用/分享时只改这一块）
 
-> 本 skill 核心流程通用；下列配置**换人换机时只需填 3 个本地路径**，其余保持默认即可。
+> 本 skill 核心流程通用；下列配置**换人换机时只需填 4 个本地路径**，其余保持默认即可。
 
-### 必填（首次使用前填写）
+### 必填（首次使用前填写；`ARTIFACTS_FALLBACK_DIR` 可留空）
 
 | 配置项 | 填写你的本地路径 | 说明 |
 |:--|:--|:--|
 | `PROJECT_ROOT` | `~/myGithub/vue-amazing-ui` | 组件库项目根 |
 | `REF_ANTDV_LOCAL` | `~/myGithub/ant-design-vue` | Ant Design Vue 本地 clone 路径（留空则降级用官网） |
 | `REF_NAIVE_LOCAL` | `~/myGithub/naive-ui` | Naive UI 本地 clone 路径（留空则降级用官网） |
+| `ARTIFACTS_FALLBACK_DIR` | `~/myGithub/ai-coding-kit/skills/dev-comp/artifacts/` | 产物归档兜底目录（用户将产物归档到 skill 下时使用；留空则仅扫 `~/.codebuddy/` 运行时目录） |
 
 ### 默认可用（无需修改）
 
@@ -34,15 +35,16 @@ description: 面向 vue-amazing-ui 组件库的单组件开发迭代工作流。
 
 > 本地 clone 不存在时：降级为仅用官网（web_fetch）参考，并提示用户可clone 以获得源码级复用。
 
-## 📦 产物存储设计原则（2026-08-18 固化）
+## 📦 产物存储设计原则（2026-08-18 固化 · 2026-08-19 补充归档兜底）
 
-> 决策背景：深入评估过「产物入仓库」方案，被开源仓库 git 污染 + dev-flow 生态路径硬绑定否决。产物全部留在 `~/.codebuddy/`，本小节固化三条原则，防止后续迭代被顺手改回。
+> 决策背景：深入评估过「产物入仓库」方案，被开源仓库 git 污染 + dev-flow 生态路径硬绑定否决。产物**默认**留在 `~/.codebuddy/`（第 1-5 条，2026-08-18 固化）；2026-08-19 按用户决策补充第 6 条——用户可显式选择归档到 skill 下 `artifacts/` 目录（⚠️ 归档前须确认该目录已被 `.gitignore` 忽略，否则私有产物有污染仓库 git 历史的风险，与第 1 条精神相悖），本小节固化六条原则，防止后续迭代被顺手改回。
 
-1. **产物不入仓库**：vue-amazing-ui 是开源项目，工作上下文/对齐清单/决策记录/度量是个人私有开发过程，进 git 污染公开历史，进 `.gitignore` 污染所有 fork 者
+1. **产物不入仓库**：vue-amazing-ui 是开源项目，工作上下文/对齐清单/决策记录/度量是个人私有开发过程，进 git 污染公开历史，进 `.gitignore` 污染所有 fork 者（**用户主动归档到 `ARTIFACTS_FALLBACK_DIR` 的快照除外**，见第 6 条）
 2. **软复用产物沿用固有约定**：devlog（`~/.codebuddy/dev-logs/<项目>/<分支>/`）、knowledge（`~/.codebuddy/knowledge/vue-amazing-ui/`）路径由被软复用的 tech-doc / knowledge-loop skill 硬编码，改不得也不该改（零硬依赖原则）
 3. **自建产物物理隔离**：工作上下文、metrics 放 dev-comp 专属根目录 `~/.codebuddy/dev-comp/`（`working-context/` + `metrics/` 子目录）。不与 dev-flow 混放，避免被 dev-flow 的 lint 全量扫描 / dashboard 统计 / 度量闸门校验误伤
 4. **命名前缀不变**：`vaui-` 前缀保留，专属目录内按组件检索不受影响
 5. **目录自举（写前必建）**：`~/.codebuddy/dev-comp/` 专属目录首次使用不存在，阶段 0 初始化与阶段 5 写 metrics 前必须 `mkdir -p` 兜底，禁止假设目录已存在
+6. **产物归档与接续兜底（2026-08-19 固化）**：产物**默认留在 `~/.codebuddy/` 运行时目录**（原位即归档，无需额外动作）；用户提出归档或阶段 5 收尾时，**弹 `ask_followup_question` 由用户决策归档目标**——A 保留 `~/.codebuddy/` 运行时目录（默认）/ B 归档到 `ARTIFACTS_FALLBACK_DIR` 并删除运行时副本（**禁止双份**，归档保留为快照）。归档到 B 后，阶段 0 接续扫描按「**运行时目录优先 → `ARTIFACTS_FALLBACK_DIR` 兜底**」两级顺序（详见 `references/flow.md` 阶段 0），命中归档时复制回运行时目录恢复活跃状态
 
 ## 触发规则
 

@@ -9,11 +9,14 @@
 
 **目标**：判断是新组件还是接续已有组件，建立/恢复工作上下文，列出计划。
 
-1. **目录自举 + 扫描已有工作上下文**（首次使用专属目录不存在，禁止假设已存在）：
+1. **目录自举 + 两级扫描已有工作上下文**（首次使用专属目录不存在，禁止假设已存在；扫描顺序固定：运行时目录优先 → artifacts 兜底）：
    - 先建目录：`mkdir -p ~/.codebuddy/dev-comp/working-context ~/.codebuddy/dev-comp/metrics`
-   - 再扫描：`ls ~/.codebuddy/dev-comp/working-context/ | grep -i {组件名}`
-   - 命中 → 读取该文件，恢复 phase/进度/决策，跳到「下一步动作」继续，**不新建**
-   - 未命中 → 用 `templates/working-context-lite.tpl.md` 新建（命名：`vaui-{组件名}-{YYYYMMDD}.md`）
+   - **第一级（运行时目录，优先）**：`ls ~/.codebuddy/dev-comp/working-context/ | grep -i {组件名}`
+   - **第二级（归档兜底）**：`ls {ARTIFACTS_FALLBACK_DIR}/{组件名}-*/working-context/ | grep -i {组件名}`（`ARTIFACTS_FALLBACK_DIR` 配置留空则跳过本级）
+   - 第一级命中 → 读取该文件，恢复 phase/进度/决策，跳到「下一步动作」继续，**不新建**
+   - 第一级未命中、第二级命中 → `cp` 复制回运行时目录后读取恢复，向用户一句话说明「已从 skill artifacts 归档副本恢复运行时状态」
+   - 两级均未命中 → 用 `templates/working-context-lite.tpl.md` 新建到运行时目录（命名：`vaui-{组件名}-{YYYYMMDD}.md`）
+   - ⚠️ 归档兜底同样适用于 devlog（`{ARTIFACTS_FALLBACK_DIR}/{组件名}-*/devlog/`）、knowledge（`{ARTIFACTS_FALLBACK_DIR}/{组件名}-*/knowledge/`）与 metrics（`{ARTIFACTS_FALLBACK_DIR}/{组件名}-*/metrics/`）：运行时目录检索不到时提示用户归档副本存在，经用户同意后复制回运行时目录（⚠️ 二者为软复用 skill（tech-doc/knowledge-loop）产物，**不自动复制**，避免干扰其自身检索逻辑；与工作上下文「命中即自动恢复」的行为差异是**有意设计**）
 2. **复杂度与分阶段决策**：
    - 简单组件（单文件、无子组件、API < 8个）→ 单轮做完，不分 P（Gate 仍逐阶段确认，不因单轮而跳过）
    - 复杂组件（多子组件/递归/多模式，如 Menu/Table/Cascader）→ **必须分阶段 P1-Pn**，本轮只做一个 P，避免半成品
@@ -149,6 +152,7 @@
 6. **发布前配置项终检（核心红线）**：读 `references/checklists.md` §发布前配置项终检，把新增组件的全部固定配置项（A 代码注册链路 / B 文档联动链路 / C 残留清理 / E 一致性）**逐项勾销 + grep 自检实测**。⚠️ 埋入阶段（1/4）的检查不能替代本终检——埋入后文件可能再被改动，发布前必须全量回检。勾销结果逐项回显到 Gate 5 报告「发布前配置项终检」区块，❌ 项必带处置码，禁止摘要式报告。
 7. **引导发布（组件全部 P 完成且验收通过时）**：读 `references/release-flow.md`，向用户呈现「合入 main（GitHub PR）→ main 上构建发布 → 发布后清理」完整链路并引导执行；若用户本轮不发布，将「待发布：合入 main + 发布」写入工作上下文接续指引，**验收完成 ≠ 任务结束**（历史事故：AutoComplete 验收后停 8 个提交在 feat 分支，npm 与源码脱节）
 8. **收尾**：更新工作上下文 status + `release` 字段（本 P 完成 → 标注下一 P 接续指引；全部 P 完成但未发布 → `release: pending` + 接续指引标注「待发布」；本轮已完成发布 → `release: released: {版本号}` + 可归档）
+9. **产物归档决策（用户提出归档或收尾时）**：弹 `ask_followup_question` 由用户决策归档目标——A 保留 `~/.codebuddy/` 运行时目录（默认，原位即归档）/ B 归档到 `ARTIFACTS_FALLBACK_DIR`（结构 `{组件名}-{日期}/{working-context|metrics|devlog|knowledge}/`）并删除 `~/.codebuddy/` 运行时副本。⚠️ 归档动作**不自动执行**，须用户选择后再操作；选择 B 后删除运行时副本，禁止长期双份维护
 
 **产出**：验收通过 + devlog/metrics/knowledge + commit（待用户确认）。
 
@@ -262,4 +266,4 @@
 
 ## dc:st / dc:status 子命令
 
-从 `~/.codebuddy/dev-comp/working-context/` 扫描 `vaui-{组件名}-*.md`，读取当前组件的工作上下文，输出：组件名/当前 phase/进度/下一步/未完成的 P/发布状态（`release` 字段：pending → 提示「待发布：合入 main + 发布」，released → 显示已发布版本号）。
+两级扫描 `vaui-{组件名}-*.md`：**第一级** `~/.codebuddy/dev-comp/working-context/`；**第一级无结果时第二级兜底** `{ARTIFACTS_FALLBACK_DIR}/{组件名}-*/working-context/`（配置留空则跳过，两级均无 → 提示「该组件无工作上下文，可能未开始或已归档」）。读取后输出：组件名/当前 phase/进度/下一步/未完成的 P/发布状态（`release` 字段：pending → 提示「待发布：合入 main + 发布」，released → 显示已发布版本号）；来源为 artifacts 时标注「归档副本」。

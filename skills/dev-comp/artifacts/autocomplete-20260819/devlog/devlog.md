@@ -52,7 +52,7 @@
 | `components.d.ts` | 修改 | 类型声明自动生成 |
 | `docs/guide/components/autocomplete.md` | 新增 | 组件文档（19 用例 + API 表格） |
 | `docs/.vitepress/config.ts` | 修改 | 侧边栏入口 |
-| `docs/guide/changelog.md` | 修改 | 2.5.0 条目 |
+| `docs/guide/changelog.md` | 修改 | 2.5.0 条目 + 移除 future 区已完成条目 |
 | `package.json` | 修改 | 版本 2.5.0 |
 | `README.md` / `README.zh-CN.md` | 修改 | 组件清单（字母序重排） |
 

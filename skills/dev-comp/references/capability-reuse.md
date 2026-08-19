@@ -8,8 +8,9 @@
 **状态**：自建（借设计不借模板）。
 
 - dev-flow 模板 400+ 行，绑 TAPD/iWiki/跨项目/门控字段，对开源组件库基本不适用
-- dev-comp 自建精简版，只留：组件名/phase/参考源/进度/接续指引/决策记录/可复用资产索引/对齐清单（API 四维 + Demo 用例）/naive 差异登记/项目特有需求
+- dev-comp 自建精简版，只留：组件名/phase/参考源/进度/接续指引/决策记录/可复用资产索引/对齐清单（API 四维 + Demo 用例）/naive 差异登记/项目特有需求/release 发布状态
 - 命名沿用 `vaui-{组件名}-{YYYYMMDD}.md`，存储改用 dev-comp 专属目录 `~/.codebuddy/dev-comp/working-context/`（与 dev-flow 产物物理隔离，不被 dev-flow lint/dashboard 扫描误伤）
+- **接续两级扫描**：运行时目录优先 → `ARTIFACTS_FALLBACK_DIR` 兜底（命中归档副本时复制回运行时目录恢复活跃状态，详见 `flow.md` 阶段 0）
 - 写前 `mkdir -p ~/.codebuddy/dev-comp/working-context/`（首次使用目录不存在，禁止假设已存在）
 - 不调 `validate-working-context.sh`，不做 JSON Schema 校验
 
@@ -22,6 +23,7 @@
 **状态**：直接调用 `use_skill('tech-doc')`（独立 skill），生成六段式 devlog。
 
 调用时机：阶段 5 收尾。
+**接续兜底**：运行时目录检索不到时，检查 `{ARTIFACTS_FALLBACK_DIR}/{组件名}-*/devlog/` 归档副本，经用户同意后复制回运行时目录。
 
 **降级**：tech-doc 未安装→跳过并提示「tech-doc 未安装，跳过 devlog 生成，建议安装以自动生成开发日志」。
 
@@ -39,6 +41,7 @@
 
 - 阶段 2 检索：搜索先前组件开发经验（`~/.codebuddy/knowledge/vue-amazing-ui/`）
 - 阶段 5 沉淀：组件接口/数据模型/易错点等写入 `~/.codebuddy/knowledge/vue-amazing-ui/{组件模块}/`（knowledge-loop 按项目名存储，实际路径以该 skill 的 schema 为准）
+- **接续兜底**：运行时目录检索不到时，检查 `{ARTIFACTS_FALLBACK_DIR}/{组件名}-*/knowledge/` 归档副本，经用户同意后复制回运行时目录
 
 **降级**：knowledge-loop 未安装→跳过并提示用户可安装。
 
