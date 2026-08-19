@@ -7,6 +7,7 @@ description: |
   触发关键词：检查兼容性、兼容性审查、浏览器兼容、can I use、caniuse、
   baseline 检查、browserslist 检查、批量扫描兼容性、升级 browserslist、
   这段代码兼容吗、Safari 12 支持吗、检查 diff 兼容性。
+keywords: ["浏览器兼容性", "caniuse", "polyfill", "baseline检查", "browserslist", "browser-compat"]
 ---
 
 # 浏览器兼容性检查 Skill
@@ -88,7 +89,7 @@ graph TD
 
 ## 配置文件 Schema 兼容
 
-`load-config.js` 同时识别两套 `.browser-compat.json` schema 风格，用户既有项目零改动即可使用。新项目推荐使用「我们 schema」（命名更清晰），存量项目沿用「用户 schema」（已在 my-project / record-project / my-website 验证）。
+`load-config.js` 同时识别两套 `.browser-compat.json` schema 风格，用户既有项目零改动即可使用。新项目推荐使用「我们 schema」（命名更清晰），存量项目沿用「用户 schema」（已在 my-project / project-a / my-site 验证）。
 
 ### 字段对照表
 

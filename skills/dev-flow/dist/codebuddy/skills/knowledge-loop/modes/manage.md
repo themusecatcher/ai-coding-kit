@@ -80,9 +80,9 @@
 1. 向用户展示评估结果：
 
 ```text
-📊 模块规模评估：meeting-setting
+📊 模块规模评估：module-settings
 ├── 核心文件：5 个，总计 ~6200 行
-├── 最大文件：MeetingSetting/index.tsx（4100 行）
+├── 最大文件：ModuleSettings/index.tsx（4100 行）
 ├── 评估结果：大型模块
 └── 推荐策略：L1骨架→L2摘要→L3按需深入，超大文件分段处理
 ```
@@ -187,9 +187,9 @@
    ```text
    📊 项目全局评估：user-project
    ├── 识别到 5 个模块，共 87 个文件，~32000 行
-   ├── 大型模块：meeting-setting（6200行）、account-setting（4500行）
-   ├── 中等模块：member-manage（2800行）、role-permission（1500行）
-   ├── 轻量模块：org-structure（800行）
+   ├── 大型模块：module-settings（6200行）、profile-settings（4500行）
+   ├── 中等模块：team-manage（2800行）、access-control（1500行）
+   ├── 轻量模块：department-list（800行）
    └── 预估扫描时间：~8 分钟（L2 摘要级）
    ```
 
@@ -206,11 +206,11 @@
 
    ```
    📚 全量扫描进度：[██████░░░░] 3/5 模块
-   ├── meeting-setting   ✅ L1+L2+L3（6 个文件已写入）
-   ├── account-setting   ✅ L1+L2（4 个文件已写入）
-   ├── member-manage     ⏳ L2 扫描中（api.md）
-   ├── role-permission   ⏸️ 待扫描
-   └── org-structure     ⏸️ 待扫描
+   ├── module-settings   ✅ L1+L2+L3（6 个文件已写入）
+   ├── profile-settings   ✅ L1+L2（4 个文件已写入）
+   ├── team-manage     ⏳ L2 扫描中（api.md）
+   ├── access-control   ⏸️ 待扫描
+   └── department-list     ⏸️ 待扫描
    ```
 
    - 每个模块按智能评估推荐的深度执行
@@ -346,8 +346,8 @@
 
 1. **查询词扩展**（语义搜索增强）：
    - AI 先将用户的自然语言查询扩展为多组关键词
-   - 示例：用户搜索 "如何处理灰度判断" → 扩展为 `["灰度", "gray", "grayCalcOut", "queryAbilityConfig", "enable", "灰度中心", "能力中心"]`
-   - 示例：用户搜索 "接口报错处理" → 扩展为 `["error", "catch", "error_code", "错误码", "异常", "try", "dealReconnect"]`
+   - 示例：用户搜索 "如何处理灰度判断" → 扩展为 `["灰度", "gray", "calcResult", "queryFeatureConfig", "enable", "灰度平台", "配置中心"]`
+   - 示例：用户搜索 "接口报错处理" → 扩展为 `["error", "catch", "error_code", "错误码", "异常", "try", "handleReconnect"]`
 
 2. **多策略搜索**（并行执行，合并结果）：
    - **关键词搜索**：在 `~/.codebuddy/knowledge/{project-name}/` 下全文 grep 扩展后的关键词
@@ -362,14 +362,14 @@
 4. **输出格式**：
 
    ```
-   🔍 搜索 "灰度判断" → 扩展关键词：灰度, gray, grayCalcOut, queryAbilityConfig
+   🔍 搜索 "灰度判断" → 扩展关键词：灰度, gray, calcResult, queryFeatureConfig
    
-   1. user-project/_patterns/gray-control.md (verified) — 标题匹配
-      └── 灰度控制机制：能力中心 vs 灰度中心两种灰度平台对比
-   2. user-project/meeting-setting/api.md (verified) — 正文匹配
-      └── queryAbilityConfig：能力中心灰度查询接口
-   3. user-project/meeting-setting/pitfalls.md (verified) — 正文匹配
-      └── 两种灰度平台不能混用
+   1. user-project/_patterns/feature-flag.md (verified) — 标题匹配
+      └── 灰度控制机制：配置中心 vs 灰度平台两种灰度方式对比
+   2. user-project/module-settings/api.md (verified) — 正文匹配
+      └── queryFeatureConfig：配置中心灰度查询接口
+   3. user-project/module-settings/pitfalls.md (verified) — 正文匹配
+      └── 两种灰度方式不能混用
    ```
 
 5. **跨项目搜索**（可选）：加 `--all` 参数搜索所有项目
@@ -516,9 +516,9 @@
 
    ```text
    ✨ 检测到 3 条 pending 知识对应的 feature 分支已合入 master，建议升级为 verified：
-   ☑ meeting-setting/api.md       （feature/vip-light-preload）
-   ☑ account-setting/data-model.md（feature/account-export）  
-   ☑ _patterns/gray-control.md    （feature/gray-refactor）
+   ☑ module-settings/api.md       （feature/new-module）
+   ☑ profile-settings/data-model.md（feature/data-export）  
+   ☑ _patterns/feature-flag.md    （feature/refactor-module）
    ```
 
 #### 阶段 4：增量重扫「待重扫」列表
@@ -537,24 +537,24 @@
    🔄 dev:kb sync 报告（范围 abc1234..def5678，耗时 4.2s）
 
    ✨ pending 升级 verified（3项）
-   ├── meeting-setting/api.md（feature/vip-light-preload）
-   ├── account-setting/data-model.md
-   └── _patterns/gray-control.md
+   ├── module-settings/api.md（feature/new-module）
+   ├── profile-settings/data-model.md
+   └── _patterns/feature-flag.md
 
    ⚠️ verified 降级为 stale（3项）
-   ├── member-manage/logic.md — 他人改动于 commit a1b2c3d (@zhangsan)
-   ├── role-permission/api.md — 他人改动于 commit e4f5g6h (@lisi)
-   └── org-structure/data-model.md — 他人改动于 commit i7j8k9l (@wangwu)
+   ├── team-manage/logic.md — 他人改动于 commit a1b2c3d (@zhangsan)
+   ├── access-control/api.md — 他人改动于 commit e4f5g6h (@lisi)
+   └── department-list/data-model.md — 他人改动于 commit i7j8k9l (@wangwu)
 
    🔄 增量重扫后恢复（2项）
-   ├── member-manage/logic.md → verified（内容一致，调整变量名）
-   └── role-permission/api.md → verified（仅注释变动）
+   ├── team-manage/logic.md → verified（内容一致，调整变量名）
+   └── access-control/api.md → verified（仅注释变动）
 
    ❓ 需人工决策（1项）
-   └── org-structure/data-model.md — 接口参数变更，需手动合并
+   └── department-list/data-model.md — 接口参数变更，需手动合并
 
    ⚠️ 我的 pending 知识对应代码被他人改动（1项，详见下方独立列表）
-   └── vip-light/api.md（详见「手动确认列表」）
+   └── premium-mod/api.md（详见「手动确认列表」）
 
    🗑️ 疑似废弃（1项）
    └── deprecated-feature/api.md — 源文件已删除，请确认是否标记为 deprecated
@@ -588,8 +588,8 @@
 
    ```text
    ⚠️ 我的 pending 知识对应代码被他人改动（1项）
-   └── vip-light/api.md (created_branch=feature/vip-light-preload)
-         —— 被 @zhangsan 于 commit a1b2c3d 修改了 src/views/vip/api.ts
+   └── premium-mod/api.md (created_branch=feature/new-module)
+         —— 被 @zhangsan 于 commit a1b2c3d 修改了 src/views/premium/api.ts
          推荐动作：切回 feature 分支后重新检查并手动验证知识是否仍适用
    ```
 
@@ -628,7 +628,7 @@
 2. 输出每个模块的**知识覆盖度**（5 个主题文件的填充状态）：
 
    ```
-   模块: my-record
+   模块: my-project
    ├── _overview.md  ✅ verified (2026-04-10)
    ├── data-model.md ✅ verified (2026-04-08)
    ├── api.md        ✅ verified (2026-04-08)
@@ -659,7 +659,7 @@
 **输出格式**：
 
 ```
-📊 知识质量评估：meeting-setting
+📊 知识质量评估：module-settings
 ├── data-model.md  🟢 充实 — 完整接口定义 + 字段说明 + 常量枚举
 ├── api.md         🟢 充实 — 接口清单 + 参数 + 返回值
 ├── logic.md       🟡 基础 — 有初始化流程和函数签名，缺分支逻辑细节
@@ -707,7 +707,7 @@
 
 [auto-stale] (Y 条 — 优先处理)
   #001  {module}/design-intent.md::心跳机制
-        source: 知识库平台/wiki/heartbeat-design.md
+        source: remote-kb/wiki/heartbeat-design.md
         code_anchor: src/im/heartbeat.ts::startHeartbeat
         diff: wiki 描述 30s 心跳，代码实现 45s
         actions: [reject] [confirm] [view-diff]

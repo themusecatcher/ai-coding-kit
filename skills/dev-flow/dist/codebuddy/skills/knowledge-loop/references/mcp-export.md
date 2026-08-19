@@ -46,9 +46,9 @@
 ```yaml
 ---
 paths:
-  - "src/views/AccountSetting/components/MeetingSetting/**"
+  - "src/views/Settings/components/General/**"
 ---
-# 会议设置 - 易错点
+# 模块设置 - 易错点
 （从 pitfalls.md 导出的内容）
 ```
 
@@ -156,8 +156,8 @@ paths:
 📤 知识库导出完成：
 ├── 格式：CLAUDE.md + .claude/rules/
 ├── 项目：user-project
-├── 导出模块：meeting-setting（5 个知识文件）
-├── 导出位置：/path/to/user-center/
+├── 导出模块：module-settings（5 个知识文件）
+├── 导出位置：/path/to/myProject/
 └── 跳过：0 个文件（无 stale/draft 知识）
 ```
 

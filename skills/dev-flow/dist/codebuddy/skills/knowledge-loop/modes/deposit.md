@@ -36,7 +36,7 @@
 | 易错点/踩坑 | 开发过程中是否遇到了容易出错的地方？ | `pitfalls.md` |
 | 跨模块依赖 | 是否发现了模块间的隐式依赖？ | `pitfalls.md` 或 `_patterns/` |
 | **跨仓库参数链路**（跨项目场景时） | （仅 dev-flow `cross_project.enabled: true` 或改动涉及跨仓库调用的接口/参数时检查）是否有参数/字段/标识符跨越多个仓库的完整传递链路？上下游知识是否已建立双向链接？ | 各仓库 `_index.md` §「跨仓库知识」+ 各仓库对应主题文件（双向引用） |
-| **设计意图反哺**（远程 wiki/doc_platform）| 本次研究是否从 知识库平台/wiki / doc_platform / web_search 带回了「设计意图 / 架构背景 / 未来规划」类知识？ | `design-intent.md`（详见下文专章）|
+| **设计意图反哺**（远程 wiki/doc_platform）| 本次研究是否从 remote-kb/wiki / doc_platform / web_search 带回了「设计意图 / 架构背景 / 未来规划」类知识？ | `design-intent.md`（详见下文专章）|
 
 ---
 
@@ -67,7 +67,7 @@ has_uncommitted=$(git status --porcelain | wc -l)
 
 ```text
 🔍 沉淀分支检测
-├── 当前分支：feature/vip-light-preload
+├── 当前分支：feature/new-module
 ├── 基准分支：master
 ├── 未提交改动：2 个文件
 └── 推荐级别：pending（开发期知识；MR 合并后下次在 master 上跑 `dev:kb sync` 会自动升级为 verified）
@@ -164,7 +164,7 @@ release:
 **触发条件**（任一满足即执行）：
 
 1. dev-flow 工作上下文 `cross_project.enabled: true` 且 `cross_project.fix_projects` 非空
-2. 本次沉淀的主题涉及**跨仓库传递的参数/字段/标识符**（如 `c_app_version`、`app_id`、`query` 参数、jsapi 参数、URL 参数、请求 body 透传字段等）
+2. 本次沉淀的主题涉及**跨仓库传递的参数/字段/标识符**（如 `client_token`、`app_id`、`query` 参数、jsapi 参数、URL 参数、请求 body 透传字段等）
 
 **识别规则**：
 
@@ -176,7 +176,7 @@ AI 在完成步骤 5.5 后，扫描本次沉淀的主题文件内容，如果识
 **执行流程**：
 
 1. **识别参数量链路**：
-   - 从本次改动中提取跨仓库传递的关键参数名（如 `c_app_version`）
+   - 从本次改动中提取跨仓库传递的关键参数名（如 `client_token`）
    - 确定发起方仓库（参数构造方）和消费方仓库（参数解析/使用方）
    - 绘制完整传递链路（每层文件 + 作用）
 
@@ -291,7 +291,7 @@ AI 在完成步骤 5.5 后，扫描本次沉淀的主题文件内容，如果识
 
 ## design-intent.md 写入规则（设计意图反哺）
 
-> 针对 P3 类远程知识（知识库平台/wiki / git_doc_platform / doc_platform / web_search）带回的**设计意图、架构背景、未来规划**类知识，沉淀为独立文件 `design-intent.md`，**与代码事实类知识并列不互盖**，避免设计文档与现实代码混为一谈。
+> 针对 P3 类远程知识（remote-kb/wiki / git_doc_platform / doc_platform / web_search）带回的**设计意图、架构背景、未来规划**类知识，沉淀为独立文件 `design-intent.md`，**与代码事实类知识并列不互盖**，避免设计文档与现实代码混为一谈。
 
 ### 适用范围
 
@@ -335,7 +335,7 @@ release:
 ```markdown
 ## {主题，如「心跳机制设计背景」}
 
-<!-- source: 知识库平台/wiki | doc_platform:xxxxx | mr#1234 -->
+<!-- source: remote-kb/wiki | doc_platform:xxxxx | mr#1234 -->
 <!-- ingested_at: YYYY-MM-DD -->
 <!-- arbitration: P3 · scanned · 未与代码交叉验证 -->
 
@@ -381,7 +381,7 @@ release:
 沉淀到 `pitfalls.md` 的条目使用 `[线上验证]` 前缀标注：
 
 ```markdown
-- [线上验证] **corpId 与 accountCorpId 不等价**：corpInfos 中 corpId 和 accountCorpId 在普通企业场景下相同，但在个人直升企业场景下不同。灰度中心查询时 account_corp_id 参数必须使用 accountCorpId
+- [线上验证] **tenantId 与 accountTenantId 不等价**：tenantInfos 中 tenantId 和 accountTenantId 在普通团队场景下相同，但在个人升级团队版场景下不同。灰度平台查询时 account_tenant_id 参数必须使用 accountTenantId
 ```
 
 检索模式加载知识时，`[线上验证]` 标签的条目**优先展示**（置信度最高的实战经验）。
@@ -390,7 +390,7 @@ release:
 
 强化沉淀时，AI 必须主动检查：
 
-1. bug 根因涉及的概念（如"corpId vs accountCorpId"）是否在其他模块中也被使用
+1. bug 根因涉及的概念（如"tenantId vs accountTenantId"）是否在其他模块中也被使用
 2. 有通用性 → 同步更新 `_patterns/` 或其他相关模块的 `pitfalls.md`
 3. 无通用性 → 仅更新当前模块
 

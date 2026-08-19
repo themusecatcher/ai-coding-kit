@@ -132,9 +132,9 @@ expect(assertions).toHaveLength(0);
 
 ```bash
 # 运行单个验证测试
-E2E_URL='https://host/my-record/shares?id=xxx&record_type=4' \
+E2E_URL='https://example.com/project-a/page?id=xxx&type=4' \
 E2E_STORAGE_STATE='.playwright/.auth/state.json' \
-bun run test:e2e -- tests/e2e/cases/timelines-panel/verify-translation-bubble-flip.spec.ts
+bun run test:e2e -- tests/e2e/cases/feature-panel/verify-feature.spec.ts
 
 # headed 模式（显示浏览器，方便观察）
 E2E_URL='...' E2E_STORAGE_STATE='...' bun run test:e2e:headed -- tests/e2e/cases/timelines-panel/verify-xxx.spec.ts

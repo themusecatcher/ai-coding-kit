@@ -1,6 +1,7 @@
 ---
 name: smart-commit
 description: "智能 Commit Message 生成器。基于代码 Diff 自动生成符合 Conventional Commits 规范的 commit message，包含精简版和标准版两套 body。支持剪贴板复制、可选自动提交。可被 dev-flow 按需调用，也可在任何 Git 仓库中独立使用。触发关键词：commit message、提交信息、生成提交、smart commit、帮我提交、针对当前 diff 生成 commit。"
+keywords: ["commit message", "提交信息", "Conventional Commits", "自动生成commit", "smart-commit"]
 ---
 
 # Smart Commit
@@ -76,7 +77,7 @@ LLM 基于 diff 内容 + 用户描述判断 action，参考以下映射：
 每个改动模块一行概述，格式：`- {动作} {模块/文件简称}`
 
 ```
-- 新增屏幕共享限制配置组件
+- 新增批量导出限制配置组件
 - 修改账户设置页面集成新入口
 - 新增权限策略查询 Hook
 ```
@@ -86,9 +87,9 @@ LLM 基于 diff 内容 + 用户描述判断 action，参考以下映射：
 详细说明「改了什么」+「为什么改/改动效果」，格式：`- {动作} {具体文件/模块}，{原因或效果}`
 
 ```
-- 新增 ScreenShareRestriction 组件，支持按成员维度配置屏幕共享权限，包含成员搜索和批量选择功能
-- 修改 AccountSettings 页面，在安全设置区块集成屏幕共享限制入口，使用条件渲染控制可见性
-- 新增 useScreenSharePolicy Hook，封装权限策略的 CRUD 操作和本地缓存逻辑
+- 新增 FeatureToggle 组件，支持按成员维度配置功能权限，包含成员搜索和批量选择功能
+- 修改 SettingsPage 页面，在安全设置区块集成功能限制入口，使用条件渲染控制可见性
+- 新增 useFeaturePolicy Hook，封装权限策略的 CRUD 操作和本地缓存逻辑
 ```
 
 #### Body 生成规则（LLM 模糊判断）

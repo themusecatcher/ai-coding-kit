@@ -192,7 +192,7 @@ working_context_drift:
   # 路由说明：本节点的关键词不路由到 tech-doc 三模块，而是直接触发 dev-flow 内部子流程
   # 由 dev-flow/SKILL.md 触发表的「需求漂移信号」消费
   routes_to: "dev-flow"
-    routes_to_module: "references/doc-sync-rules.md §路由分流 → references/drift-handling.md"
+  routes_to_module: "references/doc-sync-rules.md §路由分流 → references/drift-handling.md"
 
   # B. 沟通结果回流（带外信息回流）
   communication_feedback:

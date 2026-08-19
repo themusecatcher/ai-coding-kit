@@ -3,14 +3,15 @@
   "version": "1.0.0",
   "description": "方案分析与避坑指南。编码前的\"大脑\"——帮助正确分析问题、设计方案、规避已知错误模式。包含设计指南、样式分析、反模式清单三大模块。可被 dev-flow 步骤 3（制定方案）按需调用，也可独立使用。",
   "author": {
-    "name": ""
+    "name": "themusecatcher"
   },
   "keywords": [
-    "design",
-    "advisor"
+    "方案分析",
+    "避坑指南",
+    "设计模式",
+    "反模式",
+    "代码设计",
+    "design-advisor"
   ],
-  "category": "productivity",
-  "skills": [
-    "./SKILL.md"
-  ]
+  "category": "requirements"
 }

@@ -113,6 +113,7 @@ provider:
 - **agents/skills/rules 修改路径**：一律修改 `~/myGithub/ai-coding-kit/` 源码仓库下的对应文件（`agents` → `ai-coding-kit/agents/`、`skills` → `ai-coding-kit/skills/`、`rules` → `ai-coding-kit/rules/`）；禁止修改 `~/.codebuddy/plugins/marketplaces/` 下的同步产物（改后会被覆盖）
 - **修改后的交互式提醒**：详细格式见按需规则 `按需-交互式提醒格式规范`
 - **修改 dev-flow 依赖 Skill/规则后**：提醒用户执行 `package.sh` 同步到 dist → `skills/dev-flow/references/dist-sync.md`
+- **修改 ai-coding-kit 内容后 README 同步提醒（强制）**：修改本仓库任何 skill/agent/rule 后，必须主动检查并提示用户同步 README：① 该 skill 自身 `README.md`（若存在）；② 外层 `README.md` 的易过期信息（Skill 清单表格与数量、Agents/Rules 数量、安装命令数字、功能简介）
 
 ### alwaysApply 规则文件准入评估（强制）
 

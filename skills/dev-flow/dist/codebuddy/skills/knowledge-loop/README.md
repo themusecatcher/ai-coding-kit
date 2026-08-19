@@ -6,7 +6,7 @@
 
 ---
 
-## 与 知识库平台/remote_kb 的边界（重要）
+## 与 远程知识库 MCP（remote_kb） 的边界（重要）
 
 | 维度 | **knowledge-loop**（本 Skill） | **知识库平台 / remote_kb MCP** |
 |------|-------------------------------|------------------------|
@@ -72,7 +72,7 @@ knowledge-loop/
 │   ├── README.md
 │   └── schema.md
 │
-├── {project-name}/                    # L1 项目级（如 user-center / my-project）
+├── {project-name}/                    # L1 项目级（如 my-project）
 │   ├── _index.md                      # 项目知识索引（必读入口）
 │   │
 │   ├── {module}/                      # L2 模块级（按业务模块切分）
@@ -127,7 +127,7 @@ knowledge-loop/
 
 ## 核心原则
 
-- **唯一本地来源**：本 Skill 是 dev-flow 的唯一**本地代码知识**检索和沉淀目标（远程语义知识用 知识库平台/remote_kb）
+- **唯一本地来源**：本 Skill 是 dev-flow 的唯一**本地代码知识**检索和沉淀目标（远程语义知识用 远程知识库 MCP（remote_kb））
 - **宁多勿少**：不仅沉淀本次需求改动，还要全面沉淀开发过程中接触到的所有模块知识
 - **按需加载**：知识分主题存储在独立文件中，AI 按需加载而非全量加载，优化 token 效率
 - **AI 友好**：Markdown 格式，带 YAML frontmatter 元数据，机器可读可写

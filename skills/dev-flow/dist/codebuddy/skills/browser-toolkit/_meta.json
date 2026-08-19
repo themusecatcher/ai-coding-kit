@@ -1,7 +1,7 @@
 {
   "name": "browser-toolkit",
   "version": "1.0.0",
-  "author": "yourname",
+  "author": "",
   "createdAt": "2026-04-28",
   "description": "浏览器自动化工具智能路由：在 agent-browser / Playwright / Chrome DevTools MCP 三者间按任务特征自动推荐并协同编排"
 }
