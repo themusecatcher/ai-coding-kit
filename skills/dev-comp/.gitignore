@@ -1,0 +1,4 @@
+# 产物归档兜底目录：私有开发产物（工作上下文/metrics/devlog/knowledge）不入仓库
+# 与 SKILL.md「产物存储设计原则」第 1/6 条对应；README.md 为 skill 说明文档，保留
+artifacts/*
+!artifacts/README.md

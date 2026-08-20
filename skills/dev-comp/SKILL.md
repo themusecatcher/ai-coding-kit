@@ -7,7 +7,7 @@ description: 面向 vue-amazing-ui 组件库的单组件开发迭代工作流。
 # dev-comp —— 组件库开发迭代工作流
 
 > 定位：vue-amazing-ui 单组件开发迭代领域 SOP。
-> 架构：**轻量领域流程 + 软复用 dev-flow 能力模块**。全程❌ 不产生 `.flow` 锁、❌ 不走 dev-flow 重型门控（`.validated` 物理检查点 / JSON 逐步校验 / 门控 subagent / post-step 脚本 / 工具门禁）；✅ 仅保留**轻量交互式 Gate**——每阶段完成后输出「阶段完成报告」并弹 `ask_followup_question`，等用户确认再进入下一阶段（详见「6 阶段 + Gate 流程总览」）。
+> 架构：**轻量领域流程 + 软复用 dev-flow 能力模块**。全程❌ 不产生 `.flow` 锁、❌ 不走 dev-flow 重型门控（`.validated` 物理检查点 / JSON 逐步校验 / 门控 subagent / post-step 脚本 / 工具门禁）；✅ 仅保留**轻量交互式 Gate**——每阶段完成后输出「阶段完成报告」并弹 `ask_followup_question`，等用户确认再进入下一阶段（详见「6 阶段 + Gate 流程总览」）；✅ 另配 1 个**轻量校验脚本** `scripts/validate-component.sh` 承载 Gate 5 确定性检查（设计哲学「确定性用代码」，详见「能力复用索引」）。
 
 ## ⚙️ 个人化配置区（复用/分享时只改这一块）
 
@@ -37,14 +37,14 @@ description: 面向 vue-amazing-ui 组件库的单组件开发迭代工作流。
 
 ## 📦 产物存储设计原则（2026-08-18 固化 · 2026-08-19 补充归档兜底）
 
-> 决策背景：深入评估过「产物入仓库」方案，被开源仓库 git 污染 + dev-flow 生态路径硬绑定否决。产物**默认**留在 `~/.codebuddy/`（第 1-5 条，2026-08-18 固化）；2026-08-19 按用户决策补充第 6 条——用户可显式选择归档到 skill 下 `artifacts/` 目录（⚠️ 归档前须确认该目录已被 `.gitignore` 忽略，否则私有产物有污染仓库 git 历史的风险，与第 1 条精神相悖），本小节固化六条原则，防止后续迭代被顺手改回。
+> 决策背景：深入评估过「产物入仓库」方案，被开源仓库 git 污染 + dev-flow 生态路径硬绑定否决。产物**默认**留在 `~/.codebuddy/`（第 1-5 条，2026-08-18 固化）；2026-08-19 按用户决策补充第 6 条——用户可显式选择归档到 skill 下 `artifacts/` 目录（skill 内置 `skills/dev-comp/.gitignore` 忽略 `artifacts/` 内容、保留 `artifacts/README.md`，私有产物不会污染仓库 git 历史；⚠️ 换仓库分发本 skill 时须连同该 `.gitignore` 一起复制，否则归档产物有入仓库风险），本小节固化六条原则，防止后续迭代被顺手改回。
 
 1. **产物不入仓库**：vue-amazing-ui 是开源项目，工作上下文/对齐清单/决策记录/度量是个人私有开发过程，进 git 污染公开历史，进 `.gitignore` 污染所有 fork 者（**用户主动归档到 `ARTIFACTS_FALLBACK_DIR` 的快照除外**，见第 6 条）
-2. **软复用产物沿用固有约定**：devlog（`~/.codebuddy/dev-logs/<项目>/<分支>/`）、knowledge（`~/.codebuddy/knowledge/vue-amazing-ui/`）路径由被软复用的 tech-doc / knowledge-loop skill 硬编码，改不得也不该改（零硬依赖原则）
+2. **软复用产物沿用固有约定**：devlog（`~/.codebuddy/dev-logs/{YYYYMMDD}_{类型}_{简述}/devlog.md`，tech-doc 实际规范，目录名由 tech-doc 生成规则决定，**禁止自拟** `<项目>/<分支>/` 结构）、knowledge（`~/.codebuddy/knowledge/vue-amazing-ui/`）路径由被软复用的 tech-doc / knowledge-loop skill 硬编码，改不得也不该改（零硬依赖原则）
 3. **自建产物物理隔离**：工作上下文、metrics 放 dev-comp 专属根目录 `~/.codebuddy/dev-comp/`（`working-context/` + `metrics/` 子目录）。不与 dev-flow 混放，避免被 dev-flow 的 lint 全量扫描 / dashboard 统计 / 度量闸门校验误伤
 4. **命名前缀不变**：`vaui-` 前缀保留，专属目录内按组件检索不受影响
 5. **目录自举（写前必建）**：`~/.codebuddy/dev-comp/` 专属目录首次使用不存在，阶段 0 初始化与阶段 5 写 metrics 前必须 `mkdir -p` 兜底，禁止假设目录已存在
-6. **产物归档与接续兜底（2026-08-19 固化）**：产物**默认留在 `~/.codebuddy/` 运行时目录**（原位即归档，无需额外动作）；用户提出归档或阶段 5 收尾时，**弹 `ask_followup_question` 由用户决策归档目标**——A 保留 `~/.codebuddy/` 运行时目录（默认）/ B 归档到 `ARTIFACTS_FALLBACK_DIR` 并删除运行时副本（**禁止双份**，归档保留为快照）。归档到 B 后，阶段 0 接续扫描按「**运行时目录优先 → `ARTIFACTS_FALLBACK_DIR` 兜底**」两级顺序（详见 `references/flow.md` 阶段 0），命中归档时复制回运行时目录恢复活跃状态
+6. **产物归档与接续兜底（2026-08-19 固化 · 2026-08-20 修订为收尾固定步骤）**：产物**默认留在 `~/.codebuddy/` 运行时目录**（原位即归档，无需额外动作）；阶段 5 收尾时**必弹 `ask_followup_question` 由用户决策归档目标（固定步骤，禁止跳过）**——A 保留 `~/.codebuddy/` 运行时目录（默认）/ B 归档到 `ARTIFACTS_FALLBACK_DIR` 并删除运行时副本（**禁止双份**，归档保留为快照）。归档到 B 后，阶段 0 接续扫描按「**运行时目录优先 → `ARTIFACTS_FALLBACK_DIR` 兜底**」两级顺序（详见 `references/flow.md` 阶段 0），命中归档时复制回运行时目录恢复活跃状态
 
 ## 触发规则
 
@@ -91,6 +91,7 @@ description: 面向 vue-amazing-ui 组件库的单组件开发迭代工作流。
 | 知识沉淀 | `use_skill('knowledge-loop')` | 阶段 2 检索 / 阶段 5 沉淀 | `references/capability-reuse.md` |
 | 提交 | `use_skill('smart-commit')` | 阶段 5 提交 | `references/capability-reuse.md` |
 | 交互验收 e2e | `use_skill('e2e-testing')`（可选） | 阶段 5 关键交互用例 | `references/checklists.md` §交互操作清单 |
+| 配置项终检 + 提交红线校验 | `scripts/validate-component.sh`（本 skill 自带） | 阶段 5 收尾必跑（Gate 5 数据源） | `references/checklists.md` §发布前配置项终检 |
 
 > ⚠️ 上述被调 skill 缺失时**优雅降级**：跳过该环节并一句话提示用户，不阻断主流程。
 
@@ -113,12 +114,13 @@ description: 面向 vue-amazing-ui 组件库的单组件开发迭代工作流。
 
 - ❌ 禁止自动 `git commit`：commit message仅生成，用户明确选择才提交（用 smart-commit）
 - ❌ commit 格式：`<type>: <description>`（**无 scope**，项目 commitlint scope-empty）
+- ❌ **提交前 git 身份实测**：`git config user.name/email` 实测值必须与工作上下文 `git_identity` 一致，不符拦截、用户决策后继续；提交后 `git log -1 --format='%h'` 实测 hash 回填（详见 `references/flow.md` 阶段 5 第 4 步）
 - ❌ 先搜索后编码：新增能力前先查项目已有资产（`references/reusable-assets.md`）
 - ✅ 实现方式复用优先级：项目已有组件/功能/样式/布局/逻辑 > antdv 源码实现 > naive 源码实现 > 自研；**组件库已有的功能/样式/布局/逻辑优先复用，禁止重新开发**（详见 `references/reference-sources.md`）
 - ✅ 主题 light/dark 双份；链式访问用可选链 `?.`；禁 any；SSR 安全（禁裸用 window/document）
 - ✅ 大组件分阶段交付（P1-Pn），避免半成品
 - ✅ 验收标准：演示页与antdv/naive 真身并排 1:1 对照（本项目组件在左/上，官网组件在右/下）+ 用例顺序与官网一致 + 浏览器实测（⚠️ 对照仅为验收手段：阶段 3 引入 → 阶段 5 浏览器实测验收 → **验收完成后由阶段 5 第 5 步清除**，演示页回归纯本库组件）
 - ✅ 清单即验收基线：阶段 2 对齐清单（API 四维 + Demo 用例）+ naive 差异登记 + 阶段 0 项目特有需求 = 阶段 5 验收唯一对账标准，Gate 5 全量回显勾销，❌ 项必带处置码（`延后 P{n}` / `不覆盖（理由）` / `待用户确认`），禁止摘要式报告
-- ✅ **联动清单即注册基线**：`references/linkage-map.md` 是「新增组件全量联动点」唯一权威源（含 ⭐ 易遗漏点：resolver 依赖映射 / 组件总数 4 处 / components.d.ts 幽灵声明 / App.vue 孤儿变量）。阶段 1/4/5 逐项勾销，**禁止靠记忆「顺手补几处」**；每处易遗漏点配 grep 自检，宣告完成前必须实测
+- ✅ **联动清单即注册基线**：`references/linkage-map.md` 是「新增组件全量联动点」唯一权威源（含 ⭐ 易遗漏点：resolver 依赖映射 / 组件总数 4 处 / components.d.ts 幽灵声明 / App.vue 孤儿变量）。阶段 1/4/5 逐项勾销，**禁止靠记忆「顺手补几处」**；确定性 grep 自检已收拢于 `scripts/validate-component.sh`（Gate 5 必跑），宣告完成前必须实测
 - ✅ **配置项终检即发布基线**：`references/checklists.md` §发布前配置项终检 是阶段 5 验收时固定配置项（代码注册/文档联动/残留清理/一致性）的唯一权威源，Gate 5 必须全量逐项回显勾销 + grep 自检实测；**埋入阶段（1/4）的检查不能替代终检**，发布前必须全量回检
 - ✅ **验收完成 ≠ 任务结束**：验收通过后按 `references/release-flow.md` 引导「合入 main（GitHub PR）→ main 上构建发布（`pnpm pub`，执行前用户逐条确认）→ 发布后清理（删 feat 分支）」；❌ 严禁在 feat 分支上执行发布；用户本轮不发布则写入工作上下文接续指引

@@ -53,7 +53,7 @@
 - 新增 [中文名 EnglishName](https://themusecatcher.github.io/vue-amazing-ui/guide/components/{目录名}.html) 组件
 ```
 
-- 链接路径 = 组件目录名的 kebab-case（如 `AutoComplete` → `autocomplete.html`），与 `docs/guide/components/{目录名}.md` 对应。
+- 链接路径 = 组件目录名小写连写（如 `AutoComplete` → `autocomplete.html`，**非** `auto-complete.html`），与 `docs/guide/components/{目录名}.md` 对应（命名约定详见 `project-map.md` §目录命名约定）。
 - 中文名与演示页 `index.ts` 的 `title` 一致；EnglishName 与组件导出名一致。
 - 可追加用途描述（参照历史：`用于高亮文本`），非强制。
 
@@ -85,4 +85,4 @@ head -20 docs/guide/changelog.md   # 顶部第一条 VersionDateTag 版本号逐
 | 新增组件只升 patch（2.4.28 AutoComplete 事故） | 新增组件 → minor+1，patch 归 0 |
 | 只改 changelog 不改 package.json（或反之） | 双处同步，发布前 jq 对照校验 |
 | 新版本块插入位置错误（追加到文件尾部） | 插在顶部，最新版本在最上方 |
-| 组件链接写错目录名（如 `auto-complete.html`） | 用组件目录名 kebab-case，与 docs 文件对应 |
+| 组件链接写错目录名（如 `auto-complete.html`） | 用组件目录名小写连写（`autocomplete.html`），与 docs 文件对应 |

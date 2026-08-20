@@ -2,7 +2,20 @@
 
 > dev-comp 执行阶段 1/3/4 时的项目结构权威参考。
 
-## 组件三件套 + 注册链路
+## 目录命名约定（历史不统一，建目录前必读）
+
+三处组件目录命名约定**不统一**（历史遗留），建目录时按各层实际惯例执行：
+
+| 层 | 实际惯例 | 示例 | 说明 |
+|:--|:--|:--|:--|
+| `components/` | **全小写连写** | `autocomplete` / `inputnumber` | 无连字符、无驼峰 |
+| `src/views/` | **驼峰** | `autoComplete` / `inputNumber` | 首单词小写、后续单词首字母大写 |
+| `docs/guide/components/` | **全小写连写**（.md 文件） | `autocomplete.md` | 与 components 层一致 |
+
+- 建目录前先 `ls` 同层既有同类组件目录确认实际形态（如开发 AutoComplete 看既有 `autocomplete`），**禁止凭 kebab-case 猜测**（`auto-complete` 三处均不存在）。
+- 校验脚本 `scripts/validate-component.sh` 按归一化名（小写去分隔符）解析三处目录，任何形态均能正确识别；但目录名仍须符合所在层惯例。
+
+## 组件结构（三件套 + 注册链路）
 
 ```
 components/{组件名}/                # ① 组件本体
@@ -11,12 +24,12 @@ components/{组件名}/                # ① 组件本体
   └─ {子组件}/{Sub}.vue + index.ts      # 多子组件时（如 menu/menuitem）
 components/components.ts                 # ← 手动追加导出（注册点A）
 components/utils/resolver.ts             # ← 手动追加样式映射（注册点B，⭐易遗漏：componentsMap + componentDependencies）
-components/index.ts# 自动 install 循环（无需手改）
+components/index.ts                      # 自动 install 循环（无需手改）
 
 src/views/{组件名}/                      # ② 演示用例
   ├─ Index.vue                          # 演示页
   └─ index.ts                           # export default { title: '中文名' }（路由自动注册）
-src/router/index.ts# import.meta.glob 自动扫描（无需手改）
+src/router/index.ts                      # import.meta.glob 自动扫描（无需手改）
 
 docs/guide/components/{组件名}.md        # ③ vitepress 文档
 docs 侧边栏配置                # ← 手动追加入口（注册点 C）

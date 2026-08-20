@@ -5,7 +5,7 @@
 ## 架构概览
 
 ```text
-dev-comp 采用「轻量领域流程 + 软复用」架构（无程序化执行层，无门控脚本）：
+dev-comp 采用「轻量领域流程 + 软复用」架构（无重型门控，仅 1 个轻量校验脚本）：
 
 L0 入口层    SKILL.md（触发规则 + 个人化配置 + 6 阶段总览）
               ↓
@@ -14,6 +14,8 @@ L1 流程层    references/flow.md（6 阶段详细执行手册）
 L2 参考层    references/（按需加载）
               ↓
 L3 模板层    templates/（组件/演示/工作上下文/度量 骨架模板）
+              ↓
+L4 校验层    scripts/validate-component.sh（Gate 5 确定性检查数据源，非门控）
 
 软复用层    use_skill('tech-doc')    → devlog
             use_skill('knowledge-loop') → 知识沉淀/检索
@@ -34,7 +36,7 @@ L3 模板层    templates/（组件/演示/工作上下文/度量 骨架模板�
 | 维度 | dev-flow | dev-comp |
 |:--|:--|:--|
 | 定位 | 通用跨项目开发工作流 | vue-amazing-ui 组件开发专项 |
-| 流程复杂度 | 阶段 0 + 步骤 1~10 + 门控 + 脚本校验 | 6 阶段，无门控，无脚本 |
+| 流程复杂度 | 阶段 0 + 步骤 1~10 + 门控 + 脚本校验 | 6 阶段，无重型门控，1 个轻量校验脚本（Gate 5 数据源） |
 | 能力依赖 | 编排 10+ 关联 skill | 软复用 4 个独立 skill（tech-doc/knowledge-loop/smart-commit/e2e-testing（可选）） |
 | 对 dev-flow 依赖 | — | **零硬依赖**。删掉 dev-flow 不影响运行 |
 | 共存 | 互斥激活。`dev-flow` 命令与 `dc:` 命令二选一 | 同左 |
@@ -79,6 +81,9 @@ dev-comp/
 │   ├── changelog-spec.md            #   changelog 编写规范（版本号升级 + 双处同步）
 │   ├── release-flow.md              #   发布流程（合入 main + 构建发布 + 清理）
 │   └── capability-reuse.md          #   软复用 dev-flow 能力策略 + 降级
+├── scripts/                       # 轻量校验脚本（确定性检查数据源）
+│   └── validate-component.sh      #   阶段 5 收尾必跑：A/B/C/E 配置项 + S 提交红线检查
+├── .gitignore                     #   忽略 artifacts/ 私有归档产物（仅保留 README.md）
 ├── artifacts/                       # 产物归档兜底目录（用户主动归档时写入，两级扫描第二级）
 └── templates/                     # 骨架模板
     ├── component.tpl.vue            #   组件本体骨架
@@ -102,6 +107,7 @@ dev-comp/
 | `references/changelog-spec.md` | changelog 编写规范（版本号升级 + 双处同步） | AI | 阶段 4/5 |
 | `references/release-flow.md` | 发布流程（合入 main + 构建发布 + 清理） | AI | 阶段 5（验收通过后） |
 | `references/capability-reuse.md` | 软复用策略 + 降级方案 | AI | 阶段 5（能力沉淀时） |
+| `scripts/validate-component.sh` | 确定性检查权威执行体（A/B/C/E 配置项 + S 提交红线） | AI | 阶段 5 收尾必跑（Gate 5 数据源） |
 | `templates/*` | 组件/演示/上下文/度量 骨架模板 | AI | 建新文件时 |
 
 ## 关联 Skill 调用关系

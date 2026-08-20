@@ -8,6 +8,8 @@ branch: ""
 release: pending
 ref_primary: antdv
 api_style: ""
+git_identity: "{name} / {email}"
+commit: ""
 start_date: "{YYYY-MM-DD}"
 artifacts:
   component: components/{组件名}/
@@ -16,6 +18,9 @@ artifacts:
   devlog: null
   knowledge: []
 ---
+
+> `git_identity`：阶段 0 用 `git config user.name` + `git config user.email` **实测**登记（vue-amazing-ui 仓库预期为 `themusecatcher / themusecatcher@163.com`）；阶段 5 提交前实测比对，不符拦截（详见 `references/flow.md` 阶段 5 第 4 步）。
+> `commit`：提交后 `git log -1 --format='%h'` 实测回填，禁止凭记忆记录。
 
 # {组件名} 开发上下文
 

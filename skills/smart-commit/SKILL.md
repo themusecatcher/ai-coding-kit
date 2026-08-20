@@ -179,6 +179,12 @@ feat: 新增暗色模式开关
 ⚠️ **默认不执行任何 git 操作**，仅在用户明确选择「📦 自动提交」选项时执行：
 
 ```bash
+# 0. 提交前身份检查（强制，禁止跳过）
+git config user.name
+git config user.email
+git log -1 --format='%an | %ae'   # 仓库最近一次提交作者（预期身份参照）
+git branch --show-current          # 确认当前分支
+
 # 1. 暂存所有改动
 git add .
 
@@ -188,6 +194,12 @@ git commit -m "header行" -m "body第1行" -m "body第2行" ...
 # 3. 提交成功后展示结果
 git log --oneline -1
 ```
+
+**身份一致性校验（红线）**：
+
+1. 实测 `user.name`/`user.email` 与**仓库历史作者**（`git log -1`）或调用方提供的预期身份（如 dev-comp 工作上下文 `git_identity`）比对
+2. 不一致（如全局公司身份误用于开源仓库）→ 🔴 **拦截提交**，弹 `ask_followup_question` 向用户呈现「实测值 vs 预期值」，选项：修正 local config 后重试 / 确认改用实测值继续 / 取消提交；**未经用户确认不得 `git commit`**
+3. 仓库无历史提交时，以调用方提供的预期身份为准，无预期身份则默认采用实测值并明确告知用户
 
 > ❌ 禁止自动执行 `git push`，push 始终由用户自行决定。
 

@@ -7,7 +7,7 @@
 - 本目录存放 dev-comp 组件的私有开发产物（工作上下文 / metrics / devlog / knowledge）快照，结构为 `{组件名}-{日期}/{working-context|metrics|devlog|knowledge}/`
 - 产物**默认应留在 `~/.codebuddy/` 运行时目录**（原位即归档）；本目录仅作为用户显式选择的临时归档位置
 - **后续将由用户移动到指定位置**，请勿依赖此路径作长期存储
-- 私有产物不随仓库发布：注意避免将本目录内容提交进 git（若已提交，请自行处理；相关 `.gitignore` 决策由仓库所有者负责）
+- 私有产物不随仓库发布：本目录内容已被 skill 自带 `skills/dev-comp/.gitignore` 忽略（仅 `README.md` 保留跟踪），归档产物不会进入 git；分发 skill 时须连同该 `.gitignore` 一起复制
 
 ## 接续机制
 

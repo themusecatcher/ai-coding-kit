@@ -24,6 +24,7 @@
 3. **列 plan**：用 `todo_write` 把本轮要做的事拆成 todo（对应阶段 1-5 的具体动作）
 4. **确认参考源与 API 风格**：读 `references/reference-sources.md`，确定主参考（antdv/naive）与 API 风格，写入工作上下文
 5. **项目特有需求确认**：向用户确认参考库没有、但项目需要的额外功能/属性/行为，登记到工作上下文「项目特有需求」区——**验收基准 = 对齐清单 + 项目特有需求**，两源合并，避免「参考库没有的功能」成为盲区
+6. **git 身份实测登记**：`git config user.name` + `git config user.email` 实测，写入工作上下文 frontmatter `git_identity`（阶段 5 提交前与实测值比对，不符拦截——对应模板注释「阶段 0 实测登记」）
 
 **产出**：工作上下文文件 + todo plan + 分阶段决策。
 
@@ -87,6 +88,13 @@
 
 **目标**：在 `src/views` 建演示页，作为验收基准（阶段 4 文档会复用它）。演示页 = **antdv 官网展示用例的完整复制 + 本项目组件对照**。
 
+0. **格式参考先行（动笔前必做）**：`read_file` 2-3 个**同类已有组件**的演示页（如开发 Tooltip 参考 `src/views/popover/Index.vue`、`src/views/select/Index.vue`），提取项目既有格式惯例并在编写时**逐项遵循**：
+   - **标题层级与间距 class**：项目惯例（如 `<h2 class="mt30 mb10">`）优先，模板骨架的 `.demo-desc` 等占位 class 仅作注释参考，落地时替换为项目实际 class
+   - **分区结构**：对照分区用 `demo-row`/`demo-col` 还是项目其他容器写法，沿用项目惯例
+   - **描述风格**：`<p class="mb10">` + `<code>` 的实际用法样例（项目其他演示页怎么写的就怎么写）
+   - **数据声明/事件处理组织惯例**：script 顶部集中声明还是分区就近声明，沿用项目惯例
+   > 原则：**项目既有惯例 > 模板骨架**；`templates/demo.tpl.vue` 只提供结构与注释，格式细节一律以项目内已有演示页为准。演示用例与文档用例的格式规范权威源：`references/demo-description.md`。
+
 1. 建 `src/views/{组件名}/`：
    - `Index.vue`：用 `templates/demo.tpl.vue` 作骨架（结构要求见下）
    - `index.ts`：`export default { title: '{中文名}' }`（路由自动注册，无需改 router）
@@ -143,16 +151,19 @@
    - ⚠️ 后台 watch 进程会干扰终端输出 → 复杂命令重定向到文件再 `read_file` 读取；验证后关端口
 2. **基线全量勾销（核心红线）**：把工作上下文「对齐清单」区（API 四维 + Demo 用例）+「naive 差异登记」+「项目特有需求」**全量回显**到 Gate 5 报告，逐行标注 ✅/❌；❌ 项必须带处置码（`延后 P{n}` / `不覆盖（理由）` / `待用户确认`）；**禁止摘要式报告**（清单与验收同源，杜绝漏项）
    - **API 四维对账以 antdv 官网 API 属性列表为最终对照源**（官网组件文档页的 API 表格 + 本地源码 `interface.ts` 双源核对），确认每个属性/事件/插槽/暴露方法都已覆盖
-3. **能力沉淀**（软复用，缺失则降级跳过，读 `references/capability-reuse.md`）：
+3. **能力沉淀**（软复用，读 `references/capability-reuse.md`）：
    - devlog：`use_skill('tech-doc')` 生成开发日志
    - metrics：`mkdir -p ~/.codebuddy/dev-comp/metrics` 后按 `templates/metrics-lite.tpl.yaml` 写一份到 `CAP_METRICS_DIR`
    - knowledge：`use_skill('knowledge-loop')` 沉淀组件经验（接口/易错点）
-4. **提交**：`use_skill('smart-commit')` 生成 `feat: ...` message（无 scope）→ **等用户确认才提交**
+   - ⚠️ **三件套为阶段 5 必做项**：被调 skill 缺失时允许降级跳过，但必须在 Gate 5 报告「能力沉淀三件套」区块登记 ❌ + 降级原因，并向用户明示、经用户确认后才视为收尾完成（历史事故：三次开发均跳过 devlog/knowledge，产物不完整）
+4. **提交**：`use_skill('smart-commit')` 生成 `feat: ...` message（无 scope）→ **等用户确认才提交**。提交前强制执行：
+   a) **git 身份实测（红线）**：`git config user.name` + `git config user.email` 实测输出，与工作上下文 frontmatter `git_identity` 预期值逐字对比；不符 → 🔴 拦截提交，弹 `ask_followup_question` 呈现「实测值 vs 预期值」，用户决策后（修正 local config / 确认改用实测值 / 取消提交）方可继续（历史事故：comment 提交误用全局公司身份 `deardai@tencent.com`）
+   b) **提交后 hash 实测回填**：`git log -1 --format='%h'` **实测** commit hash 回填工作上下文 frontmatter `commit` 字段，禁止凭记忆记录（历史事故：Dropdown 记录 `7c6ab6a5` 与真实 `e4d8c9a0` 不符）
 5. **清除演示页对照（红线）**：删除演示页全部 antdv/naive 真身组件、对应数据（如 `avalue*`/`aoptions*`）、`ant-design-vue` 相关 import 及 antdv 专属图标（本库用例仍使用的图标保留）；⚠️ **`components.d.ts` 中 antdv 组件声明不会自动消失**——清除对照后必须显式 `grep` 确认无幽灵声明并手动删除、**随本次 commit 一起提交**（`linkage-map.md` §⑭；幽灵声明已提交进 git，删除不随 commit 提交会「复活」）；同时检查 `src/App.vue` 是否有全局配置迁移残留的孤儿变量（`linkage-map.md` §⑬）；验收前确保 `git diff` 中演示页仅剩本库用例。⚠️ 清除后需再跑一次 `lint:check` + `type-check` + `pnpm dev` 确认演示页无孤儿引用
-6. **发布前配置项终检（核心红线）**：读 `references/checklists.md` §发布前配置项终检，把新增组件的全部固定配置项（A 代码注册链路 / B 文档联动链路 / C 残留清理 / E 一致性）**逐项勾销 + grep 自检实测**。⚠️ 埋入阶段（1/4）的检查不能替代本终检——埋入后文件可能再被改动，发布前必须全量回检。勾销结果逐项回显到 Gate 5 报告「发布前配置项终检」区块，❌ 项必带处置码，禁止摘要式报告。
+6. **发布前配置项终检（核心红线）**：**先跑轻量校验脚本** `bash scripts/validate-component.sh {组件名} {PROJECT_ROOT} --context {工作上下文文件}` 一次性获取 A/B/C/E + S 全部勾销证据（脚本是确定性检查的权威执行体，见 `checklists.md` §发布前配置项终检 顶部声明；S1-S5 对应提交红线：git 身份 / 分支核对 / commit hash 回填真实性 / 沉淀三件套 / 归档双份），再读 `references/checklists.md` §发布前配置项终检 逐项核对。⚠️ 埋入阶段（1/4）的检查不能替代本终检——埋入后文件可能再被改动，发布前必须全量回检。脚本输出 `[PASS/FAIL/WARN/SKIP]` 逐项回显到 Gate 5 报告（A/B/C/E 回显「发布前配置项终检」区块，S 回显「提交前检查」区块）：FAIL 阻断收尾须修复后重跑；WARN/SKIP 须人工确认；❌ 项必带处置码，禁止摘要式报告。
 7. **引导发布（组件全部 P 完成且验收通过时）**：读 `references/release-flow.md`，向用户呈现「合入 main（GitHub PR）→ main 上构建发布 → 发布后清理」完整链路并引导执行；若用户本轮不发布，将「待发布：合入 main + 发布」写入工作上下文接续指引，**验收完成 ≠ 任务结束**（历史事故：AutoComplete 验收后停 8 个提交在 feat 分支，npm 与源码脱节）
 8. **收尾**：更新工作上下文 status + `release` 字段（本 P 完成 → 标注下一 P 接续指引；全部 P 完成但未发布 → `release: pending` + 接续指引标注「待发布」；本轮已完成发布 → `release: released: {版本号}` + 可归档）
-9. **产物归档决策（用户提出归档或收尾时）**：弹 `ask_followup_question` 由用户决策归档目标——A 保留 `~/.codebuddy/` 运行时目录（默认，原位即归档）/ B 归档到 `ARTIFACTS_FALLBACK_DIR`（结构 `{组件名}-{日期}/{working-context|metrics|devlog|knowledge}/`）并删除 `~/.codebuddy/` 运行时副本。⚠️ 归档动作**不自动执行**，须用户选择后再操作；选择 B 后删除运行时副本，禁止长期双份维护
+9. **产物归档决策（收尾固定步骤，禁止跳过）**：Gate 5 通过后必弹 `ask_followup_question` 由用户决策归档目标——A 保留 `~/.codebuddy/` 运行时目录（默认，原位即归档）/ B 归档到 `ARTIFACTS_FALLBACK_DIR`（结构 `{组件名}-{日期}/{working-context|metrics|devlog|knowledge}/`）并删除 `~/.codebuddy/` 运行时副本。⚠️ 归档动作**不自动执行**，须用户选择后再操作；选择 B 后删除运行时副本，禁止长期双份维护（历史事故：三次收尾均未弹归档决策）
 
 **产出**：验收通过 + devlog/metrics/knowledge + commit（待用户确认）。
 
@@ -162,16 +173,17 @@
 
 ## Gate 门控机制
 
-> dev-comp 的轻量门控：借鉴 dev-flow 4 层门控，只保留两个核心层，**不引入** `.validated` 物理文件 / JSON 逐步校验 / post-step 脚本 / 门控 subagent / 工具门禁。
+> dev-comp 的轻量门控：借鉴 dev-flow 4 层门控，只保留交互式 Gate（G1/G2）+ 轻量校验脚本（G3，仅作确定性检查数据源），**不引入** `.validated` 物理文件 / JSON 逐步校验 / post-step 自动门控 / 门控 subagent / 工具门禁。
 
-### 两个核心层
+### 三个核心层
 
 | 层 | 名称 | 说明 |
 |---|------|------|
 | G1 | **交互式推进选项** | 每阶段完成后弹 `ask_followup_question`：✅ 继续 / ⏸️ 暂停 / ⬅️ 回退 |
 | G2 | **阶段完成报告** | 每阶段结束必须先输出标准化报告；未输出报告禁止弹推进选项、禁止进入下一阶段 |
+| G3 | **轻量校验脚本** | `scripts/validate-component.sh`（确定性检查数据源，仅 Gate 5 阶段必跑）。定位是**数据源**而非门控：不做 `.validated` 物理锁、不接状态机、不阻断其他阶段；输出 `[PASS/FAIL/WARN/SKIP]` 嵌入 Gate 5 报告（设计哲学「确定性用代码，模糊性用 LLM」：确定性项下沉脚本，模糊性项保留 G1/G2 由用户决策） |
 
-> 核心约定：Gate **不依赖文件系统级验证**，而依赖 AI 遵循「先输出报告 → 再弹交互式选项 → 等用户确认」的顺序。这在简单领域流程中足够，避免了 scripts/precheck 等复杂基础设施。
+> 核心约定：Gate **不依赖文件系统级验证**，而依赖 AI 遵循「先输出报告 → 再弹交互式选项 → 等用户确认」的顺序。这在简单领域流程中足够，避免了 scripts/precheck 等复杂基础设施；G3 脚本仅承载「确定性检查的执行」这一层，与 dev-flow 的 post-step 自动门控有本质区别。
 
 ### Gate 报告模板
 
@@ -231,6 +243,29 @@
 - [ ] 浏览器实测截图
 - [ ] 交互操作清单逐项勾销（含 e2e 软复用结果，可选）
 
+### 能力沉淀三件套（Gate 5 适用，逐项勾销）
+| 产物 | 状态 | 位置/降级说明 |
+|------|:--:|------|
+| devlog | | |
+| metrics | | |
+| knowledge | | |
+
+（降级跳过 → ❌ + 降级原因 + 用户已确认；禁止无声跳过）
+
+### 提交前检查（Gate 5 适用，逐项实测；S1-S3 由脚本实测输出回填）
+| 检查项 | 实测值 vs 预期 | 状态 |
+|--------|---------------|:--:|
+| S1 git config user.name（对比 git_identity） | | |
+| S1 git config user.email（对比 git_identity） | | |
+| S2 当前分支 = 工作上下文 branch | | |
+| commit message 预览 | | |
+| S3 commit hash 回填（提交后 `git log -1 --format='%h'` 实测） | | |
+
+### 工作上下文已同步（Gate 5 适用）
+- [ ] status / phase / 进度接续指引已更新
+- [ ] frontmatter `commit` 已回填实测 hash
+- [ ] frontmatter `release` 已更新（pending / released: {版本号}）
+
 ### 👉 请确认
 ```
 
@@ -261,6 +296,7 @@
 | 工具门禁 | ✅ 有（阶段 0 禁写代码） | ❌ 不引入 |
 | 交互式推进选项 | ✅ 有（A/B/C） | ✅ 保留（核心层 G1） |
 | 强制等用户确认 | ✅ 有（`interactive_progression_shown`） | ✅ 保留（核心层 G2，依赖 AI 遵守「先报告再 `ask_followup_question`」约定） |
+| 轻量校验脚本 | ✅ 15 个 lint + precheck/hooks 自动触发 | ✅ 1 个 `validate-component.sh`（G3 数据源，仅 Gate 5 必跑，无自动触发） |
 
 ---
 

@@ -61,7 +61,7 @@ components.d.ts                      # ⑭ 幽灵声明清理（自动生成，�
 | `README.zh-CN.md` | §特性 | `目前共包含 \`67\` 个基础 \`UI\` 组件以及 \`18\` 个工具函数...` |
 | `README.md` | §Features | `includes \`67\` basic UI components and \`18\` utility functions...` |
 
-- **自检命令**：`grep -rEn "共包含|includes.*components|个基础" README.md README.zh-CN.md docs/index.md docs/guide/features.md`，确认数字一致且 = `components/` 实际组件数。
+- **自检命令**：`grep -rEn "共包含|includes.*components|个基础" README.md README.zh-CN.md docs/index.md docs/guide/features.md`，确认数字一致且 = `components/` 实际组件数。（已下沉 `scripts/validate-component.sh` B4/E1，脚本 FAIL 时用此命令诊断）
 - 实际组件数口径 = `ls -d components/*/ | grep -v -E 'components/(style|utils)/' | wc -l`（排除 style/utils 非组件目录）。
 
 ### ⑬ `src/App.vue` 全局配置残留 ⭐（仅涉及时）
@@ -93,6 +93,6 @@ components.d.ts                      # ⑭ 幽灵声明清理（自动生成，�
 |:--|:--|
 | **清单驱动，不靠记忆** | 阶段 1 起即以本 map 为唯一权威源逐项勾销，禁止「顺手补几处」 |
 | **易遗漏点显式标注** | ⭐ 项是历史事故点，Gate 报告必须逐项回显确认 |
-| **自动化自检兜底** | 每个易遗漏点配一条 grep 自检命令，AI 输出「已完成」前必须实测 |
+| **自动化自检兜底** | 确定性 grep 自检（§④⑩⑪⑫⑭ 的 A3/A4/B4/E1/C1）已收拢于 `scripts/validate-component.sh`——Gate 5 前置必跑，下方各节 grep 命令保留为脚本实现依据与失败诊断用；AI 输出「已完成」前必须实测 |
 
 > 本清单随每次新增组件实践持续补全——若再次出现新遗漏，第一时间回填本 map 并复盘。
