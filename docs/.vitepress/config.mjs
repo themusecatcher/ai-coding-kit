@@ -126,5 +126,23 @@ export default withMermaid(
     mermaidPlugin: {
       class: 'mermaid-diagram',
     },
+
+    // 修复 dev 模式空白页：mermaid@11 的 ESM chunk 用 `import dayjs from 'dayjs'`
+    // 期望 default 导出，但 dayjs 的 main 指向 CJS/UMD 的 dayjs.min.js（无 default 导出）。
+    // Vite dev 的 esbuild 预构建在此组合下转换失败，抛 SyntaxError 导致前端挂载中断。
+    // 通过 optimizeDeps.include 强制预构建 mermaid 整棵依赖树（含 dayjs），
+    // 使其被正确转为带 default 的 ESM；build 用 commonjsOptions 兜底转换。
+    // 注：dayjs 由 pnpm 严格隔离，不直接出现在根 node_modules，故不放进 include，
+    //     由 mermaid 的依赖树预构建一并处理（否则产生 "Failed to resolve dependency" 警告）。
+    vite: {
+      optimizeDeps: {
+        include: ['mermaid'],
+      },
+      build: {
+        commonjsOptions: {
+          include: [/node_modules/, /dayjs/],
+        },
+      },
+    },
   })
 )

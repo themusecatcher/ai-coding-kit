@@ -14,7 +14,7 @@
     "config:check": "python3 -c \"import sys; sys.path.insert(0, 'scripts/lib'); lc = __import__('load-config', fromlist=['get_config']); print(f'配置路径: {lc.config_file_path()}')\"",
     "push": "sh scripts/push.sh",
     "docs:gen": "node scripts/gen-docs.mjs",
-    "docs:dev": "vitepress dev docs",
+    "docs:dev": "vitepress dev docs --port 8008 --open",
     "docs:build": "pnpm docs:gen && vitepress build docs",
     "docs:preview": "vitepress preview docs",
     "docs:deploy": "sh scripts/deploy.sh"
