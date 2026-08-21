@@ -2,7 +2,24 @@
   "name": "ai-coding-kit",
   "version": "1.0.0",
   "description": "个人 CodeBuddy 资源管理仓库 —— 集中管理 Skills、Agents、Rules",
-  "private": true,
+  "private": false,
+  "keywords": [
+    "codebuddy",
+    "skills",
+    "agents",
+    "rules",
+    "ai"
+  ],
+  "author": "theMuseCatcher",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/themusecatcher/ai-coding-kit.git"
+  },
+  "bugs": {
+    "url": "https://github.com/themusecatcher/ai-coding-kit/issues"
+  },
+  "homepage": "https://github.com/themusecatcher/ai-coding-kit",
   "scripts": {
     "sync": "bash scripts/sync.sh",
     "sync:skills": "bash scripts/sync.sh skills",
