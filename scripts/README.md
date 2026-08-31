@@ -6,7 +6,7 @@
 
 | 脚本 | 说明 |
 |------|------|
-| `sync.sh` | 从 `~/.codebuddy` 同步 skills/agents/rules 到本 Git 仓库 |
+| `sync.sh` | `~/.codebuddy` 与本 Git 仓库之间的**双向**同步（pull / push） |
 | `gen-docs.mjs` | 扫描源文件生成 VitePress 文档站内容 + 侧边栏（`pnpm docs:gen`） |
 | `deploy.sh` | 构建文档站并部署到 GitHub Pages（`pnpm docs:deploy "<描述>"`） |
 | `push.sh` | 一键 `add + commit + push`（`pnpm push "<描述>"`） |
@@ -18,51 +18,69 @@
 
 ## 🔄 sync.sh
 
-将本地 `~/.codebuddy` 下的 `skills`、`agents`、`rules` 目录同步到仓库对应目录，并提供交互式 Git 提交与推送。
+`~/.codebuddy` 与仓库之间的双向同步，只处理 `skills`、`agents`、`rules` 三个子目录。
+
+| 方向 | 数据流 | 典型场景 |
+|------|--------|---------|
+| `pull`（默认） | `~/.codebuddy/` ──▶ `ai-coding-kit/` | 本地调试完 skill，同步回仓库并 commit |
+| `push` | `ai-coding-kit/` ──▶ `~/.codebuddy/` | 在仓库里改完，推回本地运行时生效 |
 
 ### 使用方式
 
 在仓库根目录（`ai-coding-kit/`）下通过 pnpm scripts 调用：
 
 ```bash
-# 同步全部（skills + agents + rules）
-pnpm sync
+# ── pull（默认方向）──
+pnpm sync          # 等价 pnpm sync:pull，同步全部（skills + agents + rules）
+pnpm sync:skills   # 仅同步 skills
+pnpm sync:agents   # 仅同步 agents
+pnpm sync:rules    # 仅同步 rules
 
-# 仅同步 skills
-pnpm sync:skills
-
-# 仅同步 agents
-pnpm sync:agents
-
-# 仅同步 rules
-pnpm sync:rules
+# ── push（反向）──
+pnpm sync:push            # 同步全部：预览 → 删除确认 → 自动备份 → 落盘
+pnpm sync:push --dry-run  # 只预览，不写盘
 
 # 查看帮助
 bash scripts/sync.sh -h
 ```
 
-> 也可以直接调用 `bash scripts/sync.sh [目录名...]`
+> 也可以直接调用 `bash scripts/sync.sh [pull|push] [目录名...] [选项...]`
+> 方向**只能是第一个位置参数**，其余位置参数仍为目录名。
+
+### 选项
+
+| 选项 | 适用方向 | 作用 |
+|------|---------|------|
+| `--dry-run` | 双向 | 只预览变更，不写入磁盘 |
+| `--keep-newer` | 双向 | 目标端文件 mtime 更新时跳过该文件（保守模式） |
+| `--force` | push | 跳过删除项确认（仅限非交互环境，如 CI） |
 
 ### 功能特性
 
-- **增量同步** — 使用 `rsync --delete` 确保仓库与 `.codebuddy` 完全一致
-- **智能排除** — 自动排除 `skills/.clawhub/` 等运行时数据，保护仓库独有的 `README.md` 不被删除
-- **变更预览** — 同步后展示新增/修改/删除的文件统计
-- **交互式提交** — 确认后才提交，支持自定义 commit message
-- **二次确认推送** — 提交和推送分开确认，避免误操作
+- **增量同步** — 使用 `rsync --delete` 确保目标端与源端一致
+- **智能排除** — 双向排除 `.git`、`/README.md`、`.dev-flow-managed`、`.clawhub`、`_private`、`plugin.json`、`.codebuddy-plugin`、`_platform-integrations.yaml`；push 额外排除 `skills/dev-flow/dist`（分发包，回灌运行时只会冗余）
+- **变更预览** — pull 同步后展示 Git 变更统计；push 落盘前展示新增/修改/删除三清单
+- **push 三重护栏** — 预览 → 删除项 `y/N` 二次确认（非交互环境默认拒绝，须显式 `--force`）→ 自动备份被覆盖/删除的原文件到 `~/.codebuddy/.sync-backup/<时间戳>/`
+- **交互式提交**（仅 pull） — 确认后才提交，支持自定义 commit message
+- **二次确认推送**（仅 pull） — 提交和推送分开确认，避免误操作
 
-> ⚠️ 与 pre-commit hook 联动：若同步的变更涉及 skill frontmatter（`SKILL.md` 头部元数据）或 skill 增删，交互式提交会被已安装的 hook 拦截，需先执行 `pnpm mp` 生成市场元数据（见下方 hooks 章节）。
+> ⚠️ 与 pre-commit hook 联动（pull 方向）：若同步的变更涉及 skill frontmatter（`SKILL.md` 头部元数据）或 skill 增删，交互式提交会被已安装的 hook 拦截，需先执行 `pnpm mp` 生成市场元数据（见下方 hooks 章节）。
+>
+> 📌 **`.dev-flow-managed` 为何必须双向排除**：它是 `install.sh v1.3.0` 写入的受管标记，`--status` / `--uninstall` 完全依赖它识别副本。push 时若被 `--delete` 清除，会导致健康检查全部误报"未安装"、卸载功能失效；pull 时若被拉进仓库，则会污染 Git 工作区。
+>
+> 🧹 备份目录 `~/.codebuddy/.sync-backup/` 不会自动清理，确认无需回滚后可手动删除。
 
 ### 同步流程
 
 ```
-~/.codebuddy/skills/  ──rsync──▶  ai-coding-kit/skills/
-~/.codebuddy/agents/  ──rsync──▶  ai-coding-kit/agents/
-~/.codebuddy/rules/   ──rsync──▶  ai-coding-kit/rules/
-                                       │
-                                  Git 变更预览
-                                       │
-                              交互确认 commit & push
+pull（默认）                          push
+~/.codebuddy/skills/ ──▶ ai-coding-kit/skills/   ◀── ai-coding-kit/skills/
+~/.codebuddy/agents/ ──▶ ai-coding-kit/agents/   ◀── ai-coding-kit/agents/
+~/.codebuddy/rules/  ──▶ ai-coding-kit/rules/    ◀── ai-coding-kit/rules/
+        │                                                    │
+   Git 变更预览                                    变更预览（新增/修改/删除）
+        │                                                    │
+  交互确认 commit & push                        删除确认 → 自动备份 → 落盘
 ```
 
 ## 🏷️ generate_marketplace.py

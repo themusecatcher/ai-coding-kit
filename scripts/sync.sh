@@ -1,15 +1,21 @@
 #!/bin/bash
 # ==============================================================================
-# sync.sh - 从 ~/.codebuddy 同步 skills/agents/rules 到 ai-coding-kit Git 仓库
+# sync.sh - ai-coding-kit 与 ~/.codebuddy 之间的双向同步
+#
+#   pull（默认）: ~/.codebuddy  ──▶  ai-coding-kit 仓库
+#   push        : ai-coding-kit 仓库  ──▶  ~/.codebuddy
 #
 # 用法（推荐在仓库根目录通过 npm scripts 调用）:
-#   npm run sync                   # 同步全部（skills + agents + rules）
-#   npm run sync:skills            # 仅同步 skills
-#   npm run sync:agents            # 仅同步 agents
-#   npm run sync:rules             # 仅同步 rules
+#   npm run sync                   # pull 同步全部（skills + agents + rules）
+#   npm run sync:pull              # 同上，显式声明方向
+#   npm run sync:push              # push 同步全部（含护栏：预览 + 删除确认 + 备份）
+#   npm run sync:skills            # 仅同步 skills（pull 方向）
 #
 # 也可直接调用:
-#   bash scripts/sync.sh [目录名...]
+#   bash scripts/sync.sh [push|pull] [目录名...] [--dry-run] [--force] [--keep-newer]
+#
+# ⚠️ push 方向会覆盖 ~/.codebuddy 下同名文件。执行前自动备份到
+#    ~/.codebuddy/.sync-backup/<时间戳>/，建议先用 --dry-run 预览。
 # ==============================================================================
 
 set -e
@@ -17,24 +23,40 @@ set -e
 # ---- 配置 ----
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
-SOURCE_DIR="$HOME/.codebuddy"
+RUNTIME_DIR="$HOME/.codebuddy"
 
-# 可同步的目录列表
+# 可同步的目录列表（白名单：只允许这三个子目录，避免误伤 ~/.codebuddy 顶层配置）
 ALL_DIRS=("skills" "agents" "rules")
 
-# 所有目录通用排除（保护 Git 仓库中独有的文件）
+# ---- 方向（pull 默认，向后兼容）----
+#   pull: RUNTIME_DIR → REPO_DIR
+#   push: REPO_DIR → RUNTIME_DIR
+DIRECTION="pull"
+DRY_RUN=false
+FORCE=false
+KEEP_NEWER=false
+SYNC_DIRS=()
+BACKUP_DIR=""
+PREVIEW_DIR=""
+
+# 所有目录通用排除（保护目标端独有文件）
 # 注意：/README.md 只排除同步根目录下的 README.md，不影响子目录中的 README.md
 # 这样当源端删除某个 skill/agent 时，rsync --delete 能正确清理整个子目录
+#
+# .dev-flow-managed 是 install.sh v1.3.0 写入的受管标记，其 --status / --uninstall
+# 完全依赖它识别副本。若被 --delete 清除，会导致卸载与健康检查失效，
+# 故两个方向都必须排除（同时避免 pull 时把该标记拉进仓库）。
 COMMON_EXCLUDES=(
   "--exclude=/README.md"
   "--exclude=.git"
+  "--exclude=.dev-flow-managed"
 )
 
-# skills 目录额外排除的内容
+# skills 目录额外排除的内容（双向）
 # 排除策略：
 #   - 运行时/缓存数据（.clawhub）
 #   - 私有 skill（`_` 前缀）— 不随仓库公开
-#   - 仓库独有文件/目录（plugin.json, .codebuddy-plugin, _platform-integrations.yaml）— ~/.codebuddy 中不存在，需保护不被 --delete 删除
+#   - 仓库独有文件/目录（plugin.json, .codebuddy-plugin, _platform-integrations.yaml）— 需保护不被 --delete 删除
 SKILLS_EXCLUDES=(
   "--exclude=.clawhub"
   "--exclude=_private"
@@ -42,6 +64,20 @@ SKILLS_EXCLUDES=(
   "--exclude=.codebuddy-plugin"
   "--exclude=_platform-integrations.yaml"
 )
+
+# push 方向额外排除（仅仓库侧独有的分发产物）
+#   - dev-flow/dist 是给未 clone 仓库用户的独立分发包，回灌 ~/.codebuddy 只会冗余膨胀
+PUSH_EXCLUDES=(
+  "--exclude=/dev-flow/dist"
+)
+
+# openrsync（macOS 自带）默认会把非 ASCII 文件名转义成 \#NNN 形式，
+# 导致预览明细里的路径无法用于备份匹配，其 --8-bit-output 可关闭该行为。
+# GNU rsync 无此选项，故按需探测后再启用。
+RSYNC_8BIT_OUTPUT=""
+if rsync --help 2>&1 | grep -q -- '--8-bit-output'; then
+  RSYNC_8BIT_OUTPUT="--8-bit-output"
+fi
 
 # ---- 颜色 ----
 RED='\033[0;31m'
@@ -57,40 +93,89 @@ warn()  { echo -e "${YELLOW}⚠${NC}  $1"; }
 error() { echo -e "${RED}❌${NC} $1"; }
 
 usage() {
-  echo "用法: $0 [目录名...]"
+  echo "用法: $0 [pull|push] [目录名...] [选项...]"
   echo ""
+  echo "方向（只能是第一个位置参数，缺省为 pull）:"
+  echo "  pull     ~/.codebuddy  ──▶  ai-coding-kit 仓库（默认，与历史行为一致）"
+  echo "  push     ai-coding-kit 仓库  ──▶  ~/.codebuddy（含预览/确认/备份护栏）"
+  echo ""
+  echo "目录名:"
   echo "  不带参数    同步全部 (skills, agents, rules)"
   echo "  skills     仅同步 skills"
   echo "  agents     仅同步 agents"
   echo "  rules      仅同步 rules"
   echo ""
+  echo "选项:"
+  echo "  --dry-run      只预览将要发生的变更，不写入磁盘"
+  echo "  --force        push 时跳过删除项交互确认（仅限非交互环境/CI，请谨慎）"
+  echo "  --keep-newer   目标端文件 mtime 更新时跳过该文件（保守模式）"
+  echo "  -h, --help     显示此帮助"
+  echo ""
   echo "示例:"
-  echo "  $0                  # 同步全部"
-  echo "  $0 skills           # 仅同步 skills"
-  echo "  $0 skills rules     # 同步 skills 和 rules"
+  echo "  $0                     # pull 同步全部"
+  echo "  $0 skills              # pull 仅同步 skills"
+  echo "  $0 push                # push 同步全部（会先预览并确认）"
+  echo "  $0 push rules          # push 仅同步 rules"
+  echo "  $0 push --dry-run      # 预览 push 变更，不落盘"
+}
+
+# 构建 rsync 基础参数，结果写入全局数组 RSYNC_ARGS
+# （用全局数组而非命令替换，兼容 macOS 自带的 bash 3.2 —— 无 mapfile）
+build_rsync_args() {
+  local dir="$1"
+  RSYNC_ARGS=(-av --delete "${COMMON_EXCLUDES[@]}")
+
+  # skills 目录需要额外排除运行时数据
+  if [ "$dir" = "skills" ]; then
+    RSYNC_ARGS+=("${SKILLS_EXCLUDES[@]}")
+  fi
+
+  # push 方向额外排除仓库侧独有的分发产物
+  if [ "$DIRECTION" = "push" ]; then
+    RSYNC_ARGS+=("${PUSH_EXCLUDES[@]}")
+  fi
+
+  if [ "$KEEP_NEWER" = true ]; then
+    RSYNC_ARGS+=("--update")
+  fi
+}
+
+# 预览单个目录的变更（不写盘），输出 rsync itemize 明细
+preview_dir() {
+  local dir="$1"
+  local src="$SRC_ROOT/$dir"
+  local dst="$DST_ROOT/$dir"
+
+  [ -d "$src" ] && [ -d "$dst" ] || return
+
+  build_rsync_args "$dir"
+  # shellcheck disable=SC2086 # RSYNC_8BIT_OUTPUT 需允许为空展开
+  rsync "${RSYNC_ARGS[@]}" --dry-run --itemize-changes $RSYNC_8BIT_OUTPUT "$src/" "$dst/" 2>/dev/null
 }
 
 sync_dir() {
   local dir="$1"
-  local src="$SOURCE_DIR/$dir"
-  local dst="$REPO_DIR/$dir"
+  local src="$SRC_ROOT/$dir"
+  local dst="$DST_ROOT/$dir"
 
   if [ ! -d "$src" ]; then
     warn "源目录不存在，跳过: $src"
     return
   fi
+  if [ ! -d "$dst" ]; then
+    warn "目标目录不存在，跳过: $dst"
+    return
+  fi
 
   info "同步 $dir ..."
 
-  # 构建 rsync 参数：通用排除 + 目录专属排除
-  local rsync_args=(-av --delete "${COMMON_EXCLUDES[@]}")
+  build_rsync_args "$dir"
 
-  # skills 目录需要额外排除运行时数据
-  if [ "$dir" = "skills" ]; then
-    rsync_args+=("${SKILLS_EXCLUDES[@]}")
+  if [ "$DRY_RUN" = true ]; then
+    RSYNC_ARGS+=(--dry-run)
   fi
 
-  rsync "${rsync_args[@]}" "$src/" "$dst/"
+  rsync "${RSYNC_ARGS[@]}" "$src/" "$dst/"
 
   ok "$dir 同步完成"
 }
@@ -145,27 +230,43 @@ if [[ "$1" == "-h" || "$1" == "--help" ]]; then
   exit 0
 fi
 
-# 确定要同步的目录
-if [ $# -eq 0 ]; then
-  SYNC_DIRS=("${ALL_DIRS[@]}")
-else
-  SYNC_DIRS=()
-  for arg in "$@"; do
-    # 验证参数是否合法
-    valid=false
-    for d in "${ALL_DIRS[@]}"; do
-      if [ "$arg" = "$d" ]; then
-        valid=true
-        break
-      fi
-    done
-    if [ "$valid" = true ]; then
-      SYNC_DIRS+=("$arg")
-    else
-      error "无效的目录名: $arg（仅支持: ${ALL_DIRS[*]}）"
+# 方向：仅第一个位置参数生效
+if [[ $# -gt 0 && ( "$1" == "push" || "$1" == "pull" ) ]]; then
+  DIRECTION="$1"
+  shift
+fi
+
+# 解析剩余参数（选项 + 目录名）
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --dry-run)            DRY_RUN=true; shift ;;
+    --force)              FORCE=true; shift ;;
+    --keep-newer)         KEEP_NEWER=true; shift ;;
+    skills|agents|rules)  SYNC_DIRS+=("$1"); shift ;;
+    -h|--help)            usage; exit 0 ;;
+    *)
+      error "无效参数: $1（目录仅支持: ${ALL_DIRS[*]}）"
+      echo ""
+      usage
       exit 1
-    fi
-  done
+      ;;
+  esac
+done
+
+# 未指定目录 → 同步全部
+if [ ${#SYNC_DIRS[@]} -eq 0 ]; then
+  SYNC_DIRS=("${ALL_DIRS[@]}")
+fi
+
+# 方向 → 源 / 目标
+if [ "$DIRECTION" = "push" ]; then
+  SRC_ROOT="$REPO_DIR"
+  DST_ROOT="$RUNTIME_DIR"
+  DIRECTION_LABEL="push  ai-coding-kit/  ──▶  ~/.codebuddy/"
+else
+  SRC_ROOT="$RUNTIME_DIR"
+  DST_ROOT="$REPO_DIR"
+  DIRECTION_LABEL="pull  ~/.codebuddy/  ──▶  ai-coding-kit/"
 fi
 
 echo ""
@@ -173,16 +274,155 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 echo -e "  ${BLUE}🔄 CodeBuddy 配置同步工具${NC}"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
-info "源: $SOURCE_DIR"
-info "目标: $REPO_DIR"
+info "方向: $DIRECTION_LABEL"
+info "源: $SRC_ROOT"
+info "目标: $DST_ROOT"
 info "同步目录: ${SYNC_DIRS[*]}"
 echo ""
+
+# ==================== push 方向护栏 ====================
+# 与 pull 不同，push 会覆盖运行时目录，而 ~/.codebuddy 下可能存在
+# 非本仓库来源的内容（其他市场安装的 skill、本地手动改动等）。
+# 因此 push 必须：预览 → 确认 → 备份 → 落盘。
+# 返回值：0 = 允许执行；1 = 中止（已预览/已取消）
+run_push_guard() {
+  local dir pf
+  PREVIEW_DIR="$(mktemp -d "${TMPDIR:-/tmp}/sync-preview.XXXXXX")"
+  for dir in "${SYNC_DIRS[@]}"; do
+    preview_dir "$dir" > "$PREVIEW_DIR/$dir.txt"
+  done
+
+  # 汇总统计（逐目录累加，避免引入自我引用的汇总文件）
+  local added=0 modified=0 deleted=0
+  for dir in "${SYNC_DIRS[@]}"; do
+    pf="$PREVIEW_DIR/$dir.txt"
+    [ -f "$pf" ] || continue
+    added=$(( added + $(grep -c '^>f+++' "$pf" 2>/dev/null || true) ))
+    deleted=$(( deleted + $(grep -c '^\*deleting' "$pf" 2>/dev/null || true) ))
+    modified=$(( modified + $(grep -E '^>f' "$pf" 2>/dev/null | grep -vc '^>f+++' || true) ))
+  done
+
+  echo -e "  ${BLUE}🔍 变更预览${NC}"
+  echo ""
+  echo -e "    新增: ${GREEN}${added}${NC} 个文件"
+  echo -e "    修改: ${YELLOW}${modified}${NC} 个文件"
+  echo -e "    删除: ${RED}${deleted}${NC} 个文件"
+  echo ""
+
+  if [ "$deleted" -gt 0 ]; then
+    echo -e "  ${RED}⚠️  以下目标端文件将被删除：${NC}"
+    cat "$PREVIEW_DIR"/*.txt 2>/dev/null | grep '^\*deleting' | sed 's/^[^ ]*  *//' | head -20 | while IFS= read -r line; do
+      echo -e "      ${RED}- ${line}${NC}"
+    done
+    local rest=$((deleted - 20))
+    [ "$rest" -gt 0 ] && echo -e "      ${RED}... 另有 ${rest} 项${NC}"
+    echo ""
+  fi
+
+  # 纯预览模式：到此为止
+  if [ "$DRY_RUN" = true ]; then
+    warn "预览模式（--dry-run），未写入任何文件"
+    return 1
+  fi
+
+  # 无变更：直接结束
+  if [ "$added" -eq 0 ] && [ "$modified" -eq 0 ] && [ "$deleted" -eq 0 ]; then
+    ok "目标端已与仓库一致，无需同步"
+    return 1
+  fi
+
+  # 删除项二次确认（非交互环境必须显式 --force）
+  if [ "$deleted" -gt 0 ]; then
+    if [ ! -t 0 ]; then
+      if [ "$FORCE" = true ]; then
+        warn "非交互环境 + --force：跳过删除确认，直接执行"
+      else
+        error "本次同步会删除 ${deleted} 个目标端文件，非交互环境已中止"
+        error "确认无误请加 --force，或先手工备份 ~/.codebuddy/"
+        return 1
+      fi
+    else
+      local reply=""
+      printf "  ${YELLOW}将删除 %s 个目标端文件，确认继续？${NC} (y/N) " "$deleted"
+      read -r reply || true
+      echo ""
+      if [[ ! "$reply" =~ ^[Yy]$ ]]; then
+        warn "已取消，未做任何改动"
+        return 1
+      fi
+    fi
+  fi
+
+  return 0
+}
+
+# 备份目标端将被覆盖/删除的文件到 BACKUP_DIR（保持原相对路径）
+#
+# 不使用 rsync --backup / --backup-dir 的原因：
+#   macOS 自带的 openrsync（protocol 29）虽然接受这两个参数，但实测静默失效
+#   —— 既不备份，还会连带导致 --delete 不生效。故改为基于预览明细手工 cp。
+backup_targets() {
+  local dir="$1"
+  local preview_file="$PREVIEW_DIR/$dir.txt"
+  [ -f "$preview_file" ] || return 0
+
+  local count=0 rel src_path dst_path
+  while IFS= read -r rel; do
+    [ -z "$rel" ] && continue
+    src_path="$DST_ROOT/$dir/$rel"
+    [ -e "$src_path" ] || continue
+    dst_path="$BACKUP_DIR/$dir/$rel"
+    mkdir -p "$(dirname "$dst_path")"
+    cp -R "$src_path" "$dst_path"
+    count=$((count + 1))
+  done < <(grep -E '^(\*deleting|>f)' "$preview_file" | sed 's/^[^ ]*  *//')
+
+  if [ "$count" -gt 0 ]; then
+    info "已备份 $dir: $count 项"
+  fi
+}
+
+# push 方向：护栏 → 备份 → 落盘
+if [ "$DIRECTION" = "push" ]; then
+  if ! run_push_guard; then
+    rm -rf "$PREVIEW_DIR"
+    echo ""
+    exit 0
+  fi
+  BACKUP_DIR="$RUNTIME_DIR/.sync-backup/$(date '+%Y%m%d-%H%M%S')"
+  mkdir -p "$BACKUP_DIR"
+  info "备份目录: $BACKUP_DIR"
+  echo ""
+  for dir in "${SYNC_DIRS[@]}"; do
+    backup_targets "$dir"
+  done
+fi
 
 # 执行同步
 for dir in "${SYNC_DIRS[@]}"; do
   sync_dir "$dir"
   echo ""
 done
+
+# 预览模式：同步已用 --dry-run 跑完，不再进入后续 Git 提交流程
+if [ "$DRY_RUN" = true ]; then
+  warn "预览模式（--dry-run），未写入任何文件"
+  echo ""
+  exit 0
+fi
+
+# push 方向到此结束（后续 Git 变更分析与交互式提交仅适用于 pull）
+if [ "$DIRECTION" = "push" ]; then
+  rm -rf "$PREVIEW_DIR"
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  ok "push 同步完成"
+  if [ -n "$BACKUP_DIR" ]; then
+    info "被覆盖/删除的原文件已备份至: $BACKUP_DIR"
+    warn "如发现异常，可从备份目录按原路径恢复"
+  fi
+  echo ""
+  exit 0
+fi
 
 # 显示 Git 变更
 cd "$REPO_DIR"

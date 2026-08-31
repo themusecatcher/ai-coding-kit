@@ -25,11 +25,13 @@
 
 ```bash
 ls ~/workspace/ | grep -i {包名/项目名关键词}
-
+ls ~/myGithub/ | grep -i {包名/项目名关键词}  # 覆盖多工作目录场景
 ```
 
 - dev-flow 场景可同时回查 [remote-knowledge.md](../remote-knowledge.md) §二 2.2「本地仓库速查表」取精确路径与默认分支
-- 命中 → Step 2；未命中 → Step 3
+- 命中 → Step 2；未命中 → Step 3（含 `node_modules` 降级）
+
+> ⚠️ **禁止直接读 `node_modules` 产物**：`node_modules` 是编译产物，可读性差、非原始源码、可能落后于仓库。仅在 Step 3「本地未命中」时才作为降级选项使用。
 
 ### Step 2：命中本地 → 分支感知 + 读源码
 
@@ -72,13 +74,15 @@ cd ~/workspace/{repo} && git branch --show-current && git status -s | head -5
 - 含未提交改动时**禁止主动建议 `git checkout`**（违反"严禁擅自 git 操作"红线）
 - 用户选 2 时引用标注必须带分支信息（`[local-repo@{branch}]`），防止误判信息来源
 
-### Step 3：未命中本地 → 主动提醒 clone（不静默 fallback）
+### Step 3：未命中本地 → 降级处理（不静默 fallback）
+
+**优先级**：本地 clone > `node_modules` 产物 > 知识库平台 / Git API
 
 ````markdown
 📦 检测到跨项目分析需求，但本地未发现仓库：
 
 - 涉及项目：{项目名/包名}
-- 已查目录：`~/workspace/`
+- 已查目录：`~/workspace/`、`~/myGithub/`
 - 建议本地 clone：
 
 ```bash
@@ -90,9 +94,10 @@ cd ~/workspace && git clone {repo_url}
 可选操作：
 
 1. **clone 并继续分析**（推荐）→ 等待你 clone 完成后我继续
-2. **暂用 知识库平台 MCP 分析**（dev-flow 场景且项目在映射表中）→ 立即继续，但代码可能滞后
-3. **暂用Git 平台 `get_blob_content` 分析**（非 dev-flow 场景）→ 立即继续，需要你提供项目路径
-4. **跳过此项目分析** → 仅基于当前已知信息推进
+2. **降级读 `node_modules/{pkg}/` 产物**（项目依赖已安装）→ 立即继续，但产物经编译、可读性差、可能落后，引用时标注 `[node_modules]`
+3. **暂用 知识库平台 MCP 分析**（dev-flow 场景且项目在映射表中）→ 立即继续，但代码可能滞后
+4. **暂用Git 平台 `get_blob_content` 分析**（非 dev-flow 场景）→ 立即继续，需要你提供项目路径
+5. **跳过此项目分析** → 仅基于当前已知信息推进
 
 ````
 
@@ -111,6 +116,7 @@ cd ~/workspace && git clone {repo_url}
 | 本地仓库（非默认分支） | `[local-repo@{branch}]` | `` `other-project/src/x.tsx` `` L42 `[local-repo@feature/xxx]` |
 | 知识库平台 MCP 命中 | `[remote-kb/git]` 等 | （详见 [remote-knowledge.md](../remote-knowledge.md) §五 5.2） |
 | Git 平台 API 命中 | `[git-api]` | （略） |
+| `node_modules` 产物 | `[node_modules]` | `` `node_modules/pkg/src/x.ts` `` L42 `[node_modules]` |
 
 ## 反模式（违反即拒收）
 
@@ -121,6 +127,7 @@ cd ~/workspace && git clone {repo_url}
 - ❌ 本地有未提交改动时擅自建议 `git checkout`
 - ❌ 引用本地仓库源码时不标注来源 + 分支
 - ❌ 未命中本地时静默走 知识库平台，不提醒用户 clone
+- ❌ 跳过本地探测直接读 `node_modules` 产物
 
 ## 与「修复型跨项目」的衔接
 

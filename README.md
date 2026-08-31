@@ -119,16 +119,33 @@ vim ~/.codebuddy/config/org.yaml
 
 > 详细配置说明见 [CONFIG.md](CONFIG.md)。所有 skill 默认纯本地运行，平台集成是可选增强，**零配置也能用**。也可直接编辑仓库中的 `config/org.yaml`。
 
-### 4. 从本地同步回仓库（维护者）
+### 4. 双向同步（维护者）
 
-修改 `~/.codebuddy/` 下的 skills、agents、rules 后，同步回本仓库：
+`scripts/sync.sh` 支持两个方向，**只同步 `skills` / `agents` / `rules` 三个子目录**：
 
 ```bash
-pnpm sync        # 同步全部（skills + agents + rules）
-pnpm sync:skills # 仅同步 skills
-pnpm sync:agents # 仅同步 agents
-pnpm sync:rules  # 仅同步 rules
+# pull（默认）：~/.codebuddy/  ──▶  本仓库
+pnpm sync          # 等价 pnpm sync:pull，同步全部
+pnpm sync:skills   # 仅同步 skills
+pnpm sync:agents   # 仅同步 agents
+pnpm sync:rules    # 仅同步 rules
+
+# push：本仓库  ──▶  ~/.codebuddy/
+pnpm sync:push            # 同步全部（先预览 → 有删除则确认 → 自动备份 → 落盘）
+pnpm sync:push --dry-run  # 只预览，不写盘
 ```
+
+| 通用选项 | 作用 |
+|---------|------|
+| `--dry-run` | 只预览变更，不写入磁盘（两个方向都支持） |
+| `--keep-newer` | 目标端文件 mtime 更新时跳过该文件（保守模式） |
+| `--force` | push 时跳过删除确认，仅限非交互环境/CI |
+
+> ⚠️ **push 会覆盖 `~/.codebuddy/` 下的同名文件**，因此内置三重护栏：变更预览 → 删除项 `y/N` 二次确认（非交互环境默认拒绝，须显式 `--force`）→ 自动备份被覆盖/删除的原文件到 `~/.codebuddy/.sync-backup/<时间戳>/`。
+>
+> 排除清单（双向生效）：`.git`、`/README.md`、`.dev-flow-managed`、`.clawhub`、`_private`、`plugin.json`、`.codebuddy-plugin`、`_platform-integrations.yaml`；push 额外排除 `skills/dev-flow/dist`（独立分发包，回灌运行时只会冗余）。
+>
+> 📌 `.dev-flow-managed` 是 `install.sh` 写入的受管标记，其 `--status` / `--uninstall` 依赖它识别副本，两个方向都必须排除。备份目录 `.sync-backup/` 不会自动清理，确认无需回滚后可手动删除。
 
 ### 5. 检查与维护
 

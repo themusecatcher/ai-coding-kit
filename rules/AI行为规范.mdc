@@ -158,11 +158,11 @@ provider:
 
 ## 跨项目分析 reflex（精要）
 
-> 分析涉及非当前 workspace 的代码时，禁止凭推测、禁止等用户提醒才去查本地。
+> 分析涉及非当前 workspace 的代码时，禁止凭推测、禁止等用户提醒才去查本地；**禁止直接查 `node_modules` 产物**。
 
-**三步法**：① 本地探测工作空间目录 ② 命中则先分支感知 `git branch --show-current` → ③ 未命中则提醒用户 clone
+**三步法**：① 本地探测工作空间目录（`~/myGithub/`、`~/workspace/` 等）② 命中则先分支感知 `git branch --show-current` 再读源码 → ③ 未命中本地 → 才降级查 `node_modules` 产物（标注 `[node_modules]`），或提醒用户 clone
 
-**核心禁令**：未做分支感知禁止读源码 / 已知本地路径禁止走 远程知识库 / 禁止静默 fallback
+**核心禁令**：未做分支感知禁止读源码 / 已知本地路径禁止走 远程知识库 / 禁止静默 fallback / 禁止跳过本地探测直接查 `node_modules`
 
 > 📌 完整触发信号/三步法详细/来源标注/反模式清单 → `skills/dev-flow/references/cross-project/analysis.md`；Diff / Commit 查看规范 → `skills/dev-flow/references/cross-project/integration.md` §「Diff / Commit 查看规范」
 

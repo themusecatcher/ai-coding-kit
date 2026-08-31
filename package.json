@@ -22,6 +22,8 @@
   "homepage": "https://github.com/themusecatcher/ai-coding-kit",
   "scripts": {
     "sync": "bash scripts/sync.sh",
+    "sync:pull": "bash scripts/sync.sh pull",
+    "sync:push": "bash scripts/sync.sh push",
     "sync:skills": "bash scripts/sync.sh skills",
     "sync:agents": "bash scripts/sync.sh agents",
     "sync:rules": "bash scripts/sync.sh rules",
