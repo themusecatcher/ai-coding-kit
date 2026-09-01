@@ -2,7 +2,7 @@
 description: 
 alwaysApply: true
 enabled: true
-updatedAt: 2026-05-26T14:17:00.000Z
+updatedAt: 2026-09-01T13:00:00.000Z
 provider: 
 ---
 
@@ -158,11 +158,11 @@ provider:
 
 ## 跨项目分析 reflex（精要）
 
-> 分析涉及非当前 workspace 的代码时，禁止凭推测、禁止等用户提醒才去查本地。
+> 分析涉及非当前 workspace 的代码时，禁止凭推测、禁止等用户提醒才去查本地；**禁止直接查 `node_modules` 产物**。
 
-**三步法**：① 本地探测工作空间目录 ② 命中则先分支感知 `git branch --show-current` → ③ 未命中则提醒用户 clone
+**三步法**：① 本地探测工作空间目录（`~/myGithub/`、`~/workspace/` 等）② 命中则先分支感知 `git branch --show-current` 再读源码 → ③ 未命中本地 → 才降级查 `node_modules` 产物（标注 `[node_modules]`），或提醒用户 clone
 
-**核心禁令**：未做分支感知禁止读源码 / 已知本地路径禁止走 远程知识库 / 禁止静默 fallback
+**核心禁令**：未做分支感知禁止读源码 / 已知本地路径禁止走 远程知识库 / 禁止静默 fallback / 禁止跳过本地探测直接查 `node_modules`
 
 > 📌 完整触发信号/三步法详细/来源标注/反模式清单 → `skills/dev-flow/references/cross-project/analysis.md`；Diff / Commit 查看规范 → `skills/dev-flow/references/cross-project/integration.md` §「Diff / Commit 查看规范」
 
@@ -184,6 +184,15 @@ provider:
 - **承诺一致性必须 grep 实测**：任何"已完成/已固化"类承诺，必须用工具实测验证后才能宣告完成
 
 > 📌 编辑工具假性成功兜底/批量重命名三大陷阱/详细 SOP → 按需规则 `按需-验证行为详细规范`
+
+## Git 操作规范（提交权限边界）
+
+> **无明确指令时，AI 不得直接执行 `git commit` / `git push`**——默认操作上限为 `git add`。
+
+- **默认（无明确指令）**：最多只执行 `git add` 暂存，或不执行任何提交操作；`commit` / `push` 留给用户手动完成
+- **例外（明确授权）**：仅当用户明确说"帮我执行 commit / push"等指令时，才可代为执行
+- 用户说"提交/帮我提交"等模糊表述时，按默认处理：仅完成暂存，并生成符合规范的 commit message 供用户复制使用（格式见 `开发规范-红线.mdc`）
+- 本规则于 2026-09-01 用户纠正后固化，违反即属越权操作
 
 ## Skill 模板严格遵循规则
 
