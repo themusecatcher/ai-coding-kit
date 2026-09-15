@@ -7,7 +7,7 @@ description: 面向 vue-amazing-ui 组件库的单组件开发迭代工作流。
 # dev-comp —— 组件库开发迭代工作流
 
 > 定位：vue-amazing-ui 单组件开发迭代领域 SOP。
-> 架构：**轻量领域流程 + 软复用 dev-flow 能力模块**。全程❌ 不产生 `.flow` 锁、❌ 不走 dev-flow 重型门控（`.validated` 物理检查点 / JSON 逐步校验 / 门控 subagent / post-step 脚本 / 工具门禁）；✅ 仅保留**轻量交互式 Gate**——每阶段完成后输出「阶段完成报告」并弹 `ask_followup_question`，等用户确认再进入下一阶段（详见「6 阶段 + Gate 流程总览」）；✅ 另配 1 个**轻量校验脚本** `scripts/validate-component.sh` 承载 Gate 5 确定性检查（设计哲学「确定性用代码」，详见「能力复用索引」）。
+> 架构：**轻量领域流程 + 软复用 dev-flow 能力模块**。全程❌ 不产生 `.flow` 锁、❌ 不走 dev-flow 重型门控（`.validated` 物理检查点 / JSON 逐步校验 / 门控 subagent / post-step 脚本 / 工具门禁）；✅ 仅保留**轻量交互式 Gate**——每阶段完成后输出「阶段完成报告」并弹 `ask_followup_question`，等用户确认再进入下一阶段（详见「6 阶段 + Gate 流程总览」）；✅ 另配 1 个**轻量校验脚本** `scripts/validate-component.sh` 承载 Gate 5 确定性检查（A/B/C/E/F 配置项 + S 提交红线，设计哲学「确定性用代码」，详见「能力复用索引」）。
 
 ## ⚙️ 个人化配置区（复用/分享时只改这一块）
 
@@ -34,6 +34,20 @@ description: 面向 vue-amazing-ui 组件库的单组件开发迭代工作流。
 | `CAP_METRICS_DIR` | `~/.codebuddy/dev-comp/metrics/` | 度量报告目录（dev-comp 专属） |
 
 > 本地 clone 不存在时：降级为仅用官网（web_fetch）参考，并提示用户可clone 以获得源码级复用。
+
+## 📋 项目规范权威源（必读 · 2026-09-15 新增）
+
+> 项目内已有面向贡献者的设计规范（`{PROJECT_ROOT}/development/`），是组件实现的**权威源**；本 skill 只做「引用 + 增量补充」，**禁止另起平行规则**。
+> ⚠️ 本 skill 的 checklist / 模板 / 脚本与项目规范冲突时，**以项目规范为准**，并**立即回填本 skill**（单向断链是历史欠账的根因，见 `rules/按需-Skill设计-跨文件协作.mdc` §2.1）。映射表详见 `references/project-map.md` §项目规范权威源索引。
+
+| 必读文件 | 关键内容 | 对应阶段 |
+|:--|:--|:--|
+| `development/component-design.md` | SFC 三段式 / `export interface Props` / **`defineSlots` + `<组件名>Slots`** / 主题注入 / 样式与 CSS 变量 / **根类名 `{组件名}-wrap`** | 1-2 |
+| `development/import-export.md` | 三层导出模型 / 组件 `index.ts` 三件套 / **新增组件「三步接线」Checklist** / resolver 四张表 | 1 |
+| `development/demo-doc-guide.md` | 演示页结构 / 自动路由 / 组件文档模板 / 侧边栏维护 / **演示与文档必须一致** | 3-4 |
+| `development/project-structure.md` | 顶层目录职责 / 命名规范速查 | 1/3/4 |
+| `development/build-system.md` | 三产物构建（dist / es / lib）/ 别名与模块解析 | 5（发布） |
+| `types/global-components.d.ts` | **手工维护**的自有组件全局类型声明 → 新增组件**必登记**（⚠️ 漏登记不报错、`pnpm type-check` 仍 PASS，见 `linkage-map.md` §⑮） | 1 |
 
 ## 📦 产物存储设计原则（2026-08-18 固化 · 2026-08-19 补充归档兜底）
 
@@ -68,14 +82,14 @@ description: 面向 vue-amazing-ui 组件库的单组件开发迭代工作流。
 
 ```
 阶段 0  接续/初始化   → 读/建精简工作上下文 + todo plan + 分阶段决策
-阶段 1  准备          → 分支 + 建目录/配置 + 注册占位
-阶段 2  组件本体      → 对照antdv/naive 源码开发（先搜索复用项目资产）
+阶段 1  准备          → 分支 + 建目录/配置 + 注册占位（含 types/global-components.d.ts 登记）
+阶段 2  组件本体      → 对照antdv/naive 源码开发（API 四维 + 渲染分支 + 先搜索复用项目资产）
 阶段 3  演示用例      → 完整复制官网用例（顺序一致）+ 双组件对照（src/views/xxx/Index.vue + index.ts）（⚠️ 对照为验收期临时结构，阶段 5 收尾清除）
 阶段 4  文档          → docs 复用演示页 + 周边文档联动
 阶段 5  验收收尾      → 配置项终检 + 基线全量勾销 + lint+type-check+浏览器对照 → devlog+metrics+knowledge → smart-commit → 引导发布（合入 main + 构建发布）
 ```
 
-**各阶段对应 Gate**：Gate 0 确认组件名/分阶段计划/参考源/项目特有需求 · Gate 1 确认分支/目录/注册骨架 · Gate 2 确认功能 + API 四维/Demo 用例对齐清单 · Gate 3 确认演示页完整复制官网用例（顺序一致）+ 双组件对照 · Gate 4 确认文档完整 · Gate 5 配置项终检 + 基线全量勾销 + 确认验收结果 + 提交。
+**各阶段对应 Gate**：Gate 0 确认组件名/分阶段计划/参考源/项目特有需求 · Gate 1 确认分支/目录/注册骨架（含全局类型声明登记）· Gate 2 确认功能 + API 四维/渲染分支/Demo 用例对齐清单 · Gate 3 确认演示页完整复制官网用例（顺序一致）+ 双组件对照 · Gate 4 确认文档完整 · Gate 5 配置项终检 + 基线全量勾销 + 确认验收结果 + 提交。
 
 > Gate 报告模板 + 交互式选项定义 → `references/flow.md` §Gate 门控机制
 > 完整执行规范 → `read_file("references/flow.md")`
@@ -100,13 +114,13 @@ description: 面向 vue-amazing-ui 组件库的单组件开发迭代工作流。
 | 场景 | 加载文件 |
 |:--|:--|
 | 执行任一阶段 | `references/flow.md` |
-| 项目结构/注册链路 | `references/project-map.md` |
-| 参考源路径 + antdv/naive 取舍 | `references/reference-sources.md` |
+| 项目规范权威源映射 / 项目结构/注册链路 | `references/project-map.md` |
+| 参考源路径 + antdv/naive 取舍 + **渲染分支对齐** | `references/reference-sources.md` |
 | 找可复用的项目已有资产 | `references/reusable-assets.md` |
-| 注册/主题/SSR/周边文档 checklist + 发布前配置项终检 | `references/checklists.md` |
-| 新增组件联动配置地图（⭐易遗漏点全集） | `references/linkage-map.md` |
+| 全链路 checklist（含 **F 类组件规范**）+ 发布前配置项终检 | `references/checklists.md` |
+| 新增组件联动配置地图（⭐易遗漏点全集，含 ⑮ 全局类型声明） | `references/linkage-map.md` |
 | 用例标题/简介描述规范（权威源 + 同步） | `references/demo-description.md` |
-| changelog 编写规范（版本号升级 + 双处同步） | `references/changelog-spec.md` |
+| changelog 编写规范（版本号升级 + 双处同步 + 章节唯一性） | `references/changelog-spec.md` |
 | 发布流程（合入 main + 构建发布 + 清理） | `references/release-flow.md` |
 | 如何软复用 dev-flow 能力 + 降级 | `references/capability-reuse.md` |
 
@@ -120,7 +134,13 @@ description: 面向 vue-amazing-ui 组件库的单组件开发迭代工作流。
 - ✅ 主题 light/dark 双份；链式访问用可选链 `?.`；禁 any；SSR 安全（禁裸用 window/document）
 - ✅ 大组件分阶段交付（P1-Pn），避免半成品
 - ✅ 验收标准：演示页与antdv/naive 真身并排 1:1 对照（本项目组件在左/上，官网组件在右/下）+ 用例顺序与官网一致 + 浏览器实测（⚠️ 对照仅为验收手段：阶段 3 引入 → 阶段 5 浏览器实测验收 → **验收完成后由阶段 5 第 5 步清除**，演示页回归纯本库组件）
-- ✅ 清单即验收基线：阶段 2 对齐清单（API 四维 + Demo 用例）+ naive 差异登记 + 阶段 0 项目特有需求 = 阶段 5 验收唯一对账标准，Gate 5 全量回显勾销，❌ 项必带处置码（`延后 P{n}` / `不覆盖（理由）` / `待用户确认`），禁止摘要式报告
-- ✅ **联动清单即注册基线**：`references/linkage-map.md` 是「新增组件全量联动点」唯一权威源（含 ⭐ 易遗漏点：resolver 依赖映射 / 组件总数 4 处 / components.d.ts 幽灵声明 / App.vue 孤儿变量）。阶段 1/4/5 逐项勾销，**禁止靠记忆「顺手补几处」**；确定性 grep 自检已收拢于 `scripts/validate-component.sh`（Gate 5 必跑），宣告完成前必须实测
-- ✅ **配置项终检即发布基线**：`references/checklists.md` §发布前配置项终检 是阶段 5 验收时固定配置项（代码注册/文档联动/残留清理/一致性）的唯一权威源，Gate 5 必须全量逐项回显勾销 + grep 自检实测；**埋入阶段（1/4）的检查不能替代终检**，发布前必须全量回检
+- ✅ 清单即验收基线：阶段 2 对齐清单（API 四维 + **渲染分支** + Demo 用例）+ naive 差异登记 + 阶段 0 项目特有需求 = 阶段 5 验收唯一对账标准，Gate 5 全量回显勾销，❌ 项必带处置码（`延后 P{n}` / `不覆盖（理由）` / `待用户确认`），禁止摘要式报告
+- ✅ **联动清单即注册基线**：`references/linkage-map.md` 是「新增组件全量联动点」唯一权威源（含 ⭐ 易遗漏点：resolver 依赖映射 / 组件总数 4 处 / components.d.ts 幽灵声明 / App.vue 孤儿变量 / **⑮ types/global-components.d.ts 全局类型声明登记**）。阶段 1/4/5 逐项勾销，**禁止靠记忆「顺手补几处」**；确定性 grep 自检已收拢于 `scripts/validate-component.sh`（Gate 5 必跑），宣告完成前必须实测
+- ✅ **配置项终检即发布基线**：`references/checklists.md` §发布前配置项终检 是阶段 5 验收时固定配置项（代码注册/文档联动/残留清理/一致性/**组件规范**）的唯一权威源，Gate 5 必须全量逐项回显勾销 + grep 自检实测；**埋入阶段（1/4）的检查不能替代终检**，发布前必须全量回检
 - ✅ **验收完成 ≠ 任务结束**：验收通过后按 `references/release-flow.md` 引导「合入 main（GitHub PR）→ main 上构建发布（`pnpm pub`，执行前用户逐条确认）→ 发布后清理（删 feat 分支）」；❌ 严禁在 feat 分支上执行发布；用户本轮不发布则写入工作上下文接续指引
+- ✅ **组件规范红线**（权威源 `development/component-design.md`，脚本 F1-F3 拦截）：插槽类型 `export interface {组件名}Slots` + `defineSlots<{组件名}Slots>()`；根类名 = `{组件名}-wrap`（❌ 禁 `m-` / `vui-` 等自拟前缀）；Props/Slots 注释禁写 `string | slot`；`useSlotsExist` 只传实际使用的插槽名
+- ✅ **全局类型声明必登记**（脚本 F5 拦截）：新增组件 / 复合子组件 / Provider 必须在 `types/global-components.d.ts` 登记（`linkage-map.md` §⑮）——⚠️ 漏登记**不报错、`pnpm type-check` 仍 PASS**，属静默失效，只能靠脚本兜底
+- ✅ **对齐维度 = API 四维 + 渲染分支 + Demo 用例**（三者缺一不可）：必须读参考库渲染实现**逐分支**核对（字符串/VNode/空值兜底/双源优先级/数组归一/falsy 边界），差异显式决策并登记（详见 `reference-sources.md` §渲染分支与兜底逻辑对齐）
+- ✅ **演示页红线**（脚本 F7/F8 拦截）：分区按官网原序**排列**，但标题与 script 注释**不带数字序号**；本项目组件**无需 import**（全局注册，直接写 `<Xxx>` 标签）
+- ✅ **changelog 红线**（脚本 F6 拦截）：版本章节**唯一**且严格递减；条目链接用**站内相对路径 + 实测目录名（kebab）**；`## future` 清单同步删除已落地组件；`package.json` 与 changelog 双处一致（`changelog-spec.md` §3.4）
+- ✅ **文档红线**（脚本 B5/B6/B7 拦截）：`## APIs` 必有且含 `### {组件名}` 子标题；`## Events` / `## Methods` 按组件实际能力（有 emit / `defineExpose` 才写）；类型列写真实 TS 类型（❌ 禁 `string | slot`）

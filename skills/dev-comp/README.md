@@ -82,7 +82,7 @@ dev-comp/
 │   ├── release-flow.md              #   发布流程（合入 main + 构建发布 + 清理）
 │   └── capability-reuse.md          #   软复用 dev-flow 能力策略 + 降级
 ├── scripts/                       # 轻量校验脚本（确定性检查数据源）
-│   └── validate-component.sh      #   阶段 5 收尾必跑：A/B/C/E 配置项 + S 提交红线检查
+│   └── validate-component.sh      #   阶段 5 收尾必跑：A/B/C/E/F 配置项 + S 提交红线检查
 ├── .gitignore                     #   忽略 artifacts/ 私有归档产物（仅保留 README.md）
 ├── artifacts/                       # 产物归档兜底目录（用户主动归档时写入，两级扫描第二级）
 └── templates/                     # 骨架模板
@@ -101,13 +101,13 @@ dev-comp/
 | `references/project-map.md` | 项目结构、注册链路、脚本、门禁 | AI | 阶段 1/3/4 |
 | `references/reference-sources.md` | 参考源路径 + antdv/naive 取舍规则 | AI | 阶段 0/2 |
 | `references/reusable-assets.md` | 项目可复用的动画/浮层/主题/utils | AI | 阶段 2（先搜索后编码） |
-| `references/checklists.md` | 开发全链路检查清单 + 发布前配置项终检（唯一权威源） | AI | 阶段 1/2/4/5 |
-| `references/linkage-map.md` | 新增组件全量联动点地图（⭐易遗漏点全集） | AI | 阶段 1/4/5 |
+| `references/checklists.md` | 开发全链路检查清单（含 F 类组件规范）+ 发布前配置项终检（唯一权威源） | AI | 阶段 1/2/4/5 |
+| `references/linkage-map.md` | 新增组件全量联动点地图（⭐易遗漏点全集，含 ⑮ 全局类型声明登记） | AI | 阶段 1/4/5 |
 | `references/demo-description.md` | 用例标题/简介描述规范（权威源 + 同步） | AI | 阶段 3/4 |
 | `references/changelog-spec.md` | changelog 编写规范（版本号升级 + 双处同步） | AI | 阶段 4/5 |
 | `references/release-flow.md` | 发布流程（合入 main + 构建发布 + 清理） | AI | 阶段 5（验收通过后） |
 | `references/capability-reuse.md` | 软复用策略 + 降级方案 | AI | 阶段 5（能力沉淀时） |
-| `scripts/validate-component.sh` | 确定性检查权威执行体（A/B/C/E 配置项 + S 提交红线） | AI | 阶段 5 收尾必跑（Gate 5 数据源） |
+| `scripts/validate-component.sh` | 确定性检查权威执行体（A/B/C/E/F 配置项 + S 提交红线） | AI | 阶段 5 收尾必跑（Gate 5 数据源） |
 | `templates/*` | 组件/演示/上下文/度量 骨架模板 | AI | 建新文件时 |
 
 ## 关联 Skill 调用关系

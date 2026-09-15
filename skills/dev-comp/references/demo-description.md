@@ -181,6 +181,23 @@ grep -n "描述关键词" src/views/{组件名}/Index.vue docs/guide/components/
 
 ---
 
+## 6. 演示页 script 与 import 规范（2026-09-15 新增）
+
+### 6.1 注释与标题不带数字序号
+
+- script 注释写 `// 基本评论`（❌ 不写 `// 1. 基本评论`）；`<h2 class="mt30 mb10">` 标题同样不带序号。
+- 「与官网用例顺序一致」指**分区排列顺序**，不要求把序号写进标题或注释。
+- 实测依据：`src/views/` 全量演示页均无序号写法（2026-09-15 唯一违规项已修正）；兜底：`checklists.md` F7 + 脚本 F7。
+
+### 6.2 本项目组件无需 import
+
+- 演示环境由 `src/main.ts` 的 `app.use(VueAmazingUI)` **全局注册**，模板直接写 `<Xxx>` 标签。
+- ❌ 禁止从 `vue-amazing-ui` 引入组件值（脚本 F8 拦截）；`import type { XxxProps }` 允许。
+- 确需在 script 中拿到组件对象时（如构造 VNode），改用**具名插槽**或 `<component :is>`（is 传组件名字符串），不要引入组件库组件 import。
+- 必要的 import 仅三类：`vue` 的 API（`ref` / `h` / `computed`）、`-design/icons-vue` 图标、对照期的 antdv 真身。
+
+---
+
 ## 反模式清单（历史踩坑）
 
 | 反模式 | 正确做法 |

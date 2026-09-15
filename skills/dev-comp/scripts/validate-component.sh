@@ -4,16 +4,25 @@
 #
 # 定位：dev-comp 唯一的程序化校验入口（轻量定位：不做 .validated
 # 物理锁、不接状态机、不做 gate 链、不做 hooks 自动触发）。
-# 把 references/checklists.md §发布前配置项终检（A/B/C/E 类）+
+# 把 references/checklists.md §发布前配置项终检（A/B/C/E/F 类）+
 # 提交红线（S 类：S1 git 身份 / S2 分支核对 / S3 commit hash 回填真实性 /
 # S4 能力沉淀三件套 / S5 归档双份）中的确定性 grep 检查收拢为单一可执行体，
 # 作为 Gate 5 报告「发布前配置项终检」区块的数据来源。
 #
 # 规则权威源（双向引用，规则变更必须同步改本脚本）：
-#   ← references/checklists.md §发布前配置项终检（ID 一一对应）
-#   ← references/linkage-map.md §④⑩⑪⑫⑬⑭
+#   ← references/checklists.md §发布前配置项终检（ID 一一对应：A/B/C/E/F + S）
+#   ← references/linkage-map.md §④⑩⑪⑫⑬⑭⑮
+#   ← references/changelog-spec.md §3.2 §3.4 §4（F6）
+#   ← references/project-map.md §目录命名约定 / §项目规范权威源索引
 #   ← references/flow.md 阶段 5 第 1/4/6 步
 #   ← SKILL.md §能力复用索引
+#
+# 2026-09-15（Comment 事故复盘）变更：
+#   ① 修正 B5：原「API 章节四件套齐全」判定过严——项目多数组件无事件/无暴露方法，
+#      文档只有 `## APIs` + `## Slots`，会产生**假 FAIL**；改为「APIs 必有 +
+#      Events/Methods 按组件实际能力（有 defineEmits/defineExpose 才要求）」。
+#   ② 新增 F 节（F1-F8）：组件本体与跨文件规范检查（含 F5 `types/global-components.d.ts`
+#      登记差集校验——漏登记不报错、type-check 仍 PASS，属静默失效，必须脚本兜底）。
 #
 # 用法：
 #   validate-component.sh <组件名> [项目根] [--context <工作上下文.md>]
@@ -42,9 +51,9 @@ if [ -z "$NAME" ]; then
   exit 2
 fi
 
-# 归一化组件名：AutoComplete -> autocomplete（小写、去分隔符）。
-# 项目目录命名约定不统一（components/ 全小写连写、src/views/ 驼峰、
-# docs/guide/components/ 全小写连写），禁止用 kebab 猜测路径，必须解析真实条目。
+# 归一化组件名：AutoComplete -> autocomplete（归一化示例：小写、去分隔符；实际目录名为 kebab-case，如 auto-complete）。
+# 项目目录命名约定不统一（components/ 与 docs/ 为 kebab-case、src/views/ 为 camelCase），
+# 禁止用固定形态猜测路径，必须解析真实条目（详见 project-map.md §目录命名约定）。
 LCNAME=$(echo "$NAME" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]//g')
 FALLBACK="${VAUI_ARTIFACTS_DIR:-$HOME/myGithub/ai-coding-kit/skills/dev-comp/artifacts}"
 
@@ -96,10 +105,10 @@ if grep -qi "default as $NAME" "$ROOT/components/components.ts"; then
 else
   fail "A2 components.ts 缺组件导出：grep 'default as $NAME' components/components.ts"
 fi
-if grep -qi "Props as ${NAME}Props" "$ROOT/components/components.ts"; then
-  ok "A2 components.ts 类型导出命中（export type { Props as ${NAME}Props }）"
+if grep -qi "${NAME}Props" "$ROOT/components/components.ts"; then
+  ok "A2 components.ts 类型导出命中（export type { ${NAME}Props }）"
 else
-  fail "A2 components.ts 缺类型导出：grep 'Props as ${NAME}Props' components/components.ts"
+  fail "A2 components.ts 缺类型导出：grep '${NAME}Props' components/components.ts"
 fi
 
 # A3 resolver componentsMap 映射 + 字母序
@@ -172,7 +181,7 @@ else
 fi
 
 # ============================================================
-# B · 文档联动链路（对应 checklists.md B1-B5）
+# B · 文档联动链路（对应 checklists.md B1-B7）
 # ============================================================
 section "B 文档联动链路"
 
@@ -203,7 +212,7 @@ else
 fi
 
 # B4 组件总数 4 处 +1 且一致（兼 E1）
-ACTUAL=$(cd "$ROOT" && ls -d components/*/ 2>/dev/null | grep -vE 'components/(style|utils)/' | wc -l | tr -d ' ')
+ACTUAL=$(cd "$ROOT" && ls -d components/*/ 2>/dev/null | grep -vE 'components/(style|utils|discrete)/' | wc -l | tr -d ' ')
 NUMS=""
 for f in README.md README.zh-CN.md docs/index.md docs/guide/features.md; do
   n=$(grep -oE '(共包含|includes)[[:space:]]+`?[0-9]+`?' "$ROOT/$f" 2>/dev/null | grep -oE '[0-9]+' | head -1)
@@ -216,18 +225,53 @@ else
   fail "B4/E1 组件总数不一致：4 处数字=[${NUMS}] 实际组件数=${ACTUAL}（详见 linkage-map.md §⑩⑪⑫）"
 fi
 
-# B5 API 章节标题四件套
-if [ -f "$DOC_FILE" ]; then
-  B5_CNT=$(grep -cE '^## (APIs|Events|Slots|Methods)$' "$DOC_FILE" 2>/dev/null)
-  B5_EXPOSE=$(grep -cE '^## Expose' "$DOC_FILE" 2>/dev/null)
-else
-  B5_CNT=0
-  B5_EXPOSE=0
+# B5 API 章节标题（2026-09-15 修正：原「四件套齐全」过严，会产生假 FAIL）
+# 判定规则：`## APIs` 必有；`## Events` / `## Methods` 按组件实际能力
+# （组件 SFC 有 defineEmits / defineExpose 才要求）；`## Expose` 永远禁止。
+# 依据：项目多数组件无事件/无暴露方法，文档只有 `## APIs` + `## Slots`（如 divider/statistic/comment）。
+B5_HAS_EMIT=0; B5_HAS_EXPOSE=0
+if [ -n "$COMP_DIR" ]; then
+  grep -qE "defineEmits" "$ROOT/components/$COMP_DIR/"*.vue 2>/dev/null && B5_HAS_EMIT=1
+  grep -qE "defineExpose" "$ROOT/components/$COMP_DIR/"*.vue 2>/dev/null && B5_HAS_EXPOSE=1
 fi
-if [ "$B5_CNT" = "4" ] && [ "$B5_EXPOSE" = "0" ]; then
-  ok "B5 API 章节四件套齐全（APIs/Events/Slots/Methods），无 ## Expose 内部术语"
+B5_MISSING=""
+if [ -f "$DOC_FILE" ]; then
+  grep -qE '^## APIs$' "$DOC_FILE" 2>/dev/null || B5_MISSING="$B5_MISSING APIs"
+  if [ "$B5_HAS_EMIT" = "1" ]; then
+    grep -qE '^## Events$' "$DOC_FILE" 2>/dev/null || B5_MISSING="$B5_MISSING Events"
+  fi
+  if [ "$B5_HAS_EXPOSE" = "1" ]; then
+    grep -qE '^## Methods$' "$DOC_FILE" 2>/dev/null || B5_MISSING="$B5_MISSING Methods"
+  fi
+  B5_EXPOSE=$(grep -cE '^## Expose' "$DOC_FILE" 2>/dev/null | tr -d ' ')
 else
-  fail "B5 API 章节四件套不齐：命中 $B5_CNT/4，## Expose 出现 $B5_EXPOSE 次（文档：${DOC_ENTRY:-未解析}）"
+  B5_MISSING=" APIs（文档缺失）"; B5_EXPOSE=0
+fi
+if [ -z "$B5_MISSING" ] && [ "${B5_EXPOSE:-0}" = "0" ]; then
+  ok "B5 API 章节齐全（APIs 必有；Events/Methods 按能力：emit=${B5_HAS_EMIT} expose=${B5_HAS_EXPOSE}），无 ## Expose"
+else
+  fail "B5 API 章节缺失:${B5_MISSING:-无}（组件能力 emit=${B5_HAS_EMIT} expose=${B5_HAS_EXPOSE}）；## Expose 出现 ${B5_EXPOSE:-0} 次"
+fi
+
+# B6 `## APIs` 下 `### {组件名}` 子标题（实测：项目单组件文档均有）
+if [ ! -f "$DOC_FILE" ]; then
+  skip "B6 文档缺失，跳过 ### 子标题检查"
+elif grep -qE "^###[[:space:]]+$NAME[[:space:]]*$" "$DOC_FILE" 2>/dev/null; then
+  ok "B6 API 表 ### $NAME 子标题命中"
+else
+  warn "B6 未找到 '### $NAME' 子标题（项目单组件文档惯例为 \`## APIs\` 下分节，详见 checklists.md B6）"
+fi
+
+# B7 API 表类型列无 `string | slot` / `Array | slot` 残留（2.7.1 类型强化决策）
+if [ ! -f "$DOC_FILE" ]; then
+  skip "B7 文档缺失，跳过类型列写法检查"
+else
+  B7_HIT=$(grep -nE '\|[[:space:]]*(string|Array)[[:space:]]*(&#124;|\|)[[:space:]]*slot' "$DOC_FILE" 2>/dev/null | head -3)
+  if [ -z "$B7_HIT" ]; then
+    ok "B7 API 表类型列无 'string | slot' / 'Array | slot' 残留"
+  else
+    fail "B7 类型列残留 slot 写法（应写真实 TS 类型，插槽由 ## Slots 表表达）：$B7_HIT"
+  fi
 fi
 
 # ============================================================
@@ -296,6 +340,139 @@ fi
 section "E 一致性"
 
 skip "E2 演示页↔docs 描述同源为文本语义对比（半确定性），请按 demo-description.md §5 人工 grep 双向核对"
+
+# ============================================================
+# F · 组件本体与跨文件规范（对应 checklists.md F1-F8，2026-09-15 新增）
+# 事故背景：Comment 漏登记 types/global-components.d.ts（静默失效、type-check 仍 PASS），
+# 并暴露 defineSlots 缺失 / 根类名 m- 前缀 / 注释 string | slot / 演示页序号注释与
+# 组件库 import 等无检查项覆盖的问题 → 全部下沉为确定性检查。
+# ============================================================
+section "F 组件本体与跨文件规范"
+
+COMP_VUES=""
+if [ -n "$COMP_DIR" ]; then
+  COMP_VUES=$(ls "$ROOT/components/$COMP_DIR/"*.vue 2>/dev/null)
+fi
+
+# F1 defineSlots + `export interface {组件名}Slots`（component-design.md §插槽类型）
+if [ -z "$COMP_VUES" ]; then
+  skip "F1 组件 .vue 未解析到，跳过 defineSlots 检查"
+elif grep -qE "defineSlots" $COMP_VUES 2>/dev/null; then
+  if grep -qE "export interface ${NAME}Slots" $COMP_VUES 2>/dev/null; then
+    ok "F1 defineSlots + export interface ${NAME}Slots 命中"
+  else
+    warn "F1 有 defineSlots 但未见 'export interface ${NAME}Slots'（插槽类型命名规范见 component-design.md §插槽类型）"
+  fi
+else
+  fail "F1 组件未声明插槽类型：应 'export interface ${NAME}Slots' + 'defineSlots<${NAME}Slots>()'"
+fi
+
+# F2 根类名 = {组件名}-wrap；禁止 m-/vui- 自拟前缀
+if [ -z "$COMP_VUES" ]; then
+  skip "F2 组件 .vue 未解析到，跳过根类名检查"
+else
+  F2_BAD=$(grep -nE 'class="(m|vui)-[a-z0-9-]+"' $COMP_VUES 2>/dev/null | head -3)
+  if [ -z "$F2_BAD" ]; then
+    ok "F2 无 m-/vui- 自拟类名前缀（根类名应为 {组件名}-wrap）"
+  else
+    fail "F2 使用了自拟类名前缀（应为 {组件名}-wrap / {组件名}-xxx）：$F2_BAD"
+  fi
+fi
+
+# F3 Props/Slots 注释无 `string | slot` / `Array | slot` 残留
+if [ -z "$COMP_VUES" ]; then
+  skip "F3 组件 .vue 未解析到，跳过注释残留检查"
+else
+  F3_HIT=$(grep -nE "//.*(string|Array)[[:space:]]*\|[[:space:]]*slot" $COMP_VUES 2>/dev/null | head -3)
+  if [ -z "$F3_HIT" ]; then
+    ok "F3 Props/Slots 注释无 'string | slot' 残留"
+  else
+    fail "F3 注释残留 'string | slot'（插槽形态由 {组件名}Slots 类型 + 文档 Slots 表表达）：$F3_HIT"
+  fi
+fi
+
+# F4 useSlotsExist 数组内插槽名均有实际消费点（半确定性：只列候选，须人工确认）
+if [ -z "$COMP_VUES" ]; then
+  skip "F4 组件 .vue 未解析到，跳过插槽探测检查"
+else
+  F4_ARR=$(grep -hoE "useSlotsExist\(\[[^]]*\]" $COMP_VUES 2>/dev/null | head -1)
+  if [ -z "$F4_ARR" ]; then
+    ok "F4 未使用 useSlotsExist 数组形式（或无需插槽探测）"
+  else
+    F4_NAMES=$(echo "$F4_ARR" | grep -oE "'[a-zA-Z]+'" | tr -d "'" | tr '\n' ' ')
+    F4_UNUSED=""
+    for s in $F4_NAMES; do
+      cnt=$(grep -ohE "slotsExist\.$s" $COMP_VUES 2>/dev/null | wc -l | tr -d ' ')
+      [ "${cnt:-0}" = "0" ] && F4_UNUSED="$F4_UNUSED $s"
+    done
+    if [ -z "$F4_UNUSED" ]; then
+      ok "F4 useSlotsExist 各插槽名均有消费点（${F4_NAMES}）"
+    else
+      warn "F4 useSlotsExist 可能含冗余探测项:${F4_UNUSED}（须人工确认，禁止多传未使用的插槽名）"
+    fi
+  fi
+fi
+
+# F5 types/global-components.d.ts 登记（差集：componentsMap keys − 已声明）
+# ⚠️ 漏登记不报错、type-check 仍 PASS（静默失效），只能靠本项兜底
+GDTS="$ROOT/types/global-components.d.ts"
+if [ ! -f "$GDTS" ]; then
+  skip "F5 types/global-components.d.ts 不存在（项目未使用该机制，跳过登记校验）"
+else
+  sed -n '/componentsMap[[:space:]]*=/,/^}/p' "$RESOLVER" 2>/dev/null \
+    | grep -oE '^[[:space:]]+[A-Za-z][A-Za-z0-9]*:' \
+    | sed -E 's/^[[:space:]]+([A-Za-z0-9]+):.*/\1/' | sort -u > /tmp/dc-map-$$.txt
+  grep -oE '^[[:space:]]+[A-Za-z][A-Za-z0-9]*: typeof' "$GDTS" 2>/dev/null \
+    | sed -E 's/^[[:space:]]+([A-Za-z0-9]+):.*/\1/' | sort -u > /tmp/dc-decl-$$.txt
+  F5_MISSING=$(comm -23 /tmp/dc-map-$$.txt /tmp/dc-decl-$$.txt 2>/dev/null | tr '\n' ' ')
+  rm -f /tmp/dc-map-$$.txt /tmp/dc-decl-$$.txt
+  if [ -z "$F5_MISSING" ]; then
+    ok "F5 types/global-components.d.ts 覆盖 componentsMap 全量（$NAME 已登记）"
+  else
+    fail "F5 types/global-components.d.ts 缺登记:${F5_MISSING}（漏登记不报错、type-check 仍 PASS，必须手工补，见 linkage-map.md §⑮）"
+  fi
+fi
+
+# F6 changelog 三查：版本章节唯一 + 组件链接站内相对路径 + future 无本组件残留
+if [ ! -f "$CHANGELOG" ]; then
+  skip "F6 changelog 不存在，跳过三查"
+else
+  F6_DUP=$(grep -oE '^## <VersionDateTag[^>]*>[0-9.]+' "$CHANGELOG" 2>/dev/null \
+    | grep -oE '[0-9]+\.[0-9]+\.[0-9]+$' | sort | uniq -d | tr '\n' ' ')
+  F6_BADLINK=$(grep -nE '\]\(https?://themusecatcher\.github\.io/vue-amazing-ui/guide/components/' "$CHANGELOG" 2>/dev/null | head -3)
+  F6_FUTURE=$(sed -n '/^## future/,$p' "$CHANGELOG" 2>/dev/null | grep -i "$NAME" | head -3)
+  if [ -z "$F6_DUP" ] && [ -z "$F6_BADLINK" ] && [ -z "$F6_FUTURE" ]; then
+    ok "F6 changelog 三查通过（版本章节唯一 / 组件链接站内相对路径 / future 无本组件残留）"
+  else
+    fail "F6 changelog 未过：重复版本号=[${F6_DUP:-无}] 完整URL链接=[${F6_BADLINK:-无}] future残留=[${F6_FUTURE:-无}]（详见 changelog-spec.md §3.2 §3.4）"
+  fi
+fi
+
+# F7 演示页与文档：注释 / <h2> 标题无数字序号
+F7_HIT=""
+if [ -n "$VIEW_DIR" ] && [ -f "$DEMO" ]; then
+  F7_HIT=$(grep -nE '^// [0-9]\.|<h2[^>]*>[[:space:]]*[0-9]+\.' "$DEMO" 2>/dev/null | head -3)
+fi
+if [ -z "$F7_HIT" ] && [ -f "$DOC_FILE" ]; then
+  F7_HIT=$(grep -nE '^// [0-9]\.' "$DOC_FILE" 2>/dev/null | head -3)
+fi
+if [ -z "$F7_HIT" ]; then
+  ok "F7 演示页/文档无数字序号注释与标题"
+else
+  fail "F7 存在数字序号注释/标题（应为纯语义注释，如 '// 基本评论'；分区顺序由排列体现）：$F7_HIT"
+fi
+
+# F8 演示页无本项目组件 import（全局注册，直接写 <Xxx> 标签）
+if [ -n "$VIEW_DIR" ] && [ -f "$DEMO" ]; then
+  F8_HIT=$(grep -nE "^import .*from 'vue-amazing-ui'" "$DEMO" 2>/dev/null | grep -v "import type" | head -3)
+  if [ -z "$F8_HIT" ]; then
+    ok "F8 演示页无本项目组件 import（组件已全局注册）"
+  else
+    fail "F8 演示页 import 了本项目组件（无需引入，直接写 <Xxx> 标签；仅 import type 允许）：$F8_HIT"
+  fi
+else
+  skip "F8 演示页不存在，跳过组件 import 检查"
+fi
 
 # ============================================================
 # S · 提交红线（对应 flow.md 阶段 5 第 4 步 + checklists.md §验收：

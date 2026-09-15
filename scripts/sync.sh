@@ -48,6 +48,9 @@ PREVIEW_DIR=""
 # 故两个方向都必须排除（同时避免 pull 时把该标记拉进仓库）。
 COMMON_EXCLUDES=(
   "--exclude=/README.md"
+  # 构建产物目录（如 skills/dev-flow/dist 分发包）：运行时无对应目录，
+  # 若纳入 pull 方向的 --delete 会清空仓库产物（2026-09-15 事故：190 个跟踪文件被误删）
+  "--exclude=dist/"
   "--exclude=.git"
   "--exclude=.dev-flow-managed"
 )
@@ -189,7 +192,7 @@ sync_dir() {
 classify_items_by_dir() {
   local dir="$1"
   local dir_changes
-  dir_changes=$(git status --porcelain -- "$dir/" 2>/dev/null)
+  dir_changes=$(git -c core.quotepath=false status --porcelain -- "$dir/" 2>/dev/null)
   [ -z "$dir_changes" ] && return
   echo "$dir_changes" | awk '
 {
@@ -431,7 +434,7 @@ echo -e "  ${BLUE}📋 Git 变更概览${NC}"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
 
-CHANGES=$(git status --porcelain)
+CHANGES=$(git -c core.quotepath=false status --porcelain)
 if [ -z "$CHANGES" ]; then
   ok "没有变更，已是最新状态 ✨"
   echo ""
@@ -472,7 +475,7 @@ done
 
 # 显示完整文件变更列表
 echo -e "  ${BLUE}📄 文件变更明细:${NC}"
-git status --short
+git -c core.quotepath=false status --short
 echo ""
 
 # 生成智能 commit message（扁平化逻辑，避免嵌套子 shell 挂起问题）
@@ -504,7 +507,7 @@ describe_item_changes() {
     add)
       # 新增：列出包含的主要文件
       local files
-      files=$(git status --porcelain -- "$item_path/" 2>/dev/null | awk '{print substr($0,4)}' | sed "s|^$dir/$item/||")
+      files=$(git -c core.quotepath=false status --porcelain -- "$item_path/" 2>/dev/null | awk '{print substr($0,4)}' | sed "s|^$dir/$item/||")
       local file_count
       file_count=$(echo "$files" | grep -c . || true)
       if [ "$file_count" -le 3 ]; then
@@ -522,7 +525,7 @@ describe_item_changes() {
       # 更新：先 git add 获取 staged diff，再分析内容变动
       # 注意：此时还未 git add，需要对比 working tree
       local diff_output changed_files
-      changed_files=$(git status --porcelain -- "$item_path/" 2>/dev/null | awk '{print substr($0,4)}')
+      changed_files=$(git -c core.quotepath=false status --porcelain -- "$item_path/" 2>/dev/null | awk '{print substr($0,4)}')
       local desc_parts=()
 
       while IFS= read -r filepath; do
@@ -533,7 +536,7 @@ describe_item_changes() {
         local basename_f
         basename_f=$(basename "$filepath")
         local status_code
-        status_code=$(git status --porcelain -- "$filepath" 2>/dev/null | head -1 | cut -c1-2)
+        status_code=$(git -c core.quotepath=false status --porcelain -- "$filepath" 2>/dev/null | head -1 | cut -c1-2)
 
         if [[ "$status_code" == "??" ]]; then
           desc_parts+=("add ${basename_f}")
@@ -660,7 +663,7 @@ else
 fi
 
 # 询问是否提交
-read -p "是否提交并推送到远程？(y/n) " -n 1 -r
+read -p "是否提交并推送到远程？(y/n) " -n 1 -r || true
 echo ""
 
 if [[ $REPLY =~ ^[Yy]$ ]]; then
@@ -675,7 +678,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     done <<< "$COMMIT_BODY"
   fi
   echo ""
-  read -p "输入 commit message（回车使用上述建议）: " CUSTOM_MSG
+  read -p "输入 commit message（回车使用上述建议）: " CUSTOM_MSG || true
 
   git add -A
 
@@ -688,7 +691,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
   fi
 
   echo ""
-  read -p "确认推送到远程？(y/n) " -n 1 -r
+  read -p "确认推送到远程？(y/n) " -n 1 -r || true
   echo ""
   if [[ $REPLY =~ ^[Yy]$ ]]; then
     git push

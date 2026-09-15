@@ -67,6 +67,7 @@
    b) 读取**全部 demo**：`{REF_ANTDV_LOCAL}/components/{组件名}/demo/*.vue`（用户视角用例，逐个理解数据与交互）
    c) 生成完备性基线（**写入工作上下文「对齐清单」区**，`templates/working-context-lite.tpl.md` 已含该区域；接续时直接读取，不重做）：
       - **API 四维对比清单**：Props / Events（事件名 + 回调参数结构）/ Slots（插槽名 + 参数）/ Expose（暴露方法 + 签名，⚠️ 内部分析术语，文档章节标题对应 `## Methods`），逐项对比类型/默认值/必填/字段名
+      - **源码渲染分支清单**（2026-09-15 新增）：读参考库渲染实现，逐分支列出（类型分支 / 空值兜底 / prop vs slot 优先级 / 数组归一 / falsy 边界）并与本实现对照，差异显式决策（详见 `references/reference-sources.md` §渲染分支与兜底逻辑对齐）
       - **Demo 用例对齐清单**：官网全部展示用例逐一列出（顺序与官网一致）
       - **naive 差异登记**（读 `references/reference-sources.md` §naive 差异登记）：naive 也有该组件时，登记「naive 有而 antdv 无」的特性到工作上下文「naive 差异登记」区，逐项给出决策（对齐 / 不覆盖（理由）/ 待用户确认）
    d) 对齐顺序：先 API 四维接口（Props/Events/Slots/Expose/默认值/字段名）→ 再逐个 Demo 用例
@@ -80,7 +81,7 @@
 
 **产出**：功能完整的组件本体 + 类型。
 
-**🚦 Gate 2**：输出阶段 2 报告（改动文件清单 + **API 四维对比清单** + **Demo 用例对齐清单** + **naive 差异登记** + 默认值/字段名对齐检查 + vue-tsc/ESLint 结果）→ 弹 `ask_followup_question`（✅ 继续 / ⏸️ 暂停 / ⬅️ 回退）→ 用户确认后进入阶段 3。未确认不得继续。
+**🚦 Gate 2**：输出阶段 2 报告（改动文件清单 + **API 四维对比清单** + **源码渲染分支清单** + **Demo 用例对齐清单** + **naive 差异登记** + 默认值/字段名对齐检查 + vue-tsc/ESLint 结果）→ 弹 `ask_followup_question`（✅ 继续 / ⏸️ 暂停 / ⬅️ 回退）→ 用户确认后进入阶段 3。未确认不得继续。
 
 ---
 
@@ -125,7 +126,7 @@
    - **简介描述同源**：读 `references/demo-description.md` §4 同步机制——docs 描述**从演示页逐字复制**（仅 `<code>` ↔ 反引号转换、docs 加 `<br/>`、演示页无 `<br/>`），段落数一致，禁止单边改写
    - ⚠️ **迁移时剔除对照内容**：docs 仅保留本项目 `<Xxx>` 用例，**剔除「antd 官网组件」分区及 `ant-design-vue` 真身 import**（对照仅验收期存在于演示页 `src/views`，阶段 5 收尾清除，不进文档）
    - API 表格：Props/Events/Slots/暴露方法，参照 antdv 文档结构
-   - **API 章节标题四件套（强制）**：`## APIs`（含 Props 表 + 类型定义子表）/ `## Events` / `## Slots` / `## Methods`（对外暴露方法）——⚠️ 内部术语「Expose」**禁止直接作标题**，落地为 `## Methods`；命名不一致时以项目 ≥2 个同类组件文档的实际命名为准（先 grep 确认再落笔）
+   - **API 章节标题按组件实际能力（2026-09-15 修正）**：`## APIs`（含 Props 表 + 类型定义子表）**必有**，且其下含 `### {组件名}` 子标题；`## Events` / `## Methods`（对外暴露方法）**仅当组件有 emit / defineExpose 时才要求**（❌ 无事件却凭空补章节）；⚠️ 内部术语「Expose」**禁止直接作标题**，落地为 `## Methods`
 2. **周边文档联动**（读 `references/checklists.md` §周边文档 + `references/linkage-map.md` §⑩⑪⑫）：
    - vitepress 侧边栏配置（新增组件入口）
    - `docs/index.md`（若有组件清单）
@@ -146,6 +147,7 @@
 1. **质量验证**（读 `references/checklists.md` §验收）：
    - `pnpm lint:check`（ESLint，须 EXIT 0）
    - `pnpm type-check`（vue-tsc，须无本组件错误）
+   - `pnpm test`（Vitest 全量，新增或改动组件时必跑）与 `pnpm docs:build`（阶段 4 改过文档 demo / 内联 script 时验证文档站可编译）
    - **浏览器实测**：`pnpm dev` 打开演示页，与真身 1:1 对照；按 `checklists.md` §交互操作清单逐项勾销（每个用例的可枚举操作点）；控制台 0 error/warning
    - **交互验收 e2e（可选软复用）**：`e2e-testing` skill 可用时跑关键交互用例，缺失则降级为手动勾销并一句话提示
    - ⚠️ 后台 watch 进程会干扰终端输出 → 复杂命令重定向到文件再 `read_file` 读取；验证后关端口
@@ -160,7 +162,7 @@
    a) **git 身份实测（红线）**：`git config user.name` + `git config user.email` 实测输出，与工作上下文 frontmatter `git_identity` 预期值逐字对比；不符 → 🔴 拦截提交，弹 `ask_followup_question` 呈现「实测值 vs 预期值」，用户决策后（修正 local config / 确认改用实测值 / 取消提交）方可继续（历史事故：comment 提交误用全局公司身份 `deardai@tencent.com`）
    b) **提交后 hash 实测回填**：`git log -1 --format='%h'` **实测** commit hash 回填工作上下文 frontmatter `commit` 字段，禁止凭记忆记录（历史事故：Dropdown 记录 `7c6ab6a5` 与真实 `e4d8c9a0` 不符）
 5. **清除演示页对照（红线）**：删除演示页全部 antdv/naive 真身组件、对应数据（如 `avalue*`/`aoptions*`）、`ant-design-vue` 相关 import 及 antdv 专属图标（本库用例仍使用的图标保留）；⚠️ **`components.d.ts` 中 antdv 组件声明不会自动消失**——清除对照后必须显式 `grep` 确认无幽灵声明并手动删除、**随本次 commit 一起提交**（`linkage-map.md` §⑭；幽灵声明已提交进 git，删除不随 commit 提交会「复活」）；同时检查 `src/App.vue` 是否有全局配置迁移残留的孤儿变量（`linkage-map.md` §⑬）；验收前确保 `git diff` 中演示页仅剩本库用例。⚠️ 清除后需再跑一次 `lint:check` + `type-check` + `pnpm dev` 确认演示页无孤儿引用
-6. **发布前配置项终检（核心红线）**：**先跑轻量校验脚本** `bash scripts/validate-component.sh {组件名} {PROJECT_ROOT} --context {工作上下文文件}` 一次性获取 A/B/C/E + S 全部勾销证据（脚本是确定性检查的权威执行体，见 `checklists.md` §发布前配置项终检 顶部声明；S1-S5 对应提交红线：git 身份 / 分支核对 / commit hash 回填真实性 / 沉淀三件套 / 归档双份），再读 `references/checklists.md` §发布前配置项终检 逐项核对。⚠️ 埋入阶段（1/4）的检查不能替代本终检——埋入后文件可能再被改动，发布前必须全量回检。脚本输出 `[PASS/FAIL/WARN/SKIP]` 逐项回显到 Gate 5 报告（A/B/C/E 回显「发布前配置项终检」区块，S 回显「提交前检查」区块）：FAIL 阻断收尾须修复后重跑；WARN/SKIP 须人工确认；❌ 项必带处置码，禁止摘要式报告。
+6. **发布前配置项终检（核心红线）**：**先跑轻量校验脚本** `bash scripts/validate-component.sh {组件名} {PROJECT_ROOT} --context {工作上下文文件}` 一次性获取 A/B/C/E/F + S 全部勾销证据（脚本是确定性检查的权威执行体，见 `checklists.md` §发布前配置项终检 顶部声明；S1-S5 对应提交红线：git 身份 / 分支核对 / commit hash 回填真实性 / 沉淀三件套 / 归档双份），再读 `references/checklists.md` §发布前配置项终检 逐项核对。⚠️ 埋入阶段（1/4）的检查不能替代本终检——埋入后文件可能再被改动，发布前必须全量回检。脚本输出 `[PASS/FAIL/WARN/SKIP]` 逐项回显到 Gate 5 报告（A/B/C/E/F 回显「发布前配置项终检」区块，S 回显「提交前检查」区块）：FAIL 阻断收尾须修复后重跑；WARN/SKIP 须人工确认；❌ 项必带处置码，禁止摘要式报告。
 7. **引导发布（组件全部 P 完成且验收通过时）**：读 `references/release-flow.md`，向用户呈现「合入 main（GitHub PR）→ main 上构建发布 → 发布后清理」完整链路并引导执行；若用户本轮不发布，将「待发布：合入 main + 发布」写入工作上下文接续指引，**验收完成 ≠ 任务结束**（历史事故：AutoComplete 验收后停 8 个提交在 feat 分支，npm 与源码脱节）
 8. **收尾**：更新工作上下文 status + `release` 字段（本 P 完成 → 标注下一 P 接续指引；全部 P 完成但未发布 → `release: pending` + 接续指引标注「待发布」；本轮已完成发布 → `release: released: {版本号}` + 可归档）
 9. **产物归档决策（收尾固定步骤，禁止跳过）**：Gate 5 通过后必弹 `ask_followup_question` 由用户决策归档目标——A 保留 `~/.codebuddy/` 运行时目录（默认，原位即归档）/ B 归档到 `ARTIFACTS_FALLBACK_DIR`（结构 `{组件名}-{日期}/{working-context|metrics|devlog|knowledge}/`）并删除 `~/.codebuddy/` 运行时副本。⚠️ 归档动作**不自动执行**，须用户选择后再操作；选择 B 后删除运行时副本，禁止长期双份维护（历史事故：三次收尾均未弹归档决策）
@@ -227,13 +229,18 @@
 | B | vitepress 侧边栏入口 | | grep 命中 |
 | B | changelog 变更记录 | | grep 命中 |
 | B | ⭐ 组件总数 4 处 +1 | | grep 数字一致 |
-| B | API 章节标题四件套（APIs/Events/Slots/Methods） | | grep 四件套齐全 |
+| B | API 章节标题按能力（APIs 必有 + ### 组件名 子标题；Events/Methods 按 emit/expose） | | 脚本 B5/B6 |
+| B | API 表类型列无 slot 写法 | | 脚本 B7 |
 | C | ⭐ components.d.ts 幽灵声明 | | grep 0 匹配 |
 | C | App.vue 孤儿变量（仅涉及时） | | 不涉及 N/A 或 grep |
 | C | 演示页对照清除 | | git diff 仅本库用例 |
 | C | 调试代码清理 | | |
 | E | 组件总数 4 处数字一致 | | grep 数字一致 |
 | E | 演示页 ↔ docs 描述同源 | | grep 双向一致 |
+| F | ⭐ 组件规范（defineSlots + 组件名Slots / 根类名 组件名-wrap / 注释无 slot 写法 / useSlotsExist 无冗余） | | 脚本 F1-F4 |
+| F | ⭐ types/global-components.d.ts 全局声明登记（差集为空） | | 脚本 F5 |
+| F | ⭐ changelog 三查（章节唯一 / 链接站内相对路径 / future 无残留） | | 脚本 F6 |
+| F | 演示页序号注释与组件库 import | | 脚本 F7-F8 |
 
 （❌ 项必带处置码，同基线勾销规则；禁止摘要式报告）
 
@@ -260,6 +267,8 @@
 | S2 当前分支 = 工作上下文 branch | | |
 | commit message 预览 | | |
 | S3 commit hash 回填（提交后 `git log -1 --format='%h'` 实测） | | |
+| S4 能力沉淀三件套（devlog / metrics / knowledge） | | 脚本 S4 输出 |
+| S5 归档无双份（运行时 vs artifacts） | | 脚本 S5 输出 |
 
 ### 工作上下文已同步（Gate 5 适用）
 - [ ] status / phase / 进度接续指引已更新
