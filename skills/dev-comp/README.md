@@ -56,7 +56,7 @@ L4 校验层    scripts/validate-component.sh（Gate 5 确定性检查数据源�
   ↓
 阶段 4  文档          → docs 复用演示页 + 周边文档联动
   ↓
-阶段 5  验收收尾      → 配置项终检 + 基线全量勾销 + lint+type-check+浏览器对照 → devlog+metrics+knowledge → commit → 产物归档决策（可选）→ 引导发布（合入 main + 构建发布）
+阶段 5  验收收尾      → 配置项终检 + 基线全量勾销 + lint+type-check+浏览器对照 → devlog+metrics+knowledge → commit → 产物位置告知（统一留在运行时目录）→ 引导发布（合入 main + 构建发布）
 ```
 
 | 组件复杂度 | 策略 |
@@ -130,7 +130,7 @@ dev-comp 在以下环节调用独立 Skill（缺失则降级跳过，不阻断�
 | `~/.codebuddy/dev-logs/` | 开发日志（由 tech-doc 生成） | 阶段 5 |
 | `~/.codebuddy/dev-comp/metrics/` | 度量报告（精简 YAML，dev-comp 专属） | 阶段 5 |
 | `~/.codebuddy/knowledge/vue-amazing-ui/` | 组件知识沉淀 | 阶段 5 |
-| `{ARTIFACTS_FALLBACK_DIR}`（skill 内 `artifacts/`） | 产物归档快照（working-context/metrics/devlog/knowledge），阶段 0 接续两级扫描第二级兜底 | 阶段 5 收尾用户选择归档时 |
+| `{ARTIFACTS_FALLBACK_DIR}`（skill 内 `artifacts/`） | **历史归档**读取兜底（working-context/metrics/devlog/knowledge），阶段 0 接续两级扫描第二级 | 不再写入（2026-08-21 起产物统一留在运行时目录） |
 
 ## 个人化配置
 
@@ -141,7 +141,7 @@ dev-comp 在以下环节调用独立 Skill（缺失则降级跳过，不阻断�
 | `PROJECT_ROOT` | vue-amazing-ui 项目根路径 |
 | `REF_ANTDV_LOCAL` | Ant Design Vue 本地 clone 路径 |
 | `REF_NAIVE_LOCAL` | Naive UI 本地 clone 路径 |
-| `ARTIFACTS_FALLBACK_DIR` | 产物归档兜底目录（可留空，留空则仅扫运行时目录） |
+| `ARTIFACTS_FALLBACK_DIR` | 历史归档读取兜底目录（可留空，留空则仅扫运行时目录；不再作为新产物归档目标） |
 
 其余流程、checklist、模板均为项目通用，无需改动。
 

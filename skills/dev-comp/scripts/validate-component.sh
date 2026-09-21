@@ -57,6 +57,20 @@ fi
 LCNAME=$(echo "$NAME" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]//g')
 FALLBACK="${VAUI_ARTIFACTS_DIR:-$HOME/myGithub/ai-coding-kit/skills/dev-comp/artifacts}"
 
+# ------------------------------------------------------------
+# 「非公开组件」定义（B4/E1 与 F5 共用）
+# components/ 下并非每个目录都是「面向用户的基础 UI 组件」：
+#   - style / utils   ：样式入口与工具函数，非组件
+#   - discrete        ：createDiscreteApi 工具函数，非组件
+#   - popup           ：内部浮层宿主（Tooltip 等的「参照容器 + 面板」承载层），
+#                       无对外文档、不在 components.ts 导出，但需存在于 resolver.componentsMap
+#                       供 componentDependencies 依赖解析（如 Tooltip: [..., 'Popup']）
+# 二者口径差异：目录名（小写 kebab）/ 组件导出名（大驼峰），故分别维护。
+# ⚠️ 新增此类内部目录/组件时必须同步本定义，否则 B4/E1、F5 会产生假 FAIL。
+# ------------------------------------------------------------
+NON_COMPONENT_DIRS="style|utils|discrete|popup"
+NON_PUBLIC_COMPS="Popup"
+
 # resolve_entry <目录>：按归一化名（去 .md 后缀）在该目录下匹配真实条目名，
 # 命中输出条目名（可能带 .md 后缀），未命中输出空。
 resolve_entry() {
@@ -212,7 +226,8 @@ else
 fi
 
 # B4 组件总数 4 处 +1 且一致（兼 E1）
-ACTUAL=$(cd "$ROOT" && ls -d components/*/ 2>/dev/null | grep -vE 'components/(style|utils|discrete)/' | wc -l | tr -d ' ')
+# 排除 NON_COMPONENT_DIRS（工具目录 + 内部宿主，见文件头定义），只统计面向用户的基础 UI 组件
+ACTUAL=$(cd "$ROOT" && ls -d components/*/ 2>/dev/null | grep -vE "components/(${NON_COMPONENT_DIRS})/" | wc -l | tr -d ' ')
 NUMS=""
 for f in README.md README.zh-CN.md docs/index.md docs/guide/features.md; do
   n=$(grep -oE '(共包含|includes)[[:space:]]+`?[0-9]+`?' "$ROOT/$f" 2>/dev/null | grep -oE '[0-9]+' | head -1)
@@ -424,7 +439,8 @@ else
     | sed -E 's/^[[:space:]]+([A-Za-z0-9]+):.*/\1/' | sort -u > /tmp/dc-map-$$.txt
   grep -oE '^[[:space:]]+[A-Za-z][A-Za-z0-9]*: typeof' "$GDTS" 2>/dev/null \
     | sed -E 's/^[[:space:]]+([A-Za-z0-9]+):.*/\1/' | sort -u > /tmp/dc-decl-$$.txt
-  F5_MISSING=$(comm -23 /tmp/dc-map-$$.txt /tmp/dc-decl-$$.txt 2>/dev/null | tr '\n' ' ')
+  # 过滤 NON_PUBLIC_COMPS：内部宿主/依赖组件（如需在 componentsMap 中供依赖解析，但不对外公开、不登记全局声明）
+  F5_MISSING=$(comm -23 /tmp/dc-map-$$.txt /tmp/dc-decl-$$.txt 2>/dev/null | grep -vxE "${NON_PUBLIC_COMPS}" | tr '\n' ' ')
   rm -f /tmp/dc-map-$$.txt /tmp/dc-decl-$$.txt
   if [ -z "$F5_MISSING" ]; then
     ok "F5 types/global-components.d.ts 覆盖 componentsMap 全量（$NAME 已登记）"
@@ -578,15 +594,17 @@ else
   fi
 fi
 
-# S5 产物归档无双份（运行时目录与 artifacts 兜底目录同时存在 → WARN）
-section "S5 归档双份"
+# S5 产物存放位置（2026-08-21 规范：产物统一留在运行时目录；artifacts 仅作历史归档读取兜底）
+section "S5 产物存放位置"
 
 RT_HIT=$(ls "$HOME/.codebuddy/dev-comp/working-context/" 2>/dev/null | grep -i "$LCNAME" | head -1)
 AF_HIT=$(ls "$FALLBACK"/ 2>/dev/null | grep -i "$LCNAME" | head -1)
 if [ -n "$RT_HIT" ] && [ -n "$AF_HIT" ]; then
-  warn "S5 工作上下文双份：运行时[$RT_HIT] 与 artifacts[$AF_HIT] 同时存在（归档后应删运行时副本，禁止长期双份）"
-elif [ -n "$RT_HIT" ] || [ -n "$AF_HIT" ]; then
-  ok "S5 工作上下文单一存放（运行时=${RT_HIT:-无} / 归档=${AF_HIT:-无}）"
+  warn "S5 工作上下文双份：运行时[$RT_HIT] 与 artifacts[$AF_HIT] 同时存在（产物应统一留在运行时目录；artifacts 若为历史归档请按需清理）"
+elif [ -n "$RT_HIT" ]; then
+  ok "S5 产物位置正常（运行时=${RT_HIT}，无新增归档副本）"
+elif [ -n "$AF_HIT" ]; then
+  warn "S5 产物仅存历史归档（artifacts/${AF_HIT}）——按 2026-08-21 规范产物应留在运行时目录；如需继续开发请复制回运行时目录"
 else
   skip "S5 运行时与归档两级均未检索到工作上下文（组件名拼写差异或未建上下文；--context 提供的文件不在两级目录内）"
 fi

@@ -161,7 +161,7 @@
 - [ ] **能力沉淀三件套必做**：devlog（tech-doc）+ metrics（lite YAML）+ knowledge（knowledge-loop）已全部生成并在 Gate 5 报告勾销；降级跳过须登记 ❌ + 原因 + 用户确认（详见 `flow.md` 阶段 5 第 3 步）
 - [ ] **提交前 git 身份实测**：`git config user.name/email` 实测值与工作上下文 `git_identity` 一致，不符已拦截并经用户决策（详见 `flow.md` 阶段 5 第 4 步）
 - [ ] **提交后 hash 实测回填**：`git log -1 --format='%h'` 实测值已回填工作上下文 frontmatter `commit`，禁止凭记忆记录
-- [ ] **产物归档决策已弹框**：Gate 5 通过后已弹归档决策（A 保留运行时 / B 归档 artifacts 并删副本），用户已决策（详见 `flow.md` 阶段 5 第 9 步）
+- [ ] **产物位置已告知**：Gate 5 报告的「能力沉淀三件套与产物位置」表已列出四项路径（working-context / metrics / devlog / knowledge）；产物一律留在 `~/.codebuddy/` 运行时目录，**不弹归档决策**（详见 `flow.md` 阶段 5 第 9 步）
 
 ## 交互操作清单（阶段 5，每个用例的可枚举操作点逐项勾销）
 
