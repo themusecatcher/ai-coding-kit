@@ -48,7 +48,7 @@
 3. **注册占位**（读 `references/checklists.md` §注册同步 + `references/linkage-map.md` §④）：
    - `components/{组件名}/index.ts`：`withInstall` + 类型导出
    - `components/components.ts`：追加 `export type {...}` + `export { default as Xxx }`
-   - **⭐ `components/utils/resolver.ts`**：`componentsMap` 映射 + `componentDependencies` 依赖（组件 `.vue` 内实际 `import` 的组件逐一列出）——**这是功能缺陷级联动点，漏配会导致按需引入缺样式**
+   - **⭐ `components/utils/style-deps.ts`**（2026-09-22 修正：四张表的**单一数据源**，D 方案后 `resolver.ts` 只读不再定义表）：`componentsMap` 映射 + `componentDependencies` 依赖（组件 `.vue` 内实际 `import` 的组件逐一列出，**复合组件逐子组件各自登记**）+ 必要时 `styleSources` / `stylelessComponents`——**这是功能缺陷级联动点，漏配会导致按需引入缺样式**；权威校验 `pnpm verify:deps`
    - 顶层 `components/index.ts` 与 router **无需手改**（自动）
 
 **产出**：可import 的组件骨架 + 注册完成。
@@ -230,8 +230,8 @@
 |----|--------|:--:|---------|
 | A | withInstall + 类型导出 | | |
 | A | components.ts 类型+组件导出 | | |
-| A | ⭐ resolver componentsMap | | grep 命中 |
-| A | ⭐ resolver componentDependencies | | grep 逐一对上 |
+| A | ⭐ `style-deps.ts` componentsMap | | grep 命中 |
+| A | ⭐ `style-deps.ts` componentDependencies（复合组件逐子组件） | | grep 逐一对上 |
 | A | 自动注册（index.ts / router 未手改） | | git diff 无痕迹 |
 | B | 组件文档 {组件名}.md | | |
 | B | vitepress 侧边栏入口 | | grep 命中 |

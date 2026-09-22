@@ -10,7 +10,7 @@
 | 项目规范文件 | 覆盖内容 | 对应阶段 |
 |:--|:--|:--|
 | `development/component-design.md` | SFC 三段式 / `export interface Props` + `withDefaults` / **插槽类型 `defineSlots` + `<组件名>Slots`** / `useInject` 主题注入 / `useSlotsExist` / 样式与 CSS 变量 / 复合组件 / 无样式组件登记 | 1-2 |
-| `development/import-export.md` | 三层导出模型 / 组件级 `index.ts` 三件套 / 复合组件目录级聚合 / `withInstall` 实现 / resolver 四张表 / **新增组件「三步接线」Checklist** / 新增工具函数 Checklist | 1 |
+| `development/import-export.md` | 三层导出模型 / 组件级 `index.ts` 三件套 / 复合组件目录级聚合 / `withInstall` 实现 / **`style-deps.ts` 四张表**（D 方案单一数据源）/ **新增组件「三步接线」Checklist** / 新增工具函数 Checklist | 1 |
 | `development/demo-doc-guide.md` | `src/views/` 演示页结构（`h1` + `h2.mt30.mb10` + `<Space>`）/ 自动路由机制 / 文档站结构 / 组件文档模板 / 内联 demo 机制 / 侧边栏维护 / **演示与文档必须一致** | 3-4 |
 | `development/project-structure.md` | 顶层目录职责 / `components/` 内部结构 / `src/` 演示环境 / `docs/` 文档站 / 命名规范速查 | 1/3/4 |
 | `development/build-system.md` | 三产物构建（dist / es / lib）/ 别名与模块解析 / 发布前守卫 | 5（发布） |
@@ -21,7 +21,7 @@
 |:--|:--|
 | `types/global-components.d.ts` | **手工维护**的自有组件全局类型声明（覆盖全部组件），`tsconfig.app.json` 已 include `types/*.d.ts` → 新增组件**必须登记**（⭐ `linkage-map.md` §⑮，2026-09-15 事故点。⚠️ 漏登记不报错、type-check 仍 PASS） |
 | `types/env.d.ts` | 环境变量类型声明 |
-| `tests/*.spec.ts` | Vitest 单测（`tests/resolver.spec.ts` 自动校验 resolver 与无样式组件登记完整性；为含分支逻辑的新组件补 `tests/{组件名}.spec.ts` 见 `checklists.md` §F） |
+| `tests/*.spec.ts` | Vitest 单测（`tests/resolver.spec.ts` 已随 D 方案改查 **`style-deps.ts` 四张表**与无样式组件登记完整性；构建期生成器另有 `tests/generate-style-entries.spec.ts`；为含分支逻辑的新组件补 `tests/{组件名}.spec.ts` 见 `checklists.md` §F） |
 | `docs/guide/template.md` | 组件文档骨架（章节顺序：何时使用 → 基本使用 → APIs → Slots → Methods → Events） |
 | `components.d.ts` | unplugin-vue-components **自动生成**（勿手改；验收清理幽灵声明见 `linkage-map.md` §⑭） |
 | `components/style/global.less` | 全局默认样式（`--primary-color` 等 CSS 变量） |
@@ -40,7 +40,7 @@
 - 📌 **历史变更**：2026-08-28（2.6.0「规范化组件目录及文档为短横线命名」）后，`components/` 与 `docs/guide/components/` 已由「全小写连写」（`autocomplete`）**改为 kebab-case**；本表此前一直描述旧形态，于 2026-09-15 实测更正。
 - ⚠️ 建目录前必须 `ls` 同层既有同类组件确认实际形态（如开发 AutoComplete 看既有 `auto-complete`），**禁止凭记忆或猜测命名**。
 - 校验脚本 `scripts/validate-component.sh` 按归一化名（小写去分隔符）解析三处目录，任何形态均能识别；但目录名仍须符合所在层惯例。
-- 联动影响：`components/utils/resolver.ts` 的 `componentsMap` value、changelog 链接（`changelog-spec.md` §3.2）均**以实测目录名为准**。
+- 联动影响：`components/utils/style-deps.ts` 的 `componentsMap` value、changelog 链接（`changelog-spec.md` §3.2）均**以实测目录名为准**。
 
 ## 组件结构（三件套 + 注册链路）
 
@@ -50,7 +50,9 @@ components/{组件名}/                     # ① 组件本体
   ├─ index.ts                            # withInstall + 类型导出
   └─ {子组件}/{Sub}.vue + index.ts       # 多子组件时（如 descriptions/descriptions-item）
 components/components.ts                 # ← 手动追加导出（注册点 A）
-components/utils/resolver.ts             # ← 手动追加样式映射（注册点 B，⭐易遗漏：componentsMap + componentDependencies）
+components/utils/style-deps.ts           # ← 手动追加样式依赖登记（注册点 B，⭐易遗漏：四张表）
+                                         #    ⚠️ 2026-09-22 修正：D 方案后为单一数据源；
+                                         #    resolver.ts 只读它、不再定义表（旧文档「改 resolver.ts」已废）
 types/global-components.d.ts             # ← 手动登记全局组件声明（注册点 D，⭐易遗漏：2026-09-15 事故点）
 components/index.ts                      # 自动 install 循环（无需手改）
 
@@ -79,7 +81,7 @@ declare module 'vue' {
     // 按字母序插入；值 = 自有组件导出名
     Comment: typeof VueAmazingUI.Comment
     ConfigProvider: typeof VueAmazingUI.ConfigProvider
-    // 复合子组件 / Provider 同样需要（与 resolver componentsMap 一一对应）
+    // 复合子组件 / Provider 同样需要（与 style-deps.ts componentsMap 一一对应）
     DescriptionsItem: typeof VueAmazingUI.DescriptionsItem
     MessageProvider: typeof VueAmazingUI.MessageProvider
   }
@@ -122,7 +124,7 @@ export default { title: '标签页' }   // title 为中文名，用于路由 met
 | 全局注册 | `components/index.ts` 遍历 `components` 调 `app.install` | 组件在 `components.ts` 导出即自动全局注册 |
 | 路由生成 | `src/router/index.ts` 用 `import.meta.glob('../views/**/index.ts')` | 建 `views/{名}/Index.vue` + `index.ts` 即自动生成路由 |
 | 类型产物 | vite-plugin-dts | 构建时自动生成 `es/index.d.ts` |
-| 按需引入样式 | `components/utils/resolver.ts` | ⚠️ 非自动：`componentsMap` / `componentDependencies` 必须手动维护 |
+| 按需引入样式 | `components/utils/style-deps.ts`（单一数据源） | ⚠️ 非自动：四张表（`componentsMap` / `styleSources` / `componentDependencies` / `stylelessComponents`）必须手动维护；`resolver.ts` 只读不定义；权威校验 `pnpm verify:deps` |
 | 全局组件类型 | `types/global-components.d.ts` | ⚠️ 非自动：必须手动登记（`components.d.ts` 不承担此职责） |
 
 ## 关键脚本（package.json · 2026-09-15 实测）

@@ -20,8 +20,8 @@
 - [ ] 多子组件：外层 `index.ts` 聚合 `export { Menu, MenuItem }` + 导出所有子类型
 - [ ] 确认无需手动修改 `components/index.ts`（自动 install 循环）和 `src/router/index.ts`（glob 自动扫描）
 - [ ] withInstall 时的 `utils/type` import 路径层级：单层 `../utils/type`，双层 `../../utils/type`
-- [ ] **⭐ `components/utils/resolver.ts` `componentsMap`**：组件名 → 样式目录映射（按字母序插入，value 用 `ls` 实测目录名，详见 `linkage-map.md` §④）
-- [ ] **⭐ `components/utils/resolver.ts` `componentDependencies`**：列出组件 `.vue` 内 `import ... from 'components/xxx'` 的实际组件依赖（grep 源文件判定，无依赖则跳过，详见 `linkage-map.md` §④）
+- [ ] **⭐ `components/utils/style-deps.ts` `componentsMap`**（2026-09-22 修正：四张表已从 `resolver.ts` 收敛到此单一数据源，`resolver.ts` 只读不再定义表）：组件名 → 样式目录映射（按字母序插入，value 用 `ls` 实测目录名，详见 `linkage-map.md` §④）
+- [ ] **⭐ `components/utils/style-deps.ts` `componentDependencies`**：列出组件 `.vue` 内 `import ... from 'components/xxx'` 的实际组件依赖（**复合组件逐子组件各自登记**，无依赖则跳过）；必要时同步 `styleSources`（自身无样式文件时指向来源组件）——详见 `linkage-map.md` §④，权威校验 `pnpm verify:deps`
 - [ ] **⭐ `types/global-components.d.ts` 登记全局组件声明**：按字母序插入 `Xxx: typeof VueAmazingUI.Xxx`，覆盖 `componentsMap` 全量（含复合子组件 / Provider）——见 F5 与 `linkage-map.md` §⑮
 
 ## 组件规范（阶段 1/2 · F 类）
@@ -108,8 +108,8 @@
 
 - [ ] A1 `components/{组件名}/index.ts`：`withInstall` + 类型导出。⚠️ **复合组件**：聚合层 index.ts 只做 `import/export 子组件`，**withInstall 在子组件层** index.ts（如 `dropdown/dropdown/index.ts`）——脚本已按此适配（2026-09-22 自查修正假 FAIL）
 - [ ] A2 `components/components.ts`：`export type { XxxProps }`（汇总级透传）+ 组件导出两条都在；组件导出**两种形态均可**——单组件 `export { default as Xxx }`、复合组件 `export { Xxx, XxxButton }`（脚本已适配，避免误命中 `XxxProps`/`XxxKey` 等类型导出）
-- [ ] A3 ⭐ resolver `componentsMap` 按需样式映射（`grep -n "{组件名}:" components/utils/resolver.ts` 命中且按字母序，value 为实测目录名，详见 `linkage-map.md` §④）
-- [ ] A4 ⭐ resolver `componentDependencies` 样式依赖（`grep -rn "import .* from 'components/" components/{组件名}/` 逐一与映射条目对上，无依赖则确认跳过，详见 `linkage-map.md` §④）
+- [ ] A3 ⭐ **`components/utils/style-deps.ts`** `componentsMap` 按需样式映射（`grep -n "{组件名}:" components/utils/style-deps.ts` 命中且按字母序，value 为实测目录名，详见 `linkage-map.md` §④）。⚠️ 2026-09-22 修正：表源已从 `resolver.ts` 迁到 `style-deps.ts`（D 方案）；脚本按结构自动选源（`style-deps.ts` 优先，缺失回退 `resolver.ts`）
+- [ ] A4 ⭐ **`components/utils/style-deps.ts`** `componentDependencies` 样式依赖（`grep -rn "import .* from 'components/" components/{组件名}/` 逐一与映射条目对上；**复合组件逐子组件各自核对**，无依赖则确认跳过，详见 `linkage-map.md` §④）；权威校验另跑 `pnpm verify:deps`（项目自带双向比对）
 - [ ] A5 自动注册确认：`git diff` 中无 `components/index.ts` / `src/router/index.ts` 手改痕迹（glob 自动扫描，无需手改）
 
 ### B · 文档联动链路（埋入于阶段 4）
@@ -140,14 +140,14 @@
 > 事故背景：Comment 开发漏了 `types/global-components.d.ts` 登记（静默失效、type-check 仍 PASS），并暴露 `defineSlots` 缺失、根类名 `m-` 前缀、Props 注释 `string | slot` 残留、演示页序号注释与组件库 import 等无检查项覆盖的问题。
 > 本类全部进 `scripts/validate-component.sh`（F1-F8），Gate 5 必跑。
 
-- [ ] **F1** `defineSlots` + `export interface {组件名}Slots` 存在于组件 SFC（`grep -n "defineSlots" components/{组件名}/*.vue`）
+- [ ] **F1** `defineSlots` + `export interface {组件名}Slots` 存在于**每个使用插槽的**组件 SFC（`grep -n "defineSlots" components/{组件名}/**/*.vue`）。⚠️ 2026-09-22 修正：① **无插槽组件豁免**（无 `<slot` / `useSlotsExist` / `$slots` 的内部渲染内核组件，如 `loading-bar/LoadingBar.vue`，原判定假 FAIL）；② 复合组件**逐 .vue 校验**
 - [ ] **F2** 根类名 = `{组件名}-wrap`，无 `m-` / `vui-` 自拟前缀（`grep -nE 'class="[a-z]+-{组件名}|class="m-|class="vui-' components/{组件名}/*.vue` 应为 0 命中）
 - [ ] **F3** Props/Slots 注释无 `string | slot` / `Array | slot` 残留（`grep -nE "//.*(string|Array) \| slot" components/{组件名}/*.vue`）
 - [ ] **F4** `useSlotsExist([...])` 数组内每个插槽名都有实际消费点（半确定性 → 脚本提示 + 人工确认，禁止冗余探测）
-- [ ] **F5** ⭐ `types/global-components.d.ts` 已登记（差集校验：`componentsMap` keys − 该文件声明 = 空）
+- [ ] **F5** ⭐ `types/global-components.d.ts` 已登记（差集校验：`style-deps.ts` 的 `componentsMap` keys − 该文件声明 = 空）。⚠️ 2026-09-22 修正：表源改为 `style-deps.ts`；**表源解析为空时脚本不得判 PASS**（假绿灯守护），改 WARN 提示人工核对
 - [ ] **F6** ⭐ changelog 三查：版本章节唯一（无重复版本号）/ 严格递减 / 组件链接为站内相对路径 + kebab 目录名 / `## future` 无已落地组件残留
 - [ ] **F7** 演示页与文档 script 注释、`<h2>` 标题无数字序号（`grep -nE "^// [0-9]\.|<h2[^>]*>[0-9]+\." src/views/{组件名}/ docs/guide/components/{组件名}.md`）
-- [ ] **F8** 演示页无本项目组件 import（`grep -nE "^import .*from 'vue-amazing-ui'" src/views/{组件名}/Index.vue` 应为 0；`import type` 允许）
+- [ ] **F8** 演示页无本项目**组件值** import（默认导入整库、或具名导入中出现 PascalCase 组件名 → 违规）。⚠️ 2026-09-22 修正：**命令式 API / hook 允许 import**（`useLoadingBar` / `useMessage` / `createDiscreteApi`，规范依据 `development/demo-doc-guide.md`）；`import type` 允许
 
 ### G · 交付前精修与三方一致性（阶段 5 第 5 步 · ⭐ 2026-09-22 新增）
 

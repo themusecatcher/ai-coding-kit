@@ -194,7 +194,7 @@ grep -n "描述关键词" src/views/{组件名}/Index.vue docs/guide/components/
 - 演示环境由 `src/main.ts` 的 `app.use(VueAmazingUI)` **全局注册**，模板直接写 `<Xxx>` 标签。
 - ❌ 禁止从 `vue-amazing-ui` 引入组件值（脚本 F8 拦截）；`import type { XxxProps }` 允许。
 - 确需在 script 中拿到组件对象时（如构造 VNode），改用**具名插槽**或 `<component :is>`（is 传组件名字符串），不要引入组件库组件 import。
-- 必要的 import 仅三类：`vue` 的 API（`ref` / `h` / `computed`）、`-design/icons-vue` 图标、对照期的 antdv 真身。
+- 必要的 import 仅四类：`vue` 的 API（`ref` / `h` / `computed`）、图标（`@ant-design/icons-vue`）、**命令式 API / hook**（`useLoadingBar()` / `useMessage()` / `createDiscreteApi`——项目规范 `development/demo-doc-guide.md` 明确允许）、对照期的 antdv 真身（阶段 5 清除）。
 
 ---
 

@@ -2,7 +2,7 @@
 
 > dev-comp 阶段 1/4/5 必读。新增一个组件时，除组件本体外，还需同步以下**全部**联动点。
 > ⚠️ 本清单的「⭐ 易遗漏」标注来自历史事故复盘，**禁止跳过**：
-> - **2026-08-18（AutoComplete）漏 4 处**：resolver 依赖映射、4 处组件总数、components.d.ts 幽灵声明、App.vue 孤儿变量；2026-08-19 追加第 5 处：**发布版本号升级错误**（新增组件只升 patch，2.4.28 应为 2.5.0，规范见 `changelog-spec.md`）。
+> - **2026-08-18（AutoComplete）漏 4 处**：样式依赖映射（当时在 `resolver.ts`，**今已收敛到 `style-deps.ts`**，见 §④）、4 处组件总数、components.d.ts 幽灵声明、App.vue 孤儿变量；2026-08-19 追加第 5 处：**发布版本号升级错误**（新增组件只升 patch，2.4.28 应为 2.5.0，规范见 `changelog-spec.md`）。
 > - **2026-09-15（Comment）漏 1 处**：**`types/global-components.d.ts` 未登记**（全仓唯一缺失项，见 §⑮）。⚠️ 该遗漏**不报错、不中断构建、`pnpm type-check` 仍 PASS**——演示页标签静默失去类型检查，隐蔽性最强，只能靠显式 grep/脚本发现。
 > - 同批复盘还修正了 2 处**存量不一致**：目录命名约定过时（→ `project-map.md` §目录命名约定）、changelog 链接规则与版本章节唯一性（→ `changelog-spec.md`）。规则变更必须同步脚本与检查清单，详见 `rules/按需-Skill设计-跨文件协作.mdc` §2.1。
 
@@ -16,7 +16,7 @@
 components/{name}/{Xxx}.vue          # ① 组件本体（阶段 2）
 components/{name}/index.ts           # ② withInstall + 类型导出（阶段 1）
 components/components.ts             # ③ 组件/类型导出（注册点 A，阶段 1）
-components/utils/resolver.ts         # ④ 按需引入样式映射（注册点 B，阶段 1）⭐易遗漏
+components/utils/style-deps.ts       # ④ 按需引入样式依赖**单一数据源**（四张表；注册点 B，阶段 1）⭐易遗漏
 types/global-components.d.ts         # ⑮ 全局组件类型声明登记（注册点 D，阶段 1）⭐易遗漏
 src/views/{name}/Index.vue           # ⑤ 演示页（阶段 3）
 src/views/{name}/index.ts            # ⑥ 演示页 meta title（阶段 3）
@@ -32,30 +32,32 @@ components.d.ts                      # ⑭ 幽灵声明清理（自动生成，�
 
 ## 各联动点详解
 
-### ④ `components/utils/resolver.ts`（按需引入样式映射）⭐ 最高优先级
+### ④ `components/utils/style-deps.ts`（按需引入样式依赖单一数据源）⭐ 最高优先级
 
-> 功能缺陷级遗漏：漏配会导致用户按需引入组件时**缺样式**（本次 AutoComplete 漏了 Scrollbar 依赖样式）。
+> 功能缺陷级遗漏：漏配会导致用户按需引入组件时**缺样式**（历史事故：AutoComplete 漏了 Scrollbar 依赖样式）。
+> ⚠️ **结构变更（2026-09-22 实测 · commit `9ea9a70c` D 方案）**：四张表已从 `resolver.ts` **收敛到单一数据源 `components/utils/style-deps.ts`**；`resolver.ts` 只读其中三张、**不再定义表**。旧表述「追加到 `components/utils/resolver.ts`」**已废**（照做会改错文件 → 脚本 A3/A4 假 FAIL、F5 假 PASS）。
 
-两处需同步：
+四张表（均在 `style-deps.ts`，条目**按字母序插入**）：
 
-1. **`componentsMap`**：组件名 → 样式目录路径。按字母序插入：
-   ```ts
-   AutoComplete: 'auto-complete',
-   ```
-   - key 为组件导出名（PascalCase）；value 为该组件在 `components/` 下的**真实目录名**，必须 `ls components/` 实测后照抄（多子组件用子目录路径，如 `Descriptions: 'descriptions/descriptions'`、`Row: 'grid/row'`）。
-   - ⚠️ 目录名以**实测为准**，禁止用 kebab/连写猜测（详见 `project-map.md` §目录命名约定）。
+| 表 | 作用 | 形态 | 消费方 |
+|:--|:--|:--|:--|
+| `componentsMap` | 组件名 → 产物目录 | `AutoComplete: 'auto-complete',` | `resolver.ts`（拼样式入口路径）＋ 构建期生成器 |
+| `styleSources` | 自身无样式文件的组件 → 样式来源组件 | `MessageProvider: 'Message',` | `resolver.ts` |
+| `componentDependencies` | 组件的**样式依赖** | `Select: ['Empty', 'Scrollbar'],` | 构建期生成器（按表序写进入口） |
+| `stylelessComponents` | 完全无样式的组件白名单 | `['ConfigProvider', 'Highlight', 'NumberAnimation', 'Watermark']` | `resolver.ts` |
 
-2. **`componentDependencies`**：组件内部**实际 import 的其它组件**，需列出其样式依赖。按字母序插入：
-   ```ts
-   AutoComplete: ['Scrollbar'],
-   ```
-   - **判定依据 = 组件 `.vue` 里的 `import Xxx from 'components/xxx'`**，逐个列出（grep 组件源文件的 `import .* from 'components/`）。
-   - 只列**会渲染且带样式**的组件依赖；纯逻辑/工具函数（`components/utils`）不列。
-   - 同款组件可参照既有条目（如 `Select: ['Empty', 'Scrollbar']`——AutoComplete 与 Select 同为下拉输入类，依赖模式一致）。
+1. **`componentsMap`**：key = 组件导出名（PascalCase）；value = `components/` 下**真实目录名**，必须 `ls components/` 实测后照抄（多子组件用子目录路径，如 `Descriptions: 'descriptions/descriptions'`、`Row: 'grid/row'`）。
+2. **`componentDependencies`**：判定依据 = 组件 `.vue` 里的 `import ... from 'components/xxx'`，**复合组件逐子组件各自登记**（如 `Dropdown: ['Popup']`、`DropdownButton: ['Button', 'Dropdown', 'Popup']`）；只列**会渲染且带样式**的组件，`components/utils/*` 工具函数不列。
+3. **`styleSources`**：组件自身无样式文件（如 Provider 把样式落在外层组件）时登记来源组件。
+4. **`stylelessComponents`**：仅当组件**无 `<style>` 块且无外部 CSS 依赖**时才加入。
+5. 第三方带样式依赖（datepicker / swiper 等）→ 参照既有 `vendorStylesByComponent` 条目追加。
 
-3. **无样式组件列表**（`getSideEffects` 内的 `['ConfigProvider', 'Highlight', 'NumberAnimation', 'Watermark']`）：新组件若**无 `<style>` 块且无外部 CSS 依赖**才需加入；有样式块则不加。
+**校验方式（⭐ 已变化）**：
 
-4. **特殊外部样式**（`getSideEffects` 内 DatePicker/Swiper 分支）：新组件若 import 了第三方带样式的库（如 datepicker/swiper），需仿照追加对应 `.css`。
+| 层 | 手段 | 说明 |
+|:--|:--|:--|
+| skill 脚本 | `A3` / `A4` | 映射存在 + 字母序；`componentDependencies` 与源码 import 逐一对上（复合组件逐子组件） |
+| **项目权威** | **`pnpm verify:deps`** | `scripts/verify-style-deps.js`：以产物 chunk 依赖图闭包**双向**比对 `componentDependencies`（`closure ⊆ table` 抓漏写、`table ⊆ closure` 抓 stale）——**发布前 / CI 必跑** |
 
 ### ⑮ `types/global-components.d.ts`（全局组件类型声明登记）⭐ 2026-09-15 事故点
 
@@ -66,7 +68,7 @@ components.d.ts                      # ⑭ 幽灵声明清理（自动生成，�
   ```ts
   Comment: typeof VueAmazingUI.Comment
   ```
-- 覆盖范围：**与 `components/utils/resolver.ts` 的 `componentsMap` 一一对应**（含复合子组件 `Row`/`Col`/`DescriptionsItem`/`ListItem` 与 Provider `MessageProvider`/`ModalProvider`/`DialogProvider`/`NotificationProvider`）。
+- 覆盖范围：**与 `components/utils/style-deps.ts` 的 `componentsMap` 一一对应**（含复合子组件 `Row`/`Col`/`DescriptionsItem`/`ListItem` 与 Provider `LoadingBarProvider`/`MessageProvider`/`ModalProvider`/`DialogProvider`/`NotificationProvider`）。
 - 自检命令（已下沉脚本 **F5**）：
   ```bash
   # 差集 = componentsMap 有、global-components.d.ts 无 → 即缺失项（应输出空）

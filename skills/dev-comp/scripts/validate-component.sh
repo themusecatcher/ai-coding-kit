@@ -121,6 +121,12 @@ VIEW_DIR=$(resolve_entry "$ROOT/src/views")
 DOC_ENTRY=$(resolve_entry "$ROOT/docs/guide/components")
 DOC_FILE="$ROOT/docs/guide/components/$DOC_ENTRY"
 
+# 组件 .vue 清单（含一层子目录 → 复合组件；A1/A4/F1-F4/G2 共用）
+COMP_VUES=""
+if [ -n "$COMP_DIR" ]; then
+  COMP_VUES=$(find "$ROOT/components/$COMP_DIR" -maxdepth 2 -name '*.vue' 2>/dev/null | sort)
+fi
+
 PASS=0; FAIL=0; WARN=0; SKIP=0
 ok()   { PASS=$((PASS+1)); echo "  [PASS] $1"; }
 fail() { FAIL=$((FAIL+1)); echo "  [FAIL] $1"; }
@@ -157,17 +163,38 @@ else
   fail "A1 components/ 下未解析到 $NAME 目录或 index.ts 未用 withInstall（目录解析：${COMP_DIR:-未找到}；检查 ${A1_F}）"
 fi
 
-# A2 components.ts 两条导出（-i：组件名输入可能小写/驼峰，文件内为 PascalCase）
-# ⚠️ 复合组件（2026-09-22 自查修正）：导出形态为 `export { Dropdown, DropdownButton }`，
-#    不含 `default as`——故同时接受「default as」与「花括号具名导出含该名」两种写法；
-#    用 `[ {]` / `[,}[:space:]]` 做词边界，避免 DropdownProps / DropdownKey 误命中。
-A2_OK=0
-grep -qiE "default as $NAME([^A-Za-z0-9_]|$)" "$ROOT/components/components.ts" 2>/dev/null && A2_OK=1
-grep -qiE "^[[:space:]]*export[[:space:]]+[{][^}]*[ {]$NAME([,}[:space:]]|$)" "$ROOT/components/components.ts" 2>/dev/null && A2_OK=1
-if [ "$A2_OK" = "1" ]; then
-  ok "A2 components.ts 组件导出命中（default as ${NAME} 或具名导出含 ${NAME}）"
+# A2 components.ts 注册导出
+# ⚠️ 判定依据（2026-09-22 自查修正两轮后的最终口径）：**components.ts 中「从 `'./{组件目录}'` 导出的组件值」是否存在**。
+#    为什么不用组件入口 index.ts 反推导出名：入口的 `withInstall(X)` 拿到的是**局部变量名**
+#    （如 loading-bar 的 `LoadingBarProviderComp`），可能 ≠ 对外公开名（`LoadingBarProvider`）→ 会假 FAIL。
+#    该口径天然兼容三类形态：① `export { default as Tag } from './tag'`；② 复合组件
+#    `export { Dropdown, DropdownButton } from './dropdown'`；③ Provider 型 `export { LoadingBarProvider, useLoadingBar } from './loading-bar'`。
+#    ⚠️ 依赖 components.ts 的「值导出为单行」写法（项目现状如此；`export type { ... }` 多行块不参与判定）。
+a2_names_from_line() {   # $1 = export 行 → 其中的 PascalCase 组件名（词边界过滤类型名）
+  printf '%s\n' "$1" | tr -d '{}' | sed -E "s/from .*$//" | sed 's/export//g' | tr ',' '\n' \
+    | sed -E 's/default[[:space:]]+as[[:space:]]+//' | tr -d ' ' | grep -E '^[A-Z][A-Za-z0-9]*$' | sort -u | tr '\n' ' '
+}
+A2_LINE=""; A2_NAMES=""
+if [ -n "$COMP_DIR" ]; then
+  A2_LINE=$(grep -E "^[[:space:]]*export[[:space:]]+\{[^}]*\}[[:space:]]+from[[:space:]]+'\./${COMP_DIR}'" \
+    "$ROOT/components/components.ts" 2>/dev/null | head -1)
+fi
+[ -n "$A2_LINE" ] && A2_NAMES=$(a2_names_from_line "$A2_LINE")
+if [ -z "$A2_NAMES" ]; then
+  # 回退：未匹配到 `from './{目录}'` 的值导出（多目录聚合 / 命名差异）→ 按输入名判定
+  a2_exported() {
+    grep -qiE "default as $1([^A-Za-z0-9_]|$)" "$ROOT/components/components.ts" 2>/dev/null && return 0
+    grep -qiE "^[[:space:]]*export[[:space:]]+[{][^}]*[ {]$1([,}[:space:]]|$)" "$ROOT/components/components.ts" 2>/dev/null && return 0
+    return 1
+  }
+  A2_NAMES="$NAME"
+  if a2_exported "$NAME"; then
+    ok "A2 components.ts 组件导出命中（回退判定：${NAME}）"
+  else
+    fail "A2 components.ts 缺组件导出：未找到 \"export {…} from './${COMP_DIR:-?}'\"，且无 default as ${NAME}（检查 components/components.ts）"
+  fi
 else
-  fail "A2 components.ts 缺组件导出：grep -E 'default as $NAME|export \\{[^}]*$NAME' components/components.ts"
+  ok "A2 components.ts 组件导出命中（来自 './${COMP_DIR}'：${A2_NAMES}）"
 fi
 if grep -qi "${NAME}Props" "$ROOT/components/components.ts"; then
   ok "A2 components.ts 类型导出命中（export type { ${NAME}Props }）"
@@ -175,17 +202,36 @@ else
   fail "A2 components.ts 缺类型导出：grep '${NAME}Props' components/components.ts"
 fi
 
-# A3 resolver componentsMap 映射 + 字母序
+# 样式依赖表源（A3/A4/F5 共用 · 2026-09-22 修正）：
+#   D 方案重构（commit 9ea9a70c）后，四张表（componentsMap / styleSources /
+#   componentDependencies / stylelessComponents）统一收敛到 components/utils/style-deps.ts，
+#   resolver.ts 只读它、不再定义表 → 原「只查 resolver.ts」会假 FAIL + F5 假 PASS。
+#   兼容层：style-deps.ts 不存在时回退旧结构 resolver.ts（1 行成本，防未合 main 的分支误报）。
 RESOLVER="$ROOT/components/utils/resolver.ts"
+DEPS_SRC="$ROOT/components/utils/style-deps.ts"
+DEPS_SRC_FILE="style-deps.ts"
+DEPS_SRC_LABEL="style-deps.ts"
+DEPS_SRC_OK=1
+if [ ! -f "$DEPS_SRC" ]; then
+  DEPS_SRC="$RESOLVER"
+  DEPS_SRC_FILE="resolver.ts"
+  DEPS_SRC_LABEL="resolver.ts（旧结构回退）"
+  # 边界防御：两种表源都不存在 → A3/A4 应 SKIP（而非报「缺映射」误导）
+  [ -f "$DEPS_SRC" ] || DEPS_SRC_OK=0
+fi
+
+# A3 componentsMap 映射 + 字母序
 A3_OK=0
-if grep -qiE "^[[:space:]]+$NAME:[[:space:]]*'" "$RESOLVER" 2>/dev/null; then
-  ok "A3 resolver componentsMap 映射命中（$NAME: '...'）"
+if [ "$DEPS_SRC_OK" = "0" ]; then
+  skip "A3 未找到样式依赖表源（既无 components/utils/style-deps.ts 也无 resolver.ts）——请确认项目结构后人工核对 componentsMap"
+elif grep -qiE "^[[:space:]]+$NAME:[[:space:]]*'" "$DEPS_SRC" 2>/dev/null; then
+  ok "A3 ${DEPS_SRC_LABEL} componentsMap 映射命中（$NAME: '...'）"
   A3_OK=1
 else
-  fail "A3 resolver componentsMap 缺映射：grep '$NAME:' components/utils/resolver.ts"
+  fail "A3 ${DEPS_SRC_LABEL} componentsMap 缺映射：grep '$NAME:' components/utils/${DEPS_SRC_FILE}"
 fi
 if [ "$A3_OK" = "1" ]; then
-KEYS=$(sed -n '/componentsMap[[:space:]]*=/,/^}/p' "$RESOLVER" 2>/dev/null \
+KEYS=$(sed -n '/componentsMap[[:space:]]*=/,/^}/p' "$DEPS_SRC" 2>/dev/null \
   | grep -E '^[[:space:]]+[A-Za-z][A-Za-z0-9]*:' \
   | sed -E 's/^[[:space:]]+([A-Za-z0-9]+):.*/\1/')
 # 字母序做局部检查（前一 key < 当前 key）；项目存在 Row/Col 等按目录分组的
@@ -205,34 +251,49 @@ else
   skip "A3 字母序检查跳过（映射缺失，先修复映射）"
 fi
 
-# A4 resolver componentDependencies 与源码 import 对上
-if [ -n "$COMP_DIR" ]; then
-  # 单双引号两种 import 写法都要覆盖
-  DEPS=$(grep -rhoE "from ['\"]components/[^'\"]+['\"]" "$ROOT/components/$COMP_DIR/" 2>/dev/null \
-    | grep -vE "^from ['\"]components/utils(/|['\"])" \
-    | sed -E "s|from ['\"]components/([^'\"]+)['\"].*|\1|" | sort -u)
-else
-  DEPS=""
-fi
-DEP_ENTRY=$(grep -iE "^[[:space:]]+$NAME:[[:space:]]*\[" "$RESOLVER" 2>/dev/null)
+# A4 componentDependencies 与源码 import 对上
+# 表源同 A3；⚠️ 复合组件**逐子组件**核对（2026-09-22 自查修正）：原实现把整个目录的 import
+# 聚合后只与父条目（如 Dropdown）比对 → 子组件（DropdownButton）的依赖被误判缺失 → 假 FAIL。
+A4_HINT=""
+[ "$DEPS_SRC_LABEL" = "style-deps.ts" ] && A4_HINT="；新结构下权威校验另跑 pnpm verify:deps"
 if [ -z "$COMP_DIR" ]; then
   skip "A4 组件目录未解析到，跳过依赖核对"
-elif [ -z "$DEPS" ]; then
-  if [ -n "$DEP_ENTRY" ]; then
-    warn "A4 源码无 components/ import，但 resolver 有 ${NAME} 依赖条目（可能冗余：${DEP_ENTRY}）"
-  else
-    ok "A4 源码无组件间依赖，resolver 无条目（一致）"
-  fi
+elif [ -z "$COMP_VUES" ]; then
+  skip "A4 未解析到组件 .vue，跳过依赖核对"
+elif [ "$DEPS_SRC_OK" = "0" ]; then
+  skip "A4 未找到样式依赖表源（既无 style-deps.ts 也无 resolver.ts），跳过依赖核对"
 else
-  MISSING=""
-  for d in $DEPS; do
-    # 大小写不敏感：源码 import 路径小写（components/scrollbar），resolver 条目 PascalCase（['Scrollbar']）
-    echo "$DEP_ENTRY" | grep -qi "$d" || MISSING="$MISSING $d"
+  A4_CNT=$(printf '%s\n' "$COMP_VUES" | grep -c .)
+  A4_FAIL=""; A4_WARN=""; A4_OKN=0; A4_TOTAL=0
+  for a4f in $COMP_VUES; do
+    if [ "${A4_CNT:-0}" = "1" ]; then A4_SEC="$NAME"; else A4_SEC=$(basename "$a4f" .vue); fi
+    A4_TOTAL=$((A4_TOTAL+1))
+    # 单双引号两种 import 写法都要覆盖
+    A4_DEPS=$(grep -rhoE "from ['\"]components/[^'\"]+['\"]" "$a4f" 2>/dev/null \
+      | grep -vE "^from ['\"]components/utils(/|['\"])" \
+      | sed -E "s|from ['\"]components/([^'\"]+)['\"].*|\1|" | sort -u)
+    A4_ENTRY=$(grep -iE "^[[:space:]]+$A4_SEC:[[:space:]]*\[" "$DEPS_SRC" 2>/dev/null)
+    if [ -z "$A4_DEPS" ]; then
+      [ -n "$A4_ENTRY" ] && A4_WARN="$A4_WARN ${A4_SEC}(源码无组件依赖但表有条目)"
+      continue
+    fi
+    A4_MISS=""
+    for d in $A4_DEPS; do
+      # 大小写不敏感：源码 import 路径小写（components/popup），表中条目 PascalCase（['Popup']）
+      echo "$A4_ENTRY" | grep -qi "$d" || A4_MISS="$A4_MISS $d"
+    done
+    if [ -n "$A4_ENTRY" ] && [ -z "$A4_MISS" ]; then
+      A4_OKN=$((A4_OKN+1))
+    else
+      A4_FAIL="$A4_FAIL ${A4_SEC}(缺:${A4_MISS:-条目本身缺失})"
+    fi
   done
-  if [ -n "$DEP_ENTRY" ] && [ -z "$MISSING" ]; then
-    ok "A4 componentDependencies 与源码 import 逐一对上（${DEPS}）"
+  if [ -n "$A4_FAIL" ]; then
+    fail "A4 componentDependencies 与源码 import 不一致：${A4_FAIL}（表源=${DEPS_SRC_LABEL}${A4_HINT}）"
+  elif [ -n "$A4_WARN" ]; then
+    warn "A4 非确定项须人工核对：${A4_WARN}（表源=${DEPS_SRC_LABEL}${A4_HINT}）"
   else
-    fail "A4 componentDependencies 缺失依赖:${MISSING:-（条目本身缺失 $NAME: [...]）} 源码 import: $DEPS"
+    ok "A4 componentDependencies 与源码 import 逐一对上（${A4_OKN}/${A4_TOTAL} 个组件，表源=${DEPS_SRC_LABEL}${A4_HINT}）"
   fi
 fi
 
@@ -510,29 +571,34 @@ skip "E2 演示页↔docs 描述同源为文本语义对比（半确定性），
 # ============================================================
 section "F 组件本体与跨文件规范"
 
-COMP_VUES=""
-if [ -n "$COMP_DIR" ]; then
-  # 含一层子目录：复合组件（如 dropdown/dropdown/Dropdown.vue + dropdown/dropdown-button/DropdownButton.vue）
-  COMP_VUES=$(find "$ROOT/components/$COMP_DIR" -maxdepth 2 -name '*.vue' 2>/dev/null | sort)
-fi
+# 注：COMP_VUES（组件 .vue 清单，含一层子目录）已在文件头部公共区定义（A1/A4/F1-F4/G2 共用）
 
 # F1 defineSlots + `export interface {组件名}Slots`（component-design.md §插槽类型）
 # 复合组件：逐个 .vue 校验（每个子组件各自声明 *Slots 类型）
 if [ -z "$COMP_VUES" ]; then
   skip "F1 组件 .vue 未解析到，跳过 defineSlots 检查"
 else
-  F1_NO_SLOTDECL=""; F1_NO_IFACE=""; F1_CNT=0
+  F1_NO_SLOTDECL=""; F1_NO_IFACE=""; F1_NOSLOT=""; F1_CNT=0
   for f1f in $COMP_VUES; do
     F1_CNT=$((F1_CNT+1))
-    grep -qE "defineSlots" "$f1f" 2>/dev/null || F1_NO_SLOTDECL="$F1_NO_SLOTDECL $(basename "$f1f")"
-    grep -qE "export interface [A-Za-z]+Slots" "$f1f" 2>/dev/null || F1_NO_IFACE="$F1_NO_IFACE $(basename "$f1f")"
+    if ! grep -qE "defineSlots" "$f1f" 2>/dev/null; then
+      # 无插槽组件豁免（2026-09-22 修正 · 规范 intent：`{组件名}Slots` 是给「有插槽」的组件做类型提示；
+      # 实测内部渲染内核组件如 loading-bar/LoadingBar.vue 无 `<slot`/`useSlotsExist`，原判定假 FAIL）
+      if grep -qE "<slot|useSlotsExist|\\\$slots" "$f1f" 2>/dev/null; then
+        F1_NO_SLOTDECL="$F1_NO_SLOTDECL $(basename "$f1f")"
+      else
+        F1_NOSLOT="$F1_NOSLOT $(basename "$f1f")"
+      fi
+    elif ! grep -qE "export interface [A-Za-z]+Slots" "$f1f" 2>/dev/null; then
+      F1_NO_IFACE="$F1_NO_IFACE $(basename "$f1f")"
+    fi
   done
   if [ -n "$F1_NO_SLOTDECL" ]; then
-    fail "F1 组件未声明插槽类型（应 'export interface {组件名}Slots' + 'defineSlots<{组件名}Slots>()'）：$F1_NO_SLOTDECL"
+    fail "F1 组件使用了插槽但未声明插槽类型（应 'export interface {组件名}Slots' + 'defineSlots<{组件名}Slots>()'）：$F1_NO_SLOTDECL"
   elif [ -n "$F1_NO_IFACE" ]; then
     warn "F1 有 defineSlots 但未见 'export interface {组件名}Slots'：${F1_NO_IFACE}（命名规范见 component-design.md §插槽类型）"
   else
-    ok "F1 defineSlots + export interface *Slots 命中（${F1_CNT} 个组件文件）"
+    ok "F1 defineSlots + export interface *Slots 命中（${F1_CNT} 个组件文件；无插槽豁免:${F1_NOSLOT:-无}）"
   fi
 fi
 
@@ -584,22 +650,35 @@ fi
 
 # F5 types/global-components.d.ts 登记（差集：componentsMap keys − 已声明）
 # ⚠️ 漏登记不报错、type-check 仍 PASS（静默失效），只能靠本项兜底
+# 🔴 假绿灯守护（2026-09-22 自查修正）：表源必须与 A3/A4 一致（style-deps.ts）；
+#    若表源解析不到任何 key → **不得 PASS**（原实现读 resolver.ts 取到空集 → 永远 PASS，
+#    恰是「静默失效」最危险的形态），改 WARN 提示人工核对。
 GDTS="$ROOT/types/global-components.d.ts"
 if [ ! -f "$GDTS" ]; then
   skip "F5 types/global-components.d.ts 不存在（项目未使用该机制，跳过登记校验）"
 else
-  sed -n '/componentsMap[[:space:]]*=/,/^}/p' "$RESOLVER" 2>/dev/null \
+  sed -n '/componentsMap[[:space:]]*=/,/^}/p' "$DEPS_SRC" 2>/dev/null \
     | grep -oE '^[[:space:]]+[A-Za-z][A-Za-z0-9]*:' \
     | sed -E 's/^[[:space:]]+([A-Za-z0-9]+):.*/\1/' | sort -u > /tmp/dc-map-$$.txt
   grep -oE '^[[:space:]]+[A-Za-z][A-Za-z0-9]*: typeof' "$GDTS" 2>/dev/null \
     | sed -E 's/^[[:space:]]+([A-Za-z0-9]+):.*/\1/' | sort -u > /tmp/dc-decl-$$.txt
-  # 过滤 NON_PUBLIC_COMPS：内部宿主/依赖组件（如需在 componentsMap 中供依赖解析，但不对外公开、不登记全局声明）
-  F5_MISSING=$(comm -23 /tmp/dc-map-$$.txt /tmp/dc-decl-$$.txt 2>/dev/null | grep -vxE "${NON_PUBLIC_COMPS}" | tr '\n' ' ')
-  rm -f /tmp/dc-map-$$.txt /tmp/dc-decl-$$.txt
-  if [ -z "$F5_MISSING" ]; then
-    ok "F5 types/global-components.d.ts 覆盖 componentsMap 全量（$NAME 已登记）"
+  F5_KEYS=$(grep -c . /tmp/dc-map-$$.txt 2>/dev/null | tr -d ' ')
+  if [ "${F5_KEYS:-0}" = "0" ]; then
+    rm -f /tmp/dc-map-$$.txt /tmp/dc-decl-$$.txt
+    if [ "$DEPS_SRC_OK" = "0" ]; then
+      warn "F5 未找到样式依赖表源（既无 style-deps.ts 也无 resolver.ts）——本次【无法校验】登记完整性，禁止视为通过；请确认项目结构后人工核对 types/global-components.d.ts（见 linkage-map.md §⑮）"
+    else
+      warn "F5 未从表源解析到 componentsMap（表源=${DEPS_SRC_LABEL}）——本次【无法校验】登记完整性，禁止视为通过；请人工核对 types/global-components.d.ts 与 componentsMap 差集（见 linkage-map.md §⑮）"
+    fi
   else
-    fail "F5 types/global-components.d.ts 缺登记:${F5_MISSING}（漏登记不报错、type-check 仍 PASS，必须手工补，见 linkage-map.md §⑮）"
+    # 过滤 NON_PUBLIC_COMPS：内部宿主/依赖组件（如需在 componentsMap 中供依赖解析，但不对外公开、不登记全局声明）
+    F5_MISSING=$(comm -23 /tmp/dc-map-$$.txt /tmp/dc-decl-$$.txt 2>/dev/null | grep -vxE "${NON_PUBLIC_COMPS}" | tr '\n' ' ')
+    rm -f /tmp/dc-map-$$.txt /tmp/dc-decl-$$.txt
+    if [ -z "$F5_MISSING" ]; then
+      ok "F5 types/global-components.d.ts 覆盖 componentsMap 全量（${F5_KEYS} 个键，表源=${DEPS_SRC_LABEL}）"
+    else
+      fail "F5 types/global-components.d.ts 缺登记:${F5_MISSING}（漏登记不报错、type-check 仍 PASS，必须手工补，见 linkage-map.md §⑮）"
+    fi
   fi
 fi
 
@@ -632,13 +711,23 @@ else
   fail "F7 存在数字序号注释/标题（应为纯语义注释，如 '// 基本评论'；分区顺序由排列体现）：$F7_HIT"
 fi
 
-# F8 演示页无本项目组件 import（全局注册，直接写 <Xxx> 标签）
+# F8 演示页无本项目【组件值】import（全局注册，直接写 <Xxx> 标签）
+# ⚠️ 2026-09-22 修正：`useLoadingBar()` / `useMessage()` / `createDiscreteApi` 等**命令式 API / hook
+#    （非组件值）允许 import**——项目规范 `development/demo-doc-guide.md` 明确「演示应用在根组件做了
+#    全局包裹，这是演示页里能直接调用 useLoadingBar() 等的前提」。原判定只看包名 → 假 FAIL。
+#    判定：默认导入整库 → 违规；具名导入中**出现 PascalCase 标识符（组件值）** → 违规；纯 hook/工厂函数 → 允许。
 if [ -n "$VIEW_DIR" ] && [ -f "$DEMO" ]; then
-  F8_HIT=$(grep -nE "^import .*from 'vue-amazing-ui'" "$DEMO" 2>/dev/null | grep -v "import type" | head -3)
-  if [ -z "$F8_HIT" ]; then
-    ok "F8 演示页无本项目组件 import（组件已全局注册）"
+  F8_LINES=$(grep -nE "^import .*from 'vue-amazing-ui'" "$DEMO" 2>/dev/null | grep -v "import type")
+  F8_DEFAULT=""; F8_BAD=""
+  if [ -n "$F8_LINES" ]; then
+    F8_DEFAULT=$(printf '%s\n' "$F8_LINES" | grep -vE "\{" | head -3)
+    F8_BAD=$(printf '%s\n' "$F8_LINES" | grep -E "\{" | sed -E 's/.*\{//; s/\}.*//' | tr ',' '\n' \
+      | sed -E 's/^[[:space:]]+//; s/[[:space:]]+$//' | grep -E '^[A-Z][A-Za-z0-9]*$' | sort -u | tr '\n' ' ')
+  fi
+  if [ -z "$F8_DEFAULT" ] && [ -z "$F8_BAD" ]; then
+    ok "F8 演示页无本项目组件值 import（全局注册；命令式 API/hook 与 import type 允许）"
   else
-    fail "F8 演示页 import 了本项目组件（无需引入，直接写 <Xxx> 标签；仅 import type 允许）：$F8_HIT"
+    fail "F8 演示页 import 了本项目组件值（无需引入，直接写 <Xxx> 标签）：默认导入=${F8_DEFAULT:-无} 组件名=[${F8_BAD:-无}]"
   fi
 else
   skip "F8 演示页不存在，跳过组件 import 检查"
