@@ -4,7 +4,7 @@ layout: home
 hero:
   name: AI Coding Kit
   text: AI 辅助编程方法论门户
-  tagline: 以 dev-flow 为核心旗舰，整合 29 个 Skills、16 条 Rules、10 个 Agents，构建系统化的 AI 结对编程工作流。
+  tagline: 以 dev-flow 为核心旗舰，整合 29 个 Skills、17 条 Rules、10 个 Agents，构建系统化的 AI 结对编程工作流。
   image:
     src: /logo.svg
     alt: AI Coding Kit
@@ -31,7 +31,7 @@ features:
     link: /skills/
     linkText: 浏览全部 Skills
   - icon: 📏
-    title: 16 条 Rules 规范
+    title: 17 条 Rules 规范
     details: 核心红线（alwaysApply）+ 官方规范（CSS/SQL/TypeScript）+ 按需规范，约束 AI 代码生成行为，守住工程质量底线。
     link: /rules/
     linkText: 查看规范清单
@@ -65,6 +65,6 @@ bash install.sh   # 默认：dev-flow + 全部依赖 + 核心规则 + Agents
 | 命令 | 内容 |
 |------|------|
 | `bash install.sh` | 默认安装：dev-flow + 全部 14 依赖（共 **15 个 Skill**）+ **2 条核心规则** + 10 个 Agents |
-| `bash install.sh --all-repo` | 整仓全量：**全部 29 个 Skill** + 全部 **16 条规则** + 10 Agents |
+| `bash install.sh --all-repo` | 整仓全量：**全部 29 个 Skill** + 全部 **17 条规则** + 10 Agents |
 
 > 安装器为**复制**式独立副本，与本仓库完全隔离 —— 改动 `~/.codebuddy/` 下的内容不会影响本仓库，反之亦然。详见 [安装与配置](/guide/installation)。

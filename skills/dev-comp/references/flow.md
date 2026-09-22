@@ -40,6 +40,7 @@
    - 全新组件 → 从主干新建 `feat/{组件名}`
    - 已有雏形（如 Menu 在 layout 分支）→ 在既有特性分支续做，不新建
    - ⚠️ 先 `git branch --show-current` 确认当前分支，不盲目切换
+   - **⭐ 登记 `base_ref`（分批提交必需）**：`git merge-base origin/main HEAD`（主干名按实际调整）实测后写入工作上下文 frontmatter `base_ref` —— 组件常分批开发、每批单独提交，阶段 5 的 C5 品牌扫描要用基点回溯**已提交批次**（只查工作区会漏，详见 `refine-spec.md` §1.3）
 2. **建组件目录**（读 `references/project-map.md` §组件结构）：
    - 单组件：`components/{组件名}/` → `{Xxx}.vue` + `index.ts`
    - 多子组件：`components/{组件名}/{子}/` 各自 `.vue` + `index.ts`，外层 `index.ts` 聚合
@@ -142,7 +143,7 @@
 
 ## 阶段 5 · 验收收尾
 
-**目标**：质量验证 + 能力沉淀 + 提交。
+**目标**：质量验证 + 能力沉淀 + 清除对照与交付前精修 + 提交。
 
 1. **质量验证**（读 `references/checklists.md` §验收）：
    - `pnpm lint:check`（ESLint，须 EXIT 0）
@@ -161,15 +162,22 @@
 4. **提交**：`use_skill('smart-commit')` 生成 `feat: ...` message（无 scope）→ **等用户确认才提交**。提交前强制执行：
    a) **git 身份实测（红线）**：`git config user.name` + `git config user.email` 实测输出，与工作上下文 frontmatter `git_identity` 预期值逐字对比；不符 → 🔴 拦截提交，弹 `ask_followup_question` 呈现「实测值 vs 预期值」，用户决策后（修正 local config / 确认改用实测值 / 取消提交）方可继续（历史事故：comment 提交误用全局公司身份 `deardai@tencent.com`）
    b) **提交后 hash 实测回填**：`git log -1 --format='%h'` **实测** commit hash 回填工作上下文 frontmatter `commit` 字段，禁止凭记忆记录（历史事故：Dropdown 记录 `7c6ab6a5` 与真实 `e4d8c9a0` 不符）
-5. **清除演示页对照（红线）**：删除演示页全部 antdv/naive 真身组件、对应数据（如 `avalue*`/`aoptions*`）、`ant-design-vue` 相关 import 及 antdv 专属图标（本库用例仍使用的图标保留）；⚠️ **`components.d.ts` 中 antdv 组件声明不会自动消失**——清除对照后必须显式 `grep` 确认无幽灵声明并手动删除、**随本次 commit 一起提交**（`linkage-map.md` §⑭；幽灵声明已提交进 git，删除不随 commit 提交会「复活」）；同时检查 `src/App.vue` 是否有全局配置迁移残留的孤儿变量（`linkage-map.md` §⑬）；验收前确保 `git diff` 中演示页仅剩本库用例。⚠️ 清除后需再跑一次 `lint:check` + `type-check` + `pnpm dev` 确认演示页无孤儿引用
-6. **发布前配置项终检（核心红线）**：**先跑轻量校验脚本** `bash scripts/validate-component.sh {组件名} {PROJECT_ROOT} --context {工作上下文文件}` 一次性获取 A/B/C/E/F + S 全部勾销证据（脚本是确定性检查的权威执行体，见 `checklists.md` §发布前配置项终检 顶部声明；S1-S5 对应提交红线：git 身份 / 分支核对 / commit hash 回填真实性 / 沉淀三件套 / 归档双份），再读 `references/checklists.md` §发布前配置项终检 逐项核对。⚠️ 埋入阶段（1/4）的检查不能替代本终检——埋入后文件可能再被改动，发布前必须全量回检。脚本输出 `[PASS/FAIL/WARN/SKIP]` 逐项回显到 Gate 5 报告（A/B/C/E/F 回显「发布前配置项终检」区块，S 回显「提交前检查」区块）：FAIL 阻断收尾须修复后重跑；WARN/SKIP 须人工确认；❌ 项必带处置码，禁止摘要式报告。
+5. **清除对照 + 交付前精修（红线 · ⭐ 2026-09-22 扩展）**：本步一次性完成「清品牌 → 精修三处产物 → 三方对账」，**权威源 `references/refine-spec.md`**（判定标准 / 改写范式 / 对照矩阵），执行顺序不可颠倒（先清避免白改、后对保证三方一致）。
+   a) **清除演示页对照**：删除演示页全部 antdv/naive 真身组件、对应数据（如 `avalue*`/`aoptions*`）、`ant-design-vue` 相关 import 及 antdv 专属图标（本库用例仍使用的图标保留）；⚠️ **`components.d.ts` 中 antdv 组件声明不会自动消失**——清除对照后必须显式 `grep` 确认无幽灵声明并手动删除、**随本次 commit 一起提交**（`linkage-map.md` §⑭；幽灵声明已提交进 git，删除不随 commit 提交会「复活」）；同时检查 `src/App.vue` 是否有全局配置迁移残留的孤儿变量（`linkage-map.md` §⑬）；验收前确保 `git diff` 中演示页仅剩本库用例
+   b) **品牌信息全量清除**（`refine-spec.md` §1）：**两段口径**（⚠️ 兼容分批开发/分批提交）——①本分支**净改动**新增行（`git diff <base>`，基点 → **当前工作区**，一次覆盖「已提交的每一批 + 未提交改动」）②未跟踪新增文件全文；最小入侵、存量不追溯。覆盖组件源码 / **docs 全部内容（组件文档 + changelog/features/index）** / 演示页 / 单测 / 根级 README；清除 `antdv` `antd` `ant-design-vue` `Ant Design Vue` `naive` `naive-ui` `<a-xxx>` `avalue*`·`aoptions*` `antdTheme` 等品牌字样，以及**注释里的来源标注**。**处置**：品牌对比/差异说明类内容（docs「与 XX 的差异」段落、changelog「对齐 XX」说明）**整段直接删除、不保留**，其余去品牌化或删除（§1.4）。例外：`@ant-design/*` 基础包（图标/色板）。脚本 `C5` 实测 0 命中；⚠️ base 未解析时会 WARN（分批提交必须 `--base <ref>` 重跑或用工作上下文 `base_ref`）
+   c) **组件源码精修**：①注释（§2）——组件级 ≤3 行 / 字段级每字段中文语义注释 / 分支级写「为什么」；删复述代码、**过期注释**、品牌来源标注，>3 行的原理解释移入 devlog；②Props 排序（§3）——**六段式**（双向绑定 → 内容数据 → 形态外观 → 状态反馈 → 行为交互 → 进阶透传）+ 段内语义相邻（不强制字母序），增量属性**插入所属段**（❌ 禁追末尾），并**同步 docs `## APIs` 表顺序**（两者逐项同序，脚本 `G2` 校验——脚本保「一致」、人工保「合理」）
+   d) **演示用例精修**（§4）：官网用例**保序**、新增用例**插回官网原序位置**（❌ 不 append 末尾）、项目特有用例统一归末尾区块；布局——单例整块 / 2+ 同构示例并排 / **交互类单独全宽**，**同类型用例布局必须一致**；分区结构统一（`<h2 class="mt30 mb10">` → 可选 `<p class="mb10">` → 示例容器）
+   e) **docs ↔ views 对齐 + 三方对账**（§5）：按对照矩阵逐格核对——「源码 Props/Events/Slots/Methods ↔ docs 表 ↔ views 覆盖」与「views 用例集合/顺序/标题/描述/布局 ↔ docs」；用例**数量/顺序/标题**由脚本 `G4` 实测；差异一律**先改权威源、再同步派生副本**（`demo-description.md` §0），❌ 项带处置码
+   f) **精修后复验（必须，不可省）**：精修属实质改动 → 重跑 `pnpm lint:check` + `pnpm type-check` + `pnpm test` + `pnpm dev` 浏览器实测（对照已删，确认本库用例正常、无孤儿引用、控制台 0 error/warning），结果补进 Gate 5 报告「验证结果」（标注**精修后重跑**）；同时**回填 devlog**（第 3 步产物）记录精修要点，必要时更新工作上下文「对齐清单」
+   ⚠️ 精修记录（品牌清除 / 注释 / Props 排序 / 用例排序布局 / 三方一致性）写入工作上下文「交付前精修记录」区，Gate 5 回显。
+6. **发布前配置项终检（核心红线）**：**先跑轻量校验脚本** `bash scripts/validate-component.sh {组件名} {PROJECT_ROOT} --context {工作上下文文件}`（⚠️ 分批提交 / 长生命周期分支加 `--base <ref>` 或依赖工作上下文 `base_ref`，确保 C5 回溯已提交批次）一次性获取 A/B/C/E/F/G + S 全部勾销证据（脚本是确定性检查的权威执行体，见 `checklists.md` §发布前配置项终检 顶部声明；S1-S5 对应提交红线：git 身份 / 分支核对 / commit hash 回填真实性 / 沉淀三件套 / 归档双份），再读 `references/checklists.md` §发布前配置项终检 逐项核对。⚠️ 埋入阶段（1/4）的检查不能替代本终检——埋入后文件可能再被改动，发布前必须全量回检。脚本输出 `[PASS/FAIL/WARN/SKIP]` 逐项回显到 Gate 5 报告（A/B/C/E/F/G 回显「发布前配置项终检」区块，S 回显「提交前检查」区块）：FAIL 阻断收尾须修复后重跑；WARN/SKIP 须人工确认；❌ 项必带处置码，禁止摘要式报告。
 7. **引导发布（组件全部 P 完成且验收通过时）**：读 `references/release-flow.md`，向用户呈现「合入 main（GitHub PR）→ main 上构建发布 → 发布后清理」完整链路并引导执行；若用户本轮不发布，将「待发布：合入 main + 发布」写入工作上下文接续指引，**验收完成 ≠ 任务结束**（历史事故：AutoComplete 验收后停 8 个提交在 feat 分支，npm 与源码脱节）
 8. **收尾**：更新工作上下文 status + `release` 字段（本 P 完成 → 标注下一 P 接续指引；全部 P 完成但未发布 → `release: pending` + 接续指引标注「待发布」；本轮已完成发布 → `release: released: {版本号}` + 可归档）
 9. **产物归档（统一运行时目录 · 无需决策 · 2026-08-21 修订）**：产物一律留在 `~/.codebuddy/` 运行时目录（原位即归档，**不搬移、不产生副本**）；**禁止再弹归档决策**（2026-08-19/20 的 A/B 决策做法已废止）。收尾时只需在 Gate 5 报告的「能力沉淀三件套与产物位置」表中**列出四项产物路径**（working-context / metrics / devlog / knowledge），让用户知道文件在哪。⚠️ `ARTIFACTS_FALLBACK_DIR` 仅用于**读取历史归档**（阶段 0 两级扫描兜底），不再作为新产物的归档目标
 
 **产出**：验收通过 + devlog/metrics/knowledge + commit（待用户确认）。
 
-**🚦 Gate 5**：输出阶段 5 报告（发布前配置项终检表 + 基线全量勾销表 + lint / type-check / 浏览器实测结果 + 交互操作清单勾销结果 + commit message 预览）→ **「待用户确认」项须在报告中单独汇总，用户逐项决策后验收才算通过** → 弹 `ask_followup_question`（📦 确认提交 / 🔧 继续修复 / ⏸️ 暂停）→ 用户确认后由 smart-commit 执行提交。**未经用户明确选择「确认提交」不得 `git commit`**。
+**🚦 Gate 5**：输出阶段 5 报告（发布前配置项终检表 + 基线全量勾销表 + **交付前精修记录表** + lint / type-check / 浏览器实测结果 + 交互操作清单勾销结果 + commit message 预览）→ **「待用户确认」项须在报告中单独汇总，用户逐项决策后验收才算通过** → 弹 `ask_followup_question`（📦 确认提交 / 🔧 继续修复 / ⏸️ 暂停）→ 用户确认后由 smart-commit 执行提交。**未经用户明确选择「确认提交」不得 `git commit`**。
 
 ---
 
@@ -235,20 +243,39 @@
 | C | App.vue 孤儿变量（仅涉及时） | | 不涉及 N/A 或 grep |
 | C | 演示页对照清除 | | git diff 仅本库用例 |
 | C | 调试代码清理 | | |
+| C | ⭐ 品牌信息 0 残留（本分支净改动新增行[基点→当前工作区] + 新增文件全文；含 docs 全部内容） | | 脚本 C5 |
 | E | 组件总数 4 处数字一致 | | grep 数字一致 |
 | E | 演示页 ↔ docs 描述同源 | | grep 双向一致 |
 | F | ⭐ 组件规范（defineSlots + 组件名Slots / 根类名 组件名-wrap / 注释无 slot 写法 / useSlotsExist 无冗余） | | 脚本 F1-F4 |
 | F | ⭐ types/global-components.d.ts 全局声明登记（差集为空） | | 脚本 F5 |
 | F | ⭐ changelog 三查（章节唯一 / 链接站内相对路径 / future 无残留） | | 脚本 F6 |
 | F | 演示页序号注释与组件库 import | | 脚本 F7-F8 |
+| G | G1 组件源码注释精修（三层结构 / 无复述与过期注释 / 无品牌来源标注） | | 人工（refine-spec §2） |
+| G | G2 Props 排序（六段式分组 + 段内语义相邻 + 与 docs 表逐项同序） | | 脚本 G2 |
+| G | G3 演示用例排序与布局（官网保序 / 新增插回原序 / 同类型布局一致） | | 人工（refine-spec §4） |
+| G | G4 docs ↔ views 用例对齐（数量 / 顺序 / 标题逐字） | | 脚本 G4 |
+| G | G5 三方一致性对照矩阵逐格勾销（源码 ↔ docs ↔ views） | | 人工（refine-spec §5.1） |
+| G | G6 精修记录已入工作上下文 + 精修后已复验 | | 人工 |
 
 （❌ 项必带处置码，同基线勾销规则；禁止摘要式报告）
 
 ### 验证结果
-- [ ] vue-tsc 通过
-- [ ] ESLint 通过
-- [ ] 浏览器实测截图
+- [ ] vue-tsc 通过（⚠️ 第 5 步精修后已重跑）
+- [ ] ESLint 通过（⚠️ 第 5 步精修后已重跑）
+- [ ] pnpm test 通过（精修后已重跑）
+- [ ] 浏览器实测截图（⚠️ 第 5 步清除对照 + 精修后重跑，确认无孤儿引用、控制台 0 error/warning）
 - [ ] 交互操作清单逐项勾销（含 e2e 软复用结果，可选）
+
+### 交付前精修记录（Gate 5 适用，第 5 步产物 · 权威源 refine-spec.md §6.2，逐项勾销）
+| 项 | 状态 | 证据/说明 |
+|----|:--:|------|
+| 品牌信息清除（本次改动口径，命中数=0） | | 脚本 C5 |
+| 组件源码注释精修（删复述 / 修过期 / 补边界） | | |
+| Props 排序（是否重排 + docs 表已同步同序） | | 脚本 G2 |
+| 演示用例排序与布局（调整了哪些用例/哪类布局） | | |
+| 三方一致性差异项与处置（改哪边、为什么） | | |
+
+（❌ 项必带处置码；与工作上下文「交付前精修记录」区同源）
 
 ### 能力沉淀三件套与产物位置（Gate 5 适用，逐项勾销）
 | 产物 | 状态 | 位置/降级说明 |

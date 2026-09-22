@@ -31,7 +31,7 @@ bash install.sh   # 默认：dev-flow + 全部 14 依赖 + 规则 + Agents
 | 命令 | 内容 |
 |------|------|
 | `bash install.sh` | 默认安装：dev-flow + 全部 14 依赖（共 **15 个 Skill**）+ **2 条核心规则** + 10 个 Agents |
-| `bash install.sh --all-repo` | 整仓全量：仓库根 `skills/` 下**全部 29 个 Skill** + 全部 **16 条规则** + 10 Agents |
+| `bash install.sh --all-repo` | 整仓全量：仓库根 `skills/` 下**全部 29 个 Skill** + 全部 **17 条规则** + 10 Agents |
 
 > **远程安装**（无需预先 clone）：`bash <(curl -sSL <your-repo-url>/raw/main/skills/dev-flow/dist/remote-install.sh)`。
 >

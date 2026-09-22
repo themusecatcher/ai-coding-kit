@@ -17,6 +17,9 @@ import { useSlotsExist } from 'components/utils'
 /* eslint-disable @typescript-eslint/no-empty-object-type */
 export interface Props {
   // 在此定义 props（字段名/类型/默认值/必填逐项对齐参考库；每个字段必须带中文注释）
+  // ⚠️ 排序按六段式分组：双向绑定 → 内容数据 → 形态外观 → 状态反馈 → 行为交互 → 进阶透传；
+  //    段内语义相邻（不强制字母序），增量属性插入所属段、❌ 不要追到末尾；
+  //    排序须与 docs `## APIs` 表行序逐项一致（权威源 references/refine-spec.md §3，脚本 G2 校验）
 }
 // 声明组件插槽类型（命名固定 <组件名>Slots；仅在 SFC 内 export，不经入口 / components.ts 对外导出）
 export interface XxxSlots {

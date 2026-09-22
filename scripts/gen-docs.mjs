@@ -37,7 +37,9 @@ const OUT = {
 // ------------------------------------------------------------------
 
 /**
- * 解析 YAML frontmatter（仅支持本仓库用到的简单标量 / 内联数组，无需引第三方库）
+ * 解析 YAML frontmatter（仅支持本仓库用到的简单标量 / 内联数组 / 块标量，无需引第三方库）
+ * 注：块标量（`|` / `>`）按「单行标量」语义折叠为空格连接的一行——本仓库 frontmatter 仅用于
+ *     title / description 等短文本，折叠后才能安全写入单行 YAML，避免生成物 frontmatter 破损。
  * @param {string} raw
  * @returns {{ data: Record<string, string | boolean | string[]>, body: string, hasFrontmatter: boolean }}
  */
@@ -48,11 +50,26 @@ function parseFrontmatter(raw) {
   /** @type {Record<string, string | boolean | string[]>} */
   const data = {}
   const lines = m[1].split(/\r?\n/)
-  for (const line of lines) {
-    const kv = line.match(/^([A-Za-z_][\w-]*):\s*(.*)$/)
+  for (let i = 0; i < lines.length; i++) {
+    const kv = lines[i].match(/^([A-Za-z_][\w-]*):\s*(.*)$/)
     if (!kv) continue
     const key = kv[1]
-    let val = kv[2].trim()
+    const val = kv[2].trim()
+
+    // 块标量（`|` / `>`，可带 chomp 与缩进指示符）：吞掉后续缩进行并折叠为单行
+    if (/^[|>][-+]?\d*$/.test(val)) {
+      const block = []
+      let j = i + 1
+      for (; j < lines.length; j++) {
+        if (lines[j].trim() === '') continue // 块内空行：折叠后无意义，跳过
+        if (!/^\s/.test(lines[j])) break // 回到顶层键，块结束
+        block.push(lines[j].trim())
+      }
+      i = j - 1
+      data[key] = block.join(' ').trim()
+      continue
+    }
+
     if (val === '') {
       data[key] = ''
     } else if (val === 'true' || val === 'false') {

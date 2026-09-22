@@ -13,6 +13,12 @@
 //      - 权威源 = 演示页（本文件）；docs 是派生副本，任何改动先改这里再同步 docs
 //      - 仅信息增量时添加；代码标记原生 <code>（引用组件前 search_file 确认存在）
 //      - ⚠️ 演示页 <p> 自带间距，描述与组件之间【无需 <br/>】（<br/> 是 docs 才需要）
+//   5. ⚠️ 品牌信息红线 + 交付前精修（阶段 5 第 5 步，权威源 references/refine-spec.md）：
+//      本骨架注释里的 antdv/naive 仅用于指导对照，【落地后必须清干净】——
+//      对照分区、真身组件/数据（avalue*/aoptions*）、ant-design-vue import、antdv 专属图标，
+//      以及全部品牌字样（含注释与文案；「对齐 antd 口径」类来源标注改中性表述）都要删；
+//      最终交付文件不得出现 antdv / antd / ant-design-vue / naive 等字样
+//      （例外：@ant-design/icons-vue 图标依赖）；脚本 C5 拦截，收尾还需做用例排序/布局精修
 import { ref } from 'vue'
 // ⚠️ 本项目组件【无需 import】：由 main.ts 的 app.use(VueAmazingUI) 全局注册，模板直接写 <Xxx> 标签。
 //    ❌ 禁止 `import { Xxx } from 'vue-amazing-ui'`（checklists F8 / 脚本 F8 会拦截）；

@@ -8,7 +8,8 @@
 **状态**：自建（借设计不借模板）。
 
 - dev-flow 模板 400+ 行，绑 TAPD/iWiki/跨项目/门控字段，对开源组件库基本不适用
-- dev-comp 自建精简版，只留：组件名/phase/参考源/进度/接续指引/决策记录/可复用资产索引/对齐清单（API 四维 + Demo 用例）/naive 差异登记/项目特有需求/release 发布状态
+- dev-comp 自建精简版，只留：组件名/phase/参考源/进度/接续指引/决策记录/可复用资产索引/对齐清单（API 四维 + Demo 用例）/naive 差异登记/项目特有需求/**交付前精修记录**/release 发布状态
+- **交付前精修记录**（阶段 5 第 5 步写入，2026-09-22 新增）：品牌清除命中数 / 注释精修改动点 / Props 排序是否重排 + docs 表是否同步 / 用例排序与布局调整 / 三方一致性差异与处置——规范见 `refine-spec.md` §6.2，Gate 5 回显
 - 命名沿用 `vaui-{组件名}-{YYYYMMDD}.md`，存储改用 dev-comp 专属目录 `~/.codebuddy/dev-comp/working-context/`（与 dev-flow 产物物理隔离，不被 dev-flow lint/dashboard 扫描误伤）
 - **接续两级扫描**：运行时目录优先 → `ARTIFACTS_FALLBACK_DIR` 兜底（命中归档副本时复制回运行时目录恢复活跃状态，详见 `flow.md` 阶段 0）
 - 写前 `mkdir -p ~/.codebuddy/dev-comp/working-context/`（首次使用目录不存在，禁止假设已存在）

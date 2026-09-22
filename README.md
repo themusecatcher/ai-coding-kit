@@ -70,9 +70,9 @@ AI 技能集合，每个 Skill 是一个独立目录，包含 `SKILL.md` 主文�
 
 编码规范和项目规则文件（`.mdc` 格式），用于约束 AI 的代码生成行为。
 
-仓库共 **16 条规则**，分两类：
+仓库共 **17 条规则**，分两类：
 - **核心规则**（2 条）：`AI行为规范.mdc`、`开发规范-红线.mdc` —— 随默认安装自动部署
-- **按需规则**（14 条）：如 CSS 规范、TypeScript 规范、浏览器兼容性规范等 —— 位于仓库 `rules/` 目录，按需手动引用或通过 `--all-repo` 安装
+- **按需规则**（15 条）：如 CSS 规范、TypeScript 规范、浏览器兼容性规范等 —— 位于仓库 `rules/` 目录，按需手动引用或通过 `--all-repo` 安装
 
 ## 📦 使用方式
 
@@ -99,7 +99,7 @@ bash install.sh   # 默认：dev-flow + 全部 14 依赖（共 15 个 skill）+ 
 | 命令 | 内容 |
 |------|------|
 | `bash install.sh` | 默认安装：dev-flow + 全部 14 依赖（共 **15 个 Skill**）+ **2 条核心规则** + 10 个 Agents |
-| `bash install.sh --all-repo` | 整仓全量：仓库根 `skills/` 下**全部 29 个 Skill**（含 issue-trace 等独立 skill）+ 全部 **16 条规则** + 10 Agents |
+| `bash install.sh --all-repo` | 整仓全量：仓库根 `skills/` 下**全部 29 个 Skill**（含 issue-trace 等独立 skill）+ 全部 **17 条规则** + 10 Agents |
 
 > **远程安装**（无需预先 clone）：`bash <(curl -sSL <your-repo-url>/raw/main/skills/dev-flow/dist/remote-install.sh)`，详见 [skills/dev-flow/dist/README.md](skills/dev-flow/dist/README.md)。
 

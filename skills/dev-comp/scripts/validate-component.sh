@@ -4,18 +4,28 @@
 #
 # 定位：dev-comp 唯一的程序化校验入口（轻量定位：不做 .validated
 # 物理锁、不接状态机、不做 gate 链、不做 hooks 自动触发）。
-# 把 references/checklists.md §发布前配置项终检（A/B/C/E/F 类）+
+# 把 references/checklists.md §发布前配置项终检（A/B/C/E/F/G 类）+
 # 提交红线（S 类：S1 git 身份 / S2 分支核对 / S3 commit hash 回填真实性 /
 # S4 能力沉淀三件套 / S5 归档双份）中的确定性 grep 检查收拢为单一可执行体，
 # 作为 Gate 5 报告「发布前配置项终检」区块的数据来源。
 #
 # 规则权威源（双向引用，规则变更必须同步改本脚本）：
-#   ← references/checklists.md §发布前配置项终检（ID 一一对应：A/B/C/E/F + S）
+#   ← references/checklists.md §发布前配置项终检（ID 一一对应：A/B/C/E/F/G + S）
 #   ← references/linkage-map.md §④⑩⑪⑫⑬⑭⑮
 #   ← references/changelog-spec.md §3.2 §3.4 §4（F6）
 #   ← references/project-map.md §目录命名约定 / §项目规范权威源索引
-#   ← references/flow.md 阶段 5 第 1/4/6 步
+#   ← references/refine-spec.md §1 §3.3 §5（C5 品牌残留 / G2 Props 顺序 / G4 用例对齐）
+#   ← references/flow.md 阶段 5 第 1/4/5/6 步
 #   ← SKILL.md §能力复用索引
+#
+# 2026-09-22（多次实践复盘 · 交付前精修）变更：
+#   ① 新增 C5：品牌信息残留扫描（两段口径 = 本分支净改动新增行[基点→当前工作区] +
+#      未跟踪新增文件全文，覆盖「分批开发 + 分批提交」场景；存量不追溯；
+#      例外 @ant-design/icons-vue 等既有 @ant-design/* 基础包）。
+#   ② 新增 G 节（G1-G6）：交付前精修与三方一致性。确定性下沉 G2（源码 Props 顺序
+#      ↔ docs API 表顺序）、G4（views ↔ docs 用例数量/顺序/标题）；G1/G3/G5/G6
+#      为语义判断 → SKIP 提示人工按 refine-spec.md 勾销。
+#   ③ 新增 --base <ref> 参数（C5 分支基点，支持工作上下文 base_ref 字段）。
 #
 # 2026-09-15（Comment 事故复盘）变更：
 #   ① 修正 B5：原「API 章节四件套齐全」判定过严——项目多数组件无事件/无暴露方法，
@@ -25,29 +35,50 @@
 #      登记差集校验——漏登记不报错、type-check 仍 PASS，属静默失效，必须脚本兜底）。
 #
 # 用法：
-#   validate-component.sh <组件名> [项目根] [--context <工作上下文.md>]
+#   validate-component.sh <组件名> [项目根] [--context <工作上下文.md>] [--base <git ref>]
 #   环境变量：VAUI_PROJECT_ROOT 替代参数 2；VAUI_ARTIFACTS_DIR 替代归档兜底目录
+#   --base：C5 分支基点（分批提交时用于回溯已提交改动）；缺省按
+#           工作上下文 base_ref → merge-base(origin/main|origin/master|main|master, HEAD) 自动解析
 #
 # 输出：每项 [PASS]/[FAIL]/[WARN]/[SKIP] + 证据行 + 汇总
 # 退出码：0=无 FAIL（WARN/SKIP 不阻断）；1=存在 FAIL；2=参数错误
+#
+# ⚠️ 维护红线（2026-09-22 自查事故）：shell 变量后紧跟**非 ASCII 字符**（如中文括号）
+#    必须写成 `${VAR_名}`——bash 在 UTF-8 locale 下会把中文标点并入变量名，配合 set -u
+#    直接以「unbound variable」中断脚本（事故现场：G2 的 MISS 提示导致 G3-G6/S 段被整段跳过）。
+#    自检：rg '\$[A-Za-z_][A-Za-z0-9_]*[^\x00-\x7F]' scripts/validate-component.sh 应为 0 命中
 #
 # 兼容：macOS bash 3.2（不依赖关联数组 / mapfile）
 # ============================================================
 
 set -u
 
+# ⚠️ 必须用 bash 运行：脚本依赖 bash 的单词分割（`for f in $VAR`）与 $BASH_VERSION 等语义；
+#    误在 zsh 下执行（zsh 默认不做单词分割）会导致扫描集合为单元素、**检查静默失效**。
+if [ -z "${BASH_VERSION:-}" ]; then
+  echo "[FATAL] 请用 bash 运行本脚本：bash validate-component.sh <组件名> <项目根> …（当前 shell 非 bash 会静默失效）" >&2
+  exit 2
+fi
+
+# 临时文件统一清理（异常退出 / Ctrl-C 也不留残留；文件名均以 $$ 作用域隔离）
+trap 'rm -f /tmp/dc-ghost-$$.txt /tmp/dc-map-$$.txt /tmp/dc-decl-$$.txt \
+  /tmp/dc-brand-$$.txt /tmp/dc-brand-seen-$$.txt \
+  /tmp/dc-vt-$$.txt /tmp/dc-dt-$$.txt /tmp/dc-dtu-$$.txt' EXIT
+
 NAME="${1:-}"
 ROOT="${2:-${VAUI_PROJECT_ROOT:-$HOME/myGithub/vue-amazing-ui}}"
 CTX=""
+BASE=""
 while [ $# -gt 0 ]; do
   case "$1" in
     --context) CTX="$2"; shift 2 ;;
+    --base) BASE="$2"; shift 2 ;;
     *) shift ;;
   esac
 done
 
 if [ -z "$NAME" ]; then
-  echo "用法: validate-component.sh <组件名> [项目根] [--context <工作上下文.md>]" >&2
+  echo "用法: validate-component.sh <组件名> [项目根] [--context <工作上下文.md>] [--base <git ref>]" >&2
   exit 2
 fi
 
@@ -100,24 +131,43 @@ section() { echo; echo "== $1 =="; }
 echo "[dev-comp validate] 组件: $NAME | 项目: $ROOT"
 [ -d "$ROOT" ] || { echo "[FATAL] 项目根不存在: ${ROOT}（参数 2 或 VAUI_PROJECT_ROOT 指定）" >&2; exit 2; }
 
+# 脚本自检：变量后紧跟非 ASCII 字符（bash 会把中文标点并入变量名，set -u 下中断整个脚本）
+SELF_BUG=$(grep -nE '\$[A-Za-z_][A-Za-z0-9_]*[^ -~]' "$0" 2>/dev/null | head -3)
+[ -n "$SELF_BUG" ] && echo "  [WARN] 脚本自身存在「变量后紧跟非 ASCII 字符」隐患（会中断执行）：$SELF_BUG" >&2
+
 # ============================================================
 # A · 代码注册链路（对应 checklists.md A1-A5）
 # ============================================================
 section "A 代码注册链路"
 
 # A1 withInstall + 类型导出
+# ⚠️ 复合组件（2026-09-22 自查修正）：聚合层 index.ts 只做 `import/export 子组件`，
+#    withInstall 位于**子组件层** index.ts（如 dropdown/dropdown/index.ts）——原判定会假 FAIL。
 A1_F="$ROOT/components/$COMP_DIR/index.ts"
+A1_SUB=""
+if [ -n "$COMP_DIR" ]; then
+  A1_SUB=$(grep -rl "withInstall" "$ROOT/components/$COMP_DIR" --include='index.ts' 2>/dev/null \
+    | grep -v "^${A1_F}$" | sed "s|^${ROOT}/||" | tr '\n' ' ')
+fi
 if [ -n "$COMP_DIR" ] && [ -f "$A1_F" ] && grep -q "withInstall" "$A1_F"; then
-  ok "A1 components/$COMP_DIR/index.ts 存在且含 withInstall"
+  ok "A1 components/$COMP_DIR/index.ts 存在且含 withInstall（单组件）"
+elif [ -n "$A1_SUB" ]; then
+  ok "A1 复合组件：聚合 index.ts 委托子组件，withInstall 位于子组件层（${A1_SUB}）"
 else
   fail "A1 components/ 下未解析到 $NAME 目录或 index.ts 未用 withInstall（目录解析：${COMP_DIR:-未找到}；检查 ${A1_F}）"
 fi
 
 # A2 components.ts 两条导出（-i：组件名输入可能小写/驼峰，文件内为 PascalCase）
-if grep -qi "default as $NAME" "$ROOT/components/components.ts"; then
-  ok "A2 components.ts 组件导出命中（export { default as $NAME }）"
+# ⚠️ 复合组件（2026-09-22 自查修正）：导出形态为 `export { Dropdown, DropdownButton }`，
+#    不含 `default as`——故同时接受「default as」与「花括号具名导出含该名」两种写法；
+#    用 `[ {]` / `[,}[:space:]]` 做词边界，避免 DropdownProps / DropdownKey 误命中。
+A2_OK=0
+grep -qiE "default as $NAME([^A-Za-z0-9_]|$)" "$ROOT/components/components.ts" 2>/dev/null && A2_OK=1
+grep -qiE "^[[:space:]]*export[[:space:]]+[{][^}]*[ {]$NAME([,}[:space:]]|$)" "$ROOT/components/components.ts" 2>/dev/null && A2_OK=1
+if [ "$A2_OK" = "1" ]; then
+  ok "A2 components.ts 组件导出命中（default as ${NAME} 或具名导出含 ${NAME}）"
 else
-  fail "A2 components.ts 缺组件导出：grep 'default as $NAME' components/components.ts"
+  fail "A2 components.ts 缺组件导出：grep -E 'default as $NAME|export \\{[^}]*$NAME' components/components.ts"
 fi
 if grep -qi "${NAME}Props" "$ROOT/components/components.ts"; then
   ok "A2 components.ts 类型导出命中（export type { ${NAME}Props }）"
@@ -349,6 +399,102 @@ else
   skip "C4 组件目录未解析到，跳过调试代码检查"
 fi
 
+# ------------------------------------------------------------
+# C5 品牌信息残留（2026-09-22 新增 · 权威源 refine-spec.md §1）
+# 两段口径（覆盖「分批开发 + 分批提交」——只在收尾看工作区会漏掉已提交批次）：
+#   ① 本分支净改动新增行：git diff <base> -U0 的 + 行（base = 分支基点，
+#      与【当前工作区】比对 → 一次覆盖「已提交批次 + 未提交改动」；
+#      ⚠️ 不用 base...HEAD 再单独扫工作区：那样会把「提交后又在工作区删掉」的行误判为残留）
+#   ② 未跟踪新增文件：全文
+#   范围：components/ src/ docs/（组件文档 + 周边文档 changelog/features/index）types/ tests/
+#         + 根级 README/CHANGELOG
+#   豁免：基础设施（package.json / lock / components.d.ts / vite.config.ts / tsconfig / eslintrc）
+#         + 生成物（node_modules / dist / lib / es / coverage / .temp）
+#   例外：@ant-design/icons-vue 等既有 @ant-design/* 基础包（用户 2026-09-22 确认豁免）
+#   base 解析：--base 参数 > 工作上下文 base_ref > merge-base(origin/main|master|main|master, HEAD)
+#              （解析失败 → 退化为「工作区 vs HEAD」并 WARN：分批提交场景会漏）
+# ------------------------------------------------------------
+if [ -z "$BASE" ] && [ -n "$CTX" ] && [ -f "$CTX" ]; then
+  BASE=$(sed -n 's/^base_ref: *"\{0,1\}\([^"]*\)"\{0,1\}$/\1/p' "$CTX" | head -1 | sed 's/[[:space:]]*$//')
+fi
+if [ -z "$BASE" ]; then
+  for cand in origin/main origin/master main master; do
+    if git -C "$ROOT" rev-parse --verify --quiet "$cand" >/dev/null 2>&1; then
+      BASE=$(git -C "$ROOT" merge-base "$cand" HEAD 2>/dev/null)
+      [ -n "$BASE" ] && break
+    fi
+  done
+fi
+
+# ⚠️ `antd` 必须单列：实测「// 对齐 antd 口径」这类只写 antd（不带 v）的注释是存量高频形态，
+#    仅写 antdv 会漏检（`ant-[a-z]+` 也匹配不到 antd——它没有连字符）
+BRAND_PAT='antd|antdv|ant-design-vue|ant design|ant-[a-z]+|naive|</?a-[a-z][a-z-]*[[:space:]>]'
+BRAND_EXCL='(^|/)(package\.json|pnpm-lock\.yaml|components\.d\.ts|vite\.config\.ts|tsconfig[^/]*\.json)$|\.eslintrc|pnpm-workspace\.yaml$|(^|/)(node_modules|dist|lib|coverage|\.temp)/|^es/'
+BRAND_SCOPE='^(components|src|docs|types|tests)/|^README|^CHANGELOG'
+BRAND_ALLOW='@ant-design/(icons-vue|colors)'
+BRAND_HITS=/tmp/dc-brand-$$.txt
+BRAND_SEEN=/tmp/dc-brand-seen-$$.txt
+: > "$BRAND_HITS"; : > "$BRAND_SEEN"
+
+brand_scan_full() {   # ② 新增文件：全文扫描
+  local rel="$1" abs="$ROOT/$1"
+  [ -f "$abs" ] || return 0
+  echo "$rel" | grep -qE "$BRAND_EXCL" && return 0
+  echo "$rel" >> "$BRAND_SEEN"
+  grep -nE "$BRAND_PAT" "$abs" 2>/dev/null | grep -viE "$BRAND_ALLOW" \
+    | sed "s|^|${rel}|" >> "$BRAND_HITS"
+}
+
+brand_scan_diff() {   # ① 已跟踪文件：按 diff 范围取新增行（$2=基点 ref / HEAD，$3=标签）
+  local rel="$1" rng="$2" label="$3"
+  [ -n "$rng" ] || return 0
+  echo "$rel" | grep -qE "$BRAND_EXCL" && return 0
+  echo "$rel" >> "$BRAND_SEEN"
+  git -C "$ROOT" diff "$rng" -U0 -- "$rel" 2>/dev/null \
+    | grep -E '^\+' | grep -vE '^\+\+\+' | sed 's/^+//' \
+    | grep -viE "$BRAND_ALLOW" | grep -iE "$BRAND_PAT" \
+    | sed "s|^|${rel}（${label}）:|" >> "$BRAND_HITS"
+}
+
+# ① 本分支净改动（基点 → 当前工作区）；base 缺失时退化为「工作区 vs HEAD」
+if [ -n "$BASE" ]; then
+  git -C "$ROOT" diff --name-only "$BASE" 2>/dev/null | grep -E "$BRAND_SCOPE" \
+    | while read -r rel; do brand_scan_diff "$rel" "$BASE" "本分支新增行"; done
+else
+  git -C "$ROOT" diff --name-only HEAD 2>/dev/null | grep -E "$BRAND_SCOPE" \
+    | while read -r rel; do brand_scan_diff "$rel" HEAD "工作区新增行"; done
+fi
+# ② 未跟踪新增文件
+git -C "$ROOT" ls-files --others --exclude-standard 2>/dev/null | grep -E "$BRAND_SCOPE" \
+  | while read -r rel; do brand_scan_full "$rel"; done
+
+C5_TOTAL=$(sort -u "$BRAND_HITS" 2>/dev/null | grep -c .)
+C5_HITS=$(sort -u "$BRAND_HITS" 2>/dev/null | head -8 | tr '\n' ' ')
+C5_FILES=$(sort -u "$BRAND_SEEN" 2>/dev/null | grep -c .)
+rm -f "$BRAND_HITS" "$BRAND_SEEN"
+if [ "${C5_FILES:-0}" = "0" ]; then
+  skip "C5 未扫描到改动文件（本分支净改动为空 + 无未跟踪文件）——请确认 base 解析与 git 状态（口径见 refine-spec.md §1.3）"
+elif [ -n "$C5_HITS" ]; then
+  fail "C5 品牌信息残留共 ${C5_TOTAL} 处（品牌对比/差异说明类内容须【直接删除】；其余去品牌化或删除；例外仅 @ant-design/* 基础包；详见 refine-spec.md §1）：$C5_HITS"
+elif [ -z "$BASE" ]; then
+  warn "C5 品牌信息 0 残留（扫描 ${C5_FILES} 个文件）⚠️ 但未解析到分支基点 base：本次仅比对「工作区 vs HEAD」，本分支【已提交】批次未纳入（分批提交会漏）——请显式 --base <ref> 或在工作上下文登记 base_ref"
+else
+  # 附查「已提交批次」（base...HEAD）：若仍残留但工作区已清除 → 必须随本次 commit 提交，否则复活
+  C5_HEAD_HITS=$(git -C "$ROOT" diff --name-only "$BASE"...HEAD 2>/dev/null | grep -E "$BRAND_SCOPE" \
+    | while read -r rel; do
+        echo "$rel" | grep -qE "$BRAND_EXCL" && continue
+        git -C "$ROOT" diff "$BASE"...HEAD -U0 -- "$rel" 2>/dev/null \
+          | grep -E '^\+' | grep -vE '^\+\+\+' | sed 's/^+//' \
+          | grep -viE "$BRAND_ALLOW" | grep -iE "$BRAND_PAT"
+      done | grep -c .)
+  if [ "${C5_HEAD_HITS:-0}" != "0" ]; then
+    ok "C5 品牌信息 0 残留（净改动口径，扫描 ${C5_FILES} 个文件：base=${BASE} → 当前工作区 + 新增文件全文）"
+    warn "C5 附注：本分支【已提交】批次中仍有 ${C5_HEAD_HITS} 处品牌残留，工作区已清除但**尚未提交**——请确保这些删除随本次 commit 一起提交（与 components.d.ts 幽灵声明同理，不提交会「复活」）"
+  else
+    ok "C5 品牌信息 0 残留（扫描 ${C5_FILES} 个文件：本分支净改动新增行[base=${BASE}] + 新增文件全文）"
+  fi
+fi
+
 # ============================================================
 # E · 一致性（E1 已并入 B4；E2 半确定性提示人工）
 # ============================================================
@@ -366,20 +512,28 @@ section "F 组件本体与跨文件规范"
 
 COMP_VUES=""
 if [ -n "$COMP_DIR" ]; then
-  COMP_VUES=$(ls "$ROOT/components/$COMP_DIR/"*.vue 2>/dev/null)
+  # 含一层子目录：复合组件（如 dropdown/dropdown/Dropdown.vue + dropdown/dropdown-button/DropdownButton.vue）
+  COMP_VUES=$(find "$ROOT/components/$COMP_DIR" -maxdepth 2 -name '*.vue' 2>/dev/null | sort)
 fi
 
 # F1 defineSlots + `export interface {组件名}Slots`（component-design.md §插槽类型）
+# 复合组件：逐个 .vue 校验（每个子组件各自声明 *Slots 类型）
 if [ -z "$COMP_VUES" ]; then
   skip "F1 组件 .vue 未解析到，跳过 defineSlots 检查"
-elif grep -qE "defineSlots" $COMP_VUES 2>/dev/null; then
-  if grep -qE "export interface ${NAME}Slots" $COMP_VUES 2>/dev/null; then
-    ok "F1 defineSlots + export interface ${NAME}Slots 命中"
-  else
-    warn "F1 有 defineSlots 但未见 'export interface ${NAME}Slots'（插槽类型命名规范见 component-design.md §插槽类型）"
-  fi
 else
-  fail "F1 组件未声明插槽类型：应 'export interface ${NAME}Slots' + 'defineSlots<${NAME}Slots>()'"
+  F1_NO_SLOTDECL=""; F1_NO_IFACE=""; F1_CNT=0
+  for f1f in $COMP_VUES; do
+    F1_CNT=$((F1_CNT+1))
+    grep -qE "defineSlots" "$f1f" 2>/dev/null || F1_NO_SLOTDECL="$F1_NO_SLOTDECL $(basename "$f1f")"
+    grep -qE "export interface [A-Za-z]+Slots" "$f1f" 2>/dev/null || F1_NO_IFACE="$F1_NO_IFACE $(basename "$f1f")"
+  done
+  if [ -n "$F1_NO_SLOTDECL" ]; then
+    fail "F1 组件未声明插槽类型（应 'export interface {组件名}Slots' + 'defineSlots<{组件名}Slots>()'）：$F1_NO_SLOTDECL"
+  elif [ -n "$F1_NO_IFACE" ]; then
+    warn "F1 有 defineSlots 但未见 'export interface {组件名}Slots'：${F1_NO_IFACE}（命名规范见 component-design.md §插槽类型）"
+  else
+    ok "F1 defineSlots + export interface *Slots 命中（${F1_CNT} 个组件文件）"
+  fi
 fi
 
 # F2 根类名 = {组件名}-wrap；禁止 m-/vui- 自拟前缀
@@ -489,6 +643,154 @@ if [ -n "$VIEW_DIR" ] && [ -f "$DEMO" ]; then
 else
   skip "F8 演示页不存在，跳过组件 import 检查"
 fi
+
+# ============================================================
+# G · 交付前精修与三方一致性（对应 checklists.md G1-G6，2026-09-22 新增）
+# 权威源：references/refine-spec.md
+#   §2 注释精修 / §3 Props 排序 / §4 演示用例排序与布局 / §5 三方一致性对照
+# 确定性下沉：G2（源码 Props 顺序 ↔ docs API 表顺序，支持复合组件按子组件比对）、
+#             G4（views ↔ docs 用例数量/顺序/标题）
+# 语义判断（SKIP 提示人工勾销）：G1 注释精修 / G3 用例排序与布局 / G5 三方矩阵 / G6 记录与复验
+# ============================================================
+section "G 交付前精修与三方一致性"
+
+# ---- 用例标题提取（G4 用；演示页 <h2> ↔ docs 二级标题）----
+VT=/tmp/dc-vt-$$.txt; DT=/tmp/dc-dt-$$.txt; DTU=/tmp/dc-dtu-$$.txt
+: > "$VT"; : > "$DT"; : > "$DTU"
+if [ -n "$VIEW_DIR" ] && [ -f "$DEMO" ]; then
+  grep -oE '<h2[^>]*>[^<]+</h2>' "$DEMO" 2>/dev/null \
+    | sed -E 's/<[^>]+>//g' | sed -E 's/^[[:space:]]+//;s/[[:space:]]+$//' | grep -v '^$' > "$VT"
+fi
+# DT = docs 全部二级标题（用于子序列比对，避免白名单误伤真实用例标题）
+# DTU = 剔除固定章节后（用于数量比对；固定章节实测频次见 refine-spec.md §5.1 旁注）
+if [ -f "$DOC_FILE" ]; then
+  grep -E '^## ' "$DOC_FILE" 2>/dev/null | sed -E 's/^##[[:space:]]+//' \
+    | sed -E 's/[[:space:]]+$//' | grep -v '^$' > "$DT"
+  grep -vxE '何时使用|基本使用|APIs|Slots|Events|Methods|自定义样式' "$DT" > "$DTU"
+  # 白名单章节若本身也是演示页的用例标题（自定义样式等），补回 DTU，避免数量误判
+  for w in 何时使用 基本使用 APIs Slots Events Methods 自定义样式; do
+    if grep -qxF -- "$w" "$VT" 2>/dev/null && grep -qxF -- "$w" "$DT" 2>/dev/null; then
+      echo "$w" >> "$DTU"
+    fi
+  done
+fi
+
+# G1 注释精修（语义判断 → 人工）
+skip "G1 组件源码注释精修为语义判断（半确定性），请按 refine-spec.md §2 人工精修：三层结构 / 删复述与过期注释 / 删品牌来源标注"
+
+# G2 源码 Props 顺序 ↔ docs `## APIs` → `### {组件名}` 表行顺序（refine-spec.md §3.3）
+# 支持复合组件：按 .vue 文件（含一层子目录）逐一与 docs 中同名 `### {子组件名}` 表比对
+src_props_of() {   # $1 = .vue → 字段序（逐行）
+  sed -n '/interface[[:space:]]*Props[[:space:]]*{/,/^}/p' "$1" 2>/dev/null \
+    | grep -E '^[[:space:]]+[A-Za-z_][A-Za-z0-9_]*\??[[:space:]]*:' \
+    | sed -E 's/^[[:space:]]+([A-Za-z0-9_]+).*/\1/' | awk '!seen[$0]++'
+}
+doc_props_of() {   # $1 = docs 中 ### 标题名 → 表首列（逐行，限定在 `## APIs` 之后）
+  # ⚠️ 项目 docs 的 API 表为「无边框」写法（行首无 `|`，如 `color | 说明 | string`），
+  #    故按「行内含 |」取行；表头与分隔行由末尾的标识符 grep 过滤掉。
+  #    限定 `## APIs` 之后：同名 `### Xxx` 在 Slots / Methods 区会重复出现，只取 API 表那份。
+  awk -v name="$1" '
+      /^## APIs/ { inapi = 1 }
+      inapi && $0 ~ "^###[[:space:]]+" name "[[:space:]]*$" { f = 1; next }
+      f && /^#{2,4}[[:space:]]/ { exit }
+      f && /\|/ { print }
+    ' "$DOC_FILE" 2>/dev/null \
+    | sed -E 's/^[[:space:]]*\|//' | cut -d'|' -f1 \
+    | sed -E 's/<[^>]*>//g' | sed -E 's/[[:space:]`]//g' \
+    | sed -E 's/^v-model:(.*)/\1/' | grep -E '^[A-Za-z][A-Za-z0-9]*$'
+}
+g2_compare() {     # $1 = 源码字段序（空格分隔）$2 = docs 表列（换行）；结果写 G2R_*
+  G2R_ORDER=1; G2R_MATCHED=0; G2R_TOTAL=0; G2R_MISS=""
+  local last=0 ln p
+  for p in $1; do
+    G2R_TOTAL=$((G2R_TOTAL+1))
+    ln=$(printf '%s\n' "$2" | grep -nx "$p" | head -1 | cut -d: -f1)
+    if [ -z "$ln" ]; then
+      G2R_MISS="$G2R_MISS $p"
+    else
+      G2R_MATCHED=$((G2R_MATCHED+1))
+      [ "$ln" -lt "$last" ] && G2R_ORDER=0
+      last=$ln
+    fi
+  done
+}
+
+if [ -z "$COMP_DIR" ] || [ -z "$COMP_VUES" ]; then
+  skip "G2 组件 .vue 未解析到（目录解析：${COMP_DIR:-未找到}），请人工核对 Props 顺序（refine-spec.md §3）"
+elif [ ! -f "$DOC_FILE" ]; then
+  warn "G2 组件文档缺失，跳过 Props 顺序校验"
+else
+  G2_CNT=$(printf '%s\n' "$COMP_VUES" | grep -c .)
+  G2_FAIL=""; G2_UNCERTAIN=""; G2_MISSALL=""; G2_OKN=0; G2_CHECKED=0
+  for vf in $COMP_VUES; do
+    # 单文件组件用 `### {组件名}`；复合组件用 `### {子组件名}`（= .vue 文件名）
+    if [ "${G2_CNT:-0}" = "1" ]; then G2_SEC="$NAME"; else G2_SEC=$(basename "$vf" .vue); fi
+    sp=$(src_props_of "$vf" | tr '\n' ' ')
+    [ -n "$(printf '%s' "$sp" | tr -d ' ')" ] || continue
+    dp=$(doc_props_of "$G2_SEC")
+    G2_CHECKED=$((G2_CHECKED+1))
+    if [ -z "$(printf '%s' "$dp" | tr -d ' ')" ]; then
+      G2_UNCERTAIN="$G2_UNCERTAIN ${G2_SEC}(docs 无 ### ${G2_SEC} API 表)"
+      continue
+    fi
+    g2_compare "$sp" "$dp"
+    if [ "$G2R_MATCHED" = "0" ]; then
+      G2_UNCERTAIN="$G2_UNCERTAIN ${G2_SEC}(无同名 prop，命名差异须人工核对)"
+    elif [ "$((G2R_MATCHED * 100 / G2R_TOTAL))" -lt 60 ]; then
+      G2_UNCERTAIN="$G2_UNCERTAIN ${G2_SEC}(匹配率 ${G2R_MATCHED}/${G2R_TOTAL}，解析存疑)"
+    elif [ "$G2R_ORDER" != "1" ]; then
+      G2_FAIL="$G2_FAIL ${G2_SEC}(docs 表序=$(printf '%s\n' "$dp" | head -8 | tr '\n' '/'))"
+    else
+      G2_OKN=$((G2_OKN+1))
+    fi
+    # MISS 只作补充提示：docs 未列出的 prop 多为 v-model 命名差异（`v-model:value`），
+    # 不影响「顺序是否一致」的结论，故不降级 ok → warn
+    [ -n "$G2R_MISS" ] && G2_MISSALL="$G2_MISSALL ${G2_SEC}→${G2R_MISS}"
+  done
+  if [ "$G2_CHECKED" = "0" ]; then
+    skip "G2 组件 .vue 内未解析到 interface Props（extends/跨行等写法），请人工核对 Props 顺序（refine-spec.md §3.3）"
+  elif [ -n "$G2_FAIL" ]; then
+    fail "G2 源码 Props 顺序与 docs API 表顺序不一致（须逐项同序）：$G2_FAIL"
+  else
+    [ "${G2_OKN:-0}" != "0" ] && ok "G2 源码 Props 顺序 ↔ docs API 表顺序一致（${G2_OKN}/${G2_CHECKED} 个组件比对通过）"
+    [ -n "$G2_UNCERTAIN" ] && warn "G2 无法判定项（解析局限），须人工核对 Props 顺序：$G2_UNCERTAIN"
+    [ -n "$G2_MISSALL" ] && warn "G2 源码有而 docs API 表未列出的 Props：${G2_MISSALL}（确认是 v-model 命名差异还是文档漏列）"
+    true
+  fi
+fi
+
+# G3 演示用例排序与布局（语义判断 → 人工）
+skip "G3 演示用例排序与布局为语义判断（半确定性），请按 refine-spec.md §4 人工精修：官网保序 / 新增插回原序 / 同类型布局一致"
+
+# G4 views ↔ docs 用例对齐（数量 / 顺序 / 标题逐字；演示页为权威源）
+G4_V_N=$(grep -c . "$VT" 2>/dev/null | tr -d ' '); G4_D_N=$(grep -c . "$DTU" 2>/dev/null | tr -d ' ')
+G4_MISS=""; G4_LAST=0; G4_ORDER=1
+while IFS= read -r gt; do
+  [ -n "$gt" ] || continue
+  gln=$(grep -nxF -- "$gt" "$DT" 2>/dev/null | head -1 | cut -d: -f1)
+  if [ -z "$gln" ]; then
+    G4_MISS="$G4_MISS [$gt]"
+  else
+    [ "$gln" -lt "$G4_LAST" ] && G4_ORDER=0
+    G4_LAST=$gln
+  fi
+done < "$VT"
+rm -f "$VT" "$DT" "$DTU"
+if [ "${G4_V_N:-0}" = "0" ]; then
+  skip "G4 演示页未解析到用例标题（<h2>），跳过 docs ↔ views 用例对齐校验"
+elif [ -n "$G4_MISS" ]; then
+  fail "G4 docs 缺演示页用例:${G4_MISS}（docs 用例须与演示页一一对应，演示页为权威源；refine-spec.md §5.1）"
+elif [ "$G4_ORDER" != "1" ]; then
+  fail "G4 docs 用例顺序与演示页不一致（演示页为权威源，须同序；refine-spec.md §5.1）"
+elif [ "$G4_V_N" != "$G4_D_N" ]; then
+  warn "G4 用例数不一致：演示页 ${G4_V_N} 个 vs docs 用例类标题 ${G4_D_N} 个（docs 多出项须确认为固定章节「何时使用/APIs/Slots/Methods/Events/自定义样式」，或补齐演示页漏掉的分区）"
+else
+  ok "G4 docs ↔ 演示页用例对齐（${G4_V_N} 个用例，数量与顺序一致）"
+fi
+
+# G5 / G6 三方一致性矩阵 + 精修记录与复验（人工）
+skip "G5 三方一致性对照矩阵（源码 ↔ docs ↔ views 全维度）须人工逐格勾销，见 refine-spec.md §5.1"
+skip "G6 精修记录（工作上下文「交付前精修记录」区）+ 精修后复验（lint/type-check/test/浏览器）须人工确认，见 refine-spec.md §6"
 
 # ============================================================
 # S · 提交红线（对应 flow.md 阶段 5 第 4 步 + checklists.md §验收：

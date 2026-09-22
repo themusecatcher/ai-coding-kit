@@ -5,6 +5,7 @@ phase: P1
 phases_total: {N}
 status: in_progress
 branch: ""
+base_ref: ""
 release: pending
 ref_primary: antdv
 api_style: ""
@@ -21,6 +22,7 @@ artifacts:
 
 > `git_identity`：阶段 0 用 `git config user.name` + `git config user.email` **实测**登记（vue-amazing-ui 仓库预期为 `themusecatcher / themusecatcher@163.com`）；阶段 5 提交前实测比对，不符拦截（详见 `references/flow.md` 阶段 5 第 4 步）。
 > `commit`：提交后 `git log -1 --format='%h'` 实测回填，禁止凭记忆记录。
+> `base_ref`：**阶段 1 分支确认后**实测登记分支基点（`git merge-base origin/main HEAD`）。用途：组件分批开发、每批单独提交时，阶段 5 的 C5 品牌扫描需用基点回溯**已提交批次**（只查工作区会漏），详见 `references/refine-spec.md` §1.3。
 
 # {组件名} 开发上下文
 
@@ -61,6 +63,17 @@ artifacts:
 ## 项目特有需求（阶段 0 确认，参考库没有但项目需要）
 | 需求 | 描述 | 状态 |
 |:--|:--|:--|
+
+## 交付前精修记录（阶段 5 第 5 步 · 权威源 references/refine-spec.md）
+| 项 | 状态 | 说明 / 证据 |
+|:--|:--:|:--|
+| C5 品牌信息 0 残留（本次新增文件全文 + 改动新增行） | | 脚本 C5 |
+| G1 组件源码注释精修（三层结构 / 删复述与过期注释） | | |
+| G2 Props 排序（六段式分组 + 与 docs API 表逐项同序） | | 脚本 G2 |
+| G3 演示用例排序与布局（官网保序 / 同类型布局一致） | | |
+| G4 docs ↔ views 用例对齐（数量 / 顺序 / 标题） | | 脚本 G4 |
+| G5 三方一致性对照矩阵逐格勾销 | | |
+| G6 精修后复验（lint / type-check / test / 浏览器实测） | | |
 
 ## 进度 & 接续指引
 - 上次（yesterday）：{做了什么}
