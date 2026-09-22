@@ -102,14 +102,14 @@
 > ⚠️ **埋入阶段检查不能替代终检**：阶段 1/4 埋入时检查过 ≠ 发布前仍正确（埋入后文件可能再被改动），收尾必须全量回检。
 > 详细判定规则 → `linkage-map.md` 对应小节；类别 D「质量验证」（lint/type-check/浏览器实测）并入下方 §验收。
 >
-> **🔧 确定性检查的权威执行体 = `scripts/validate-component.sh`**（设计哲学「确定性用代码」落地）：Gate 5 前置跑 `bash scripts/validate-component.sh {组件名} {PROJECT_ROOT} --context {工作上下文文件}`（**分批提交 / 长生命周期分支加 `--base <ref>`**，确保 C5 回溯已提交批次），一次性获取 A/B/C/E/F/G + S 全部勾销证据（输出 `[PASS/FAIL/WARN/SKIP]`），**禁止逐条手敲 grep**。本节 ID（A1-A5/B1-B7/C1-C5/E1-E2/F1-F8/G1-G6）与下方 §验收 的提交红线（S1 git 身份 / S2 分支核对 / S3 commit hash 回填真实性 / S4 沉淀三件套 / S5 归档双份）均与脚本输出一一对应；本节定义规则语义（人类阅读），脚本是执行真相，**规则变更必须同步改脚本**，禁止只改文档（详见 `rules/按需-Skill设计-跨文件协作.mdc` §2.1 双向引用）。FAIL 阻断收尾，WARN/SKIP 须人工确认并回显 Gate 5 报告。脚本对 components/views/docs 三处目录按归一化名解析真实路径（项目命名约定不统一，禁止猜测路径）。
+> **🔧 确定性检查的权威执行体 = `scripts/validate-component.sh`**（设计哲学「确定性用代码」落地）：Gate 5 前置跑 `bash scripts/validate-component.sh {组件名} {PROJECT_ROOT} --context {工作上下文文件}`（**分批提交 / 长生命周期分支加 `--base <ref>`**，确保 C5 回溯已提交批次），一次性获取 A/B/C/E/F/G + S 全部勾销证据（输出 `[PASS/FAIL/WARN/SKIP]`），**禁止逐条手敲 grep**。本节 ID（A1-A5/B1-B8/C1-C5/E1-E2/F1-F8/G1-G6）与下方 §验收 的提交红线（S1 git 身份 / S2 分支核对 / S3 commit hash 回填真实性 / S4 沉淀三件套 / S5 归档双份）均与脚本输出一一对应；本节定义规则语义（人类阅读），脚本是执行真相，**规则变更必须同步改脚本**，禁止只改文档（详见 `rules/按需-Skill设计-跨文件协作.mdc` §2.1 双向引用）。FAIL 阻断收尾，WARN/SKIP 须人工确认并回显 Gate 5 报告。脚本对 components/views/docs 三处目录按归一化名解析真实路径（项目命名约定不统一，禁止猜测路径）。
 
 ### A · 代码注册链路（埋入于阶段 1）
 
 - [ ] A1 `components/{组件名}/index.ts`：`withInstall` + 类型导出。⚠️ **复合组件**：聚合层 index.ts 只做 `import/export 子组件`，**withInstall 在子组件层** index.ts（如 `dropdown/dropdown/index.ts`）——脚本已按此适配（2026-09-22 自查修正假 FAIL）
-- [ ] A2 `components/components.ts`：`export type { XxxProps }`（汇总级透传）+ 组件导出两条都在；组件导出**两种形态均可**——单组件 `export { default as Xxx }`、复合组件 `export { Xxx, XxxButton }`（脚本已适配，避免误命中 `XxxProps`/`XxxKey` 等类型导出）
-- [ ] A3 ⭐ **`components/utils/style-deps.ts`** `componentsMap` 按需样式映射（`grep -n "{组件名}:" components/utils/style-deps.ts` 命中且按字母序，value 为实测目录名，详见 `linkage-map.md` §④）。⚠️ 2026-09-22 修正：表源已从 `resolver.ts` 迁到 `style-deps.ts`（D 方案）；脚本按结构自动选源（`style-deps.ts` 优先，缺失回退 `resolver.ts`）
-- [ ] A4 ⭐ **`components/utils/style-deps.ts`** `componentDependencies` 样式依赖（`grep -rn "import .* from 'components/" components/{组件名}/` 逐一与映射条目对上；**复合组件逐子组件各自核对**，无依赖则确认跳过，详见 `linkage-map.md` §④）；权威校验另跑 `pnpm verify:deps`（项目自带双向比对）
+- [ ] A2 `components/components.ts`：`export type { XxxProps }`（汇总级透传）+ 组件导出两条都在；组件导出**两种形态均可**——单组件 `export { default as Xxx }`、复合组件 `export { Xxx, XxxButton }`（脚本已适配，避免误命中 `XxxProps`/`XxxKey` 等类型导出）。⚠️ 2026-09-22 再修正：**类型导出按键名判定**（键依次取 components.ts 值导出行里的组件名 → componentsMap 按目录派生键 → 输入名），原直接查 `${NAME}Props` 会假 FAIL——「目录名 ≠ 组件名」（`grid` → `Row`/`Col`）与 kebab 输入（`auto-complete`，键为 `AutoComplete`）均属此列
+- [ ] A3 ⭐ **`components/utils/style-deps.ts`** `componentsMap` 按需样式映射（`grep -n "{组件名}:" components/utils/style-deps.ts` 命中且按字母序，value 为实测目录名，详见 `linkage-map.md` §④）。⚠️ 2026-09-22 修正：表源已从 `resolver.ts` 迁到 `style-deps.ts`（D 方案）；脚本按结构自动选源（`style-deps.ts` 优先，缺失回退 `resolver.ts`）；⚠️ 2026-09-22 再修正：输入名未命中时按**目录派生键**兜底通过（`grid` → `Row` / `Col`，目录聚合组件），并提示字母序人工核对
+- [ ] A4 ⭐ **`components/utils/style-deps.ts`** `componentDependencies` 样式依赖（`grep -rn "import .* from 'components/" components/{组件名}/` 逐一与映射条目对上；**复合组件逐子组件各自核对**，无依赖则确认跳过，详见 `linkage-map.md` §④）；权威校验另跑 `pnpm verify:deps`（项目自带双向比对）。⚠️ 2026-09-22 修正假 FAIL：脚本条目提取限定在 `componentDependencies` 区块内并**完整读取多行数组**（原只取首行 → `Table: [` 这类条目依赖被全判缺失）
 - [ ] A5 自动注册确认：`git diff` 中无 `components/index.ts` / `src/router/index.ts` 手改痕迹（glob 自动扫描，无需手改）
 
 ### B · 文档联动链路（埋入于阶段 4）
@@ -121,13 +121,14 @@
 - [ ] B5 API 章节标题按实际能力：`## APIs` 必有；`## Events` / `## Methods` 有 emit / expose 才要求；无 `## Expose`
 - [ ] B6 `## APIs` 下有 `### {组件名}` 子标题
 - [ ] B7 API 表类型列无 `string | slot` / `Array | slot`（VNode 类 prop 说明参照 `avatar.md`）
+- [ ] **B8 ⭐ `## Slots` 表结构与用法列写法**（2026-09-22 新增 · Dropdown 事故复盘；同日列头定名修订）：`## Slots` 区块内表头必须为「名称 | 说明 | **用法**」（权威源 `development/demo-doc-guide.md` §约定；全库 56 个文档 60 处已统一），用法列写 `v-slot:xxx`、带作用域写 `v-slot:xxx="{ a, b }"`。❌ 禁「参数」列头与 `-` / `{ option: T }` 取值（参考库官网形态）；❌ 亦禁「类型」列头——它与列内容（模板消费侧语法）不同义，且与 APIs / Events / Methods 表的「类型」（TS 类型 / 签名）同名异义。脚本 B8 拦截（两分支：① 列头必须为「名称 \| 说明 \| 用法」；② 数据行**第 3 格（用法列）**必须以 `v-slot:` 开头——2026-09-22 由「整行含 `v-slot:`」收紧，消除「说明列出现 `v-slot:` 而用法列写 `-`」的假阴性；两分支均已实测可 FAIL 且无误报）
 
 ### C · 残留清理（阶段 5 执行）
 
 - [ ] C1 ⭐ `components.d.ts` 幽灵声明清理：`grep -rEn "<a-xxx|AButton|AAutoComplete" src/ components/ docs/` 0 匹配的 antdv 声明已删除，**删除随本次 commit 一起提交**（详见 `linkage-map.md` §⑭；⚠️ 不依赖 unplugin 自动清理）
 - [ ] C2 ⭐ `src/App.vue` 孤儿变量清理（仅本次动了全局 ConfigProvider/主题时）：grep 确认无「定义未使用」的残留变量（详见 `linkage-map.md` §⑬）
 - [ ] C3 演示页对照清除：`git diff src/views/{组件名}/Index.vue` 仅剩本库用例（antdv 真身/对应数据/`ant-design-vue` import/antdv 专属图标已删）
-- [ ] **C5 ⭐ 品牌信息 0 残留（2026-09-22 新增 · 同日扩充分批提交口径）**：**两段扫描口径**（①本分支**净改动**新增行 `git diff <base>`（基点 → **当前工作区**，一次覆盖「已提交的每一批 + 未提交改动」）②未跟踪新增文件全文）中无 `antdv` / `antd` / `ant-design-vue` / `Ant Design Vue` / `naive` / `naive-ui` / `<a-xxx>` / `avalue*`·`aoptions*` / `antdTheme` 等品牌字样。⚠️ **分批开发/分批提交时必须回溯已提交批次**（只查工作区会漏），base 取 `--base` / 工作上下文 `base_ref` / `merge-base 主干`；净改动为 0 但「已提交批次」仍有残留时脚本给 WARN——**删除必须随本次 commit 提交，否则复活**。**范围含 docs 全部内容**（组件文档 + changelog/features/index 周边文档）+ 组件源码 / 演示页 / 单测 / 根级 README。**处置**：品牌对比/差异说明类内容（如「与 Ant Design Vue 的差异」段落、changelog 的「对齐 XX」说明）**整段直接删除、不保留**；注释来源标注删除或去品牌化（`refine-spec.md` §1.4）。**例外**：`@ant-design/*` 基础包（图标/色板，已确认豁免）。详见 `refine-spec.md` §1，脚本 C5 拦截
+- [ ] **C5 ⭐ 品牌信息 0 残留（2026-09-22 新增 · 同日扩充分批提交口径）**：**两段扫描口径**（①本分支**净改动**新增行 `git diff <base>`（基点 → **当前工作区**，一次覆盖「已提交的每一批 + 未提交改动」）②未跟踪新增文件全文）中无 `antdv` / `antd` / `ant-design-vue` / `Ant Design Vue` / `naive` / `naive-ui` / `<a-xxx>` / `avalue*`·`aoptions*` / `antdTheme` 等品牌字样。⚠️ **分批开发/分批提交时必须回溯已提交批次**（只查工作区会漏），base 取 `--base` / 工作上下文 `base_ref` / `merge-base 主干`（指定的 ref **无法解析**时脚本给「C5 判定不完整」WARN 并回显该 ref——此 WARN ≠ 通过）；净改动为 0 但「已提交批次」仍有残留时脚本给 WARN——**删除必须随本次 commit 提交，否则复活**。**范围含 docs 全部内容**（组件文档 + changelog/features/index 周边文档）+ 组件源码 / 演示页 / 单测 / 根级 README。**处置**：品牌对比/差异说明类内容（如「与 Ant Design Vue 的差异」段落、changelog 的「对齐 XX」说明）**整段直接删除、不保留**；注释来源标注删除或去品牌化（`refine-spec.md` §1.4）。**例外**：`@ant-design/*` 基础包（图标/色板，已确认豁免）。详见 `refine-spec.md` §1，脚本 C5 拦截
 - [ ] C4 调试代码清理（console.log、临时样式）
 
 ### E · 一致性校验（阶段 5 执行）
@@ -156,9 +157,9 @@
 > **确定性下沉**：G2（Props 顺序）/ G4（用例对齐）由脚本实测；G1/G3/G5/G6 为模糊项，按 `refine-spec.md` 人工勾销（脚本 SKIP 提示）。
 
 - [ ] **G1 组件源码注释精修**（`refine-spec.md` §2）：组件级 ≤3 行、字段级每字段带中文语义注释、分支级写「为什么」；删复述代码 / 过期注释 / 品牌来源标注；无「行行注释」或「复杂分支零注释」
-- [ ] **G2 Props 排序**（`refine-spec.md` §3）：按六段式分组（双向绑定 → 内容数据 → 形态外观 → 状态反馈 → 行为交互 → 进阶透传）+ 段内语义相邻（**不强制字母序**，与项目既有惯例一致）；增量属性**插入所属段**（❌ 不追末尾）；**源码 `interface Props` 顺序 ≡ docs `## APIs` → `### {组件名}` 表行顺序**（脚本 G2 校验，不一致 FAIL——脚本保「一致」、人工保「合理」）；**复合组件按子组件逐一比对**（`Dropdown.vue ↔ ### Dropdown`、`DropdownButton.vue ↔ ### DropdownButton`，脚本已支持含一层子目录）；Slots/Events/Methods 表顺序同步
+- [ ] **G2 Props 排序**（`refine-spec.md` §3）：按六段式分组（双向绑定 → 内容数据 → 形态外观 → 状态反馈 → 行为交互 → 进阶透传）+ 段内语义相邻（**不强制字母序**，与项目既有惯例一致）；增量属性**插入所属段**（❌ 不追末尾）；**源码 `interface Props` 顺序 ≡ docs `## APIs` → `### {组件名}` 表行顺序**（脚本 G2 校验，不一致 FAIL——脚本保「一致」、人工保「合理」）；**复合组件按子组件逐一比对**（`Dropdown.vue ↔ ### Dropdown`、`DropdownButton.vue ↔ ### DropdownButton`，脚本已支持含一层子目录）；Slots/Events/Methods 表顺序同步。⚠️ 脚本已处理两类真实写法：跨行对象类型的**内层键**不计入顶层 prop；表首列含徽标/后缀（`open <Tag>v-model</Tag>`、`v-model:value`、`size<'small'>`）也能取到 prop 名
 - [ ] **G3 演示用例排序与布局精修**（`refine-spec.md` §4）：官网用例保序、**新增用例插回官网原序位置**、项目特有用例归末尾区块；单例整块 / 多例并排 / 交互类全宽，**同类型布局一致**；分区结构统一（`<h2>` → 可选 `<p>` → 示例容器）
-- [ ] **G4 docs ↔ views 用例对齐**（`refine-spec.md` §5.1）：用例**数量一致**、**顺序一致**、**标题逐字一致**（脚本 G4 校验）；描述文本同源（斜体 + `<br/>` vs `<p class="mb10">`）、示例代码同源（docs 仅剔对照分区）、布局同源
+- [ ] **G4 docs ↔ views 用例对齐**（`refine-spec.md` §5.1）：用例**数量一致**、**顺序一致**、**标题归一化后逐字一致**（脚本 G4 校验；已自动剥离 `<code>`/反引号/粗体/空白——docs 反引号 ↔ 演示页 `<code>` 是规范允许的载体差异；`## 使用方式` / `## 在 setup 外使用` 等 docs 专属说明章节已入白名单）；描述文本同源（斜体 + `<br/>` vs `<p class="mb10">`）、示例代码同源（docs 仅剔对照分区）、布局同源
 - [ ] **G5 三方一致性对照矩阵逐格勾销**（`refine-spec.md` §5.1）：源码 ↔ docs ↔ views 全维度（用例 / Props 名称类型默认值 / Props 顺序 / 字段注释 / Events / Slots / Methods / 品牌）；差异**先改权威源再同步副本**，❌ 项带处置码
 - [ ] **G6 精修记录 + 精修复验**（`refine-spec.md` §6）：5 项记录（品牌清除 / 注释 / Props 排序 / 用例排序布局 / 三方一致性）已写入工作上下文「交付前精修记录」区；精修后已重跑 `lint:check` + `type-check` + `test` + 浏览器实测（对照已删，确认无孤儿引用），结果补进 Gate 5 报告
 
@@ -177,7 +178,7 @@
 - [ ] **基线全量勾销**：Gate 5 报告已全量回显「对齐清单」（API 四维 + 源码实现分支 + Demo 用例）+「naive 差异登记」+「项目特有需求」，逐行 ✅/❌，❌ 项均带处置码（`延后 P{n}` / `不覆盖（理由）` / `待用户确认`）
 - [ ] 「待用户确认」缺失项已在 Gate 5 汇总呈现，用户已逐项决策
 - [ ] **交付前精修全量勾销（G1-G6 + C5）**：品牌 0 残留、注释精修、Props 六段式排序（与 docs 表逐项同序）、用例排序与布局、docs↔views 对齐、三方矩阵逐格勾销；精修后已复验（`lint:check` + `type-check` + 浏览器实测）——权威源 `refine-spec.md`，Gate 5 报告「交付前精修」区块回显
-- [ ] **能力沉淀三件套必做**：devlog（tech-doc）+ metrics（lite YAML）+ knowledge（knowledge-loop）已全部生成并在 Gate 5 报告勾销；降级跳过须登记 ❌ + 原因 + 用户确认（详见 `flow.md` 阶段 5 第 3 步）
+- [ ] **能力沉淀三件套必做**：devlog（tech-doc）+ metrics（lite YAML）+ knowledge（knowledge-loop）已全部生成并在 Gate 5 报告勾销；降级跳过须登记 ❌ + 原因 + 用户确认（详见 `flow.md` 阶段 5 第 3 步）。⚠️ **适用范围（2026-09-22 修正）**：仅**本次在途开发**的组件（其 `components/` / `src/views/` / `docs` 路径在分支净改动内）必做；**存量组件**（顺手校验的历史组件）脚本 S4 整块 SKIP，无需产出
 - [ ] **提交前 git 身份实测**：`git config user.name/email` 实测值与工作上下文 `git_identity` 一致，不符已拦截并经用户决策（详见 `flow.md` 阶段 5 第 4 步）
 - [ ] **提交后 hash 实测回填**：`git log -1 --format='%h'` 实测值已回填工作上下文 frontmatter `commit`，禁止凭记忆记录
 - [ ] **产物位置已告知**：Gate 5 报告的「能力沉淀三件套与产物位置」表已列出四项路径（working-context / metrics / devlog / knowledge）；产物一律留在 `~/.codebuddy/` 运行时目录，**不弹归档决策**（详见 `flow.md` 阶段 5 第 9 步）

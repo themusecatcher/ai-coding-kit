@@ -26,6 +26,39 @@
 #      ↔ docs API 表顺序）、G4（views ↔ docs 用例数量/顺序/标题）；G1/G3/G5/G6
 #      为语义判断 → SKIP 提示人工按 refine-spec.md 勾销。
 #   ③ 新增 --base <ref> 参数（C5 分支基点，支持工作上下文 base_ref 字段）。
+#   ④ 修正 C5 附注机制判定顺序：原实现「无扫描文件 → SKIP」抢先于附注检查，导致
+#      「工作区已删除已提交的残留 → 净改动归零」这一最该报警的场景被漏报（与
+#      refine-spec.md §1.3 附注机制相悖）；现将 base...HEAD 附查前置，命中则 WARN
+#      「删除须随本次 commit 提交，否则复活」。
+#   ⑤ C5 取行链路健壮性修正（审计实测复现，2026-09-22）：
+#      a) 路径清单加 `-c core.quotePath=false`——默认 quotePath 把非 ASCII 路径输出为
+#         带引号八进制转义 → 范围正则匹配不上 → 中文名文件被静默漏扫（假阴性）；
+#      b) 「已跟踪文件新增行」改为**单遍全量 diff + `+++ b/` 头归因**——原逐文件 pathspec
+#         在重命名时使 git 看不到旧侧 → 整文件计为新增行 → 存量品牌注释误报为残留（假 FAIL）；
+#      c) --base/工作上下文 base_ref 指向不存在的 ref 时显式 WARN「判定不完整」（原先退化为
+#         静默 SKIP）；--base/--context 缺取值按参数错误退出（2）；--context 路径不可读时
+#         不再与「未提供」混为一谈；
+#      d) `+++ b/` 头对「含空格的路径」会追加 TAB（`--name-only` / `ls-files` 不会），
+#         归因时剥掉该 TAB，避免路径带 TAB 进证据行、破坏 BRAND_EXCL 的 `$` 锚定。
+#
+# 2026-09-22（Dropdown 阶段 5 复盘）变更：
+#   ① 新增 B8：`## Slots` 表结构 + 用法列 `v-slot:xxx` 写法校验。此前该结构**无任何校验项**
+#      覆盖 → Dropdown docs 按参考库官网形态写成「名称 | 说明 | 参数」+ `-` 漂移进仓库。
+#   ② B8 列头定名「用法」（同日第一性原理复核）：原列头「类型」与其列内容（`v-slot:xxx`
+#      模板消费侧语法）不同义，且与 APIs / Events / Methods 表的「类型」（TS 类型 / 签名）
+#      同名异义 → 全库 56 个文档 60 处列头统一改为「用法」（用户 2026-09-22 决策）。
+#
+# 2026-09-22（B8 精度收紧 + A 类假阳性回填）变更：
+#   ① B8 用法列判定由「整行含 `v-slot:`」收紧为「**第 3 格**以 `v-slot:` 开头」：
+#      原判定下，「说明列出现 `v-slot:` 而用法列写 `-`」可蒙混过关（假阴性）；
+#      收紧后按单元格取值判定（实测全库 56 文档 166 数据行 0 异常，无回归）。
+#   ② B8 分隔行过滤兼容 `:---:` / `---:` 对齐写法（原仅兼容 `:---`）。
+#   ③ A2（类型导出）/ A3（componentsMap）改为按「注册键」判定，键来源依次为：
+#      components.ts 值导出行里的组件名 → componentsMap 按目录派生键 → 输入名。
+#      原实现直接查 `${NAME}Props` / `${NAME}:` → 「目录名 ≠ 组件名」（grid → Row/Col）
+#      与 kebab 输入（auto-complete，键为 AutoComplete）必然假 FAIL。
+#   ④ A4 条目提取限定在 componentDependencies 区块内并完整读取多行数组：原实现只取
+#      首行 → `Table: [` 这类多行条目的依赖被全部判缺失（假 FAIL）。
 #
 # 2026-09-15（Comment 事故复盘）变更：
 #   ① 修正 B5：原「API 章节四件套齐全」判定过严——项目多数组件无事件/无暴露方法，
@@ -62,23 +95,30 @@ fi
 
 # 临时文件统一清理（异常退出 / Ctrl-C 也不留残留；文件名均以 $$ 作用域隔离）
 trap 'rm -f /tmp/dc-ghost-$$.txt /tmp/dc-map-$$.txt /tmp/dc-decl-$$.txt \
-  /tmp/dc-brand-$$.txt /tmp/dc-brand-seen-$$.txt \
-  /tmp/dc-vt-$$.txt /tmp/dc-dt-$$.txt /tmp/dc-dtu-$$.txt' EXIT
+  /tmp/dc-brand-$$.txt \
+  /tmp/dc-vt-$$.txt /tmp/dc-dt-$$.txt /tmp/dc-dtu-$$.txt \
+  /tmp/dc-vts-$$.txt /tmp/dc-dtus-$$.txt' EXIT
 
+USAGE="用法: validate-component.sh <组件名> [项目根] [--context <工作上下文.md>] [--base <git ref>]"
 NAME="${1:-}"
 ROOT="${2:-${VAUI_PROJECT_ROOT:-$HOME/myGithub/vue-amazing-ui}}"
 CTX=""
 BASE=""
 while [ $# -gt 0 ]; do
   case "$1" in
-    --context) CTX="$2"; shift 2 ;;
-    --base) BASE="$2"; shift 2 ;;
+    # 带值参数缺值时按「参数错误」退出（2），避免 set -u 抛出 unbound variable
+    --context)
+      [ $# -ge 2 ] || { echo "[FATAL] --context 缺少取值。$USAGE" >&2; exit 2; }
+      CTX="$2"; shift 2 ;;
+    --base)
+      [ $# -ge 2 ] || { echo "[FATAL] --base 缺少取值。$USAGE" >&2; exit 2; }
+      BASE="$2"; shift 2 ;;
     *) shift ;;
   esac
 done
 
 if [ -z "$NAME" ]; then
-  echo "用法: validate-component.sh <组件名> [项目根] [--context <工作上下文.md>] [--base <git ref>]" >&2
+  echo "$USAGE" >&2
   exit 2
 fi
 
@@ -114,6 +154,27 @@ resolve_entry() {
     if [ "$n" = "$LCNAME" ]; then echo "$b"; return 0; fi
   done
   return 0
+}
+
+# ------------------------------------------------------------
+# 样式依赖表源 + 注册键派生（A2/A3 共用 · 2026-09-22 追加）
+#   deps_src_file ：D 方案后四张表收敛在 components/utils/style-deps.ts（旧结构回退 resolver.ts）
+#   map_keys_by_dir：componentsMap 中「值指向本组件目录」的注册键 —— 解决三类假 FAIL：
+#     ① 目录名 ≠ 组件名（grid → Row/Col）② 复合组件（dropdown → Dropdown/DropdownButton）
+#     ③ kebab 输入（auto-complete → 键为 AutoComplete，原判定查 'auto-completeProps' 必失败）
+# ------------------------------------------------------------
+deps_src_file() {
+  if [ -f "$ROOT/components/utils/style-deps.ts" ]; then echo "$ROOT/components/utils/style-deps.ts"; return 0; fi
+  if [ -f "$ROOT/components/utils/resolver.ts" ]; then echo "$ROOT/components/utils/resolver.ts"; return 0; fi
+  return 1
+}
+map_keys_by_dir() {
+  [ -n "$COMP_DIR" ] || return 0
+  local src
+  src=$(deps_src_file) || return 0
+  sed -n '/componentsMap[[:space:]]*=/,/^}/p' "$src" 2>/dev/null \
+    | sed -nE "s/^[[:space:]]+([A-Za-z0-9]+):[[:space:]]*'([^']*)'.*/\1 \2/p" \
+    | awk -v d="$COMP_DIR" '{ if ($2 == d || index($2, d "/") == 1) printf "%s ", $1 }'
 }
 
 COMP_DIR=$(resolve_entry "$ROOT/components")
@@ -196,10 +257,19 @@ if [ -z "$A2_NAMES" ]; then
 else
   ok "A2 components.ts 组件导出命中（来自 './${COMP_DIR}'：${A2_NAMES}）"
 fi
-if grep -qi "${NAME}Props" "$ROOT/components/components.ts"; then
-  ok "A2 components.ts 类型导出命中（export type { ${NAME}Props }）"
+# 类型导出键：以「components.ts 值导出行里的组件名」为准（天然覆盖复合组件 / 目录名≠组件名），
+# 回退到「componentsMap 按目录派生键」，再回退输入名 —— 原实现直接查 `${NAME}Props` 会假 FAIL。
+A2_TYPE_CANDS="${A2_NAMES:-}"
+[ -n "$A2_TYPE_CANDS" ] || A2_TYPE_CANDS=$(map_keys_by_dir)
+[ -n "$A2_TYPE_CANDS" ] || A2_TYPE_CANDS="$NAME"
+A2_TYPE_HIT=""
+for a2k in $A2_TYPE_CANDS; do
+  if grep -qi "${a2k}Props" "$ROOT/components/components.ts" 2>/dev/null; then A2_TYPE_HIT="$a2k"; break; fi
+done
+if [ -n "$A2_TYPE_HIT" ]; then
+  ok "A2 components.ts 类型导出命中（export type { ${A2_TYPE_HIT}Props }）"
 else
-  fail "A2 components.ts 缺类型导出：grep '${NAME}Props' components/components.ts"
+  fail "A2 components.ts 缺类型导出：grep '…Props' components/components.ts（候选键：${A2_TYPE_CANDS}）"
 fi
 
 # 样式依赖表源（A3/A4/F5 共用 · 2026-09-22 修正）：
@@ -221,16 +291,23 @@ if [ ! -f "$DEPS_SRC" ]; then
 fi
 
 # A3 componentsMap 映射 + 字母序
-A3_OK=0
+A3_OK=0; A3_AGGR=0
 if [ "$DEPS_SRC_OK" = "0" ]; then
   skip "A3 未找到样式依赖表源（既无 components/utils/style-deps.ts 也无 resolver.ts）——请确认项目结构后人工核对 componentsMap"
 elif grep -qiE "^[[:space:]]+$NAME:[[:space:]]*'" "$DEPS_SRC" 2>/dev/null; then
   ok "A3 ${DEPS_SRC_LABEL} componentsMap 映射命中（$NAME: '...'）"
   A3_OK=1
+elif [ -n "$(map_keys_by_dir)" ]; then
+  # 目录聚合组件：目录名 ≠ 组件名（如 grid → Row/Col）；键存在即通过，字母序人工核对
+  ok "A3 ${DEPS_SRC_LABEL} componentsMap 命中目录聚合键（$(map_keys_by_dir)）——目录名 ≠ 组件名"
+  A3_OK=1
+  A3_AGGR=1
 else
   fail "A3 ${DEPS_SRC_LABEL} componentsMap 缺映射：grep '$NAME:' components/utils/${DEPS_SRC_FILE}"
 fi
-if [ "$A3_OK" = "1" ]; then
+if [ "$A3_AGGR" = "1" ]; then
+  warn "A3 目录聚合组件（$(map_keys_by_dir)）字母序请人工核对（键分散在表内，非单条目）"
+elif [ "$A3_OK" = "1" ]; then
 KEYS=$(sed -n '/componentsMap[[:space:]]*=/,/^}/p' "$DEPS_SRC" 2>/dev/null \
   | grep -E '^[[:space:]]+[A-Za-z][A-Za-z0-9]*:' \
   | sed -E 's/^[[:space:]]+([A-Za-z0-9]+):.*/\1/')
@@ -272,7 +349,13 @@ else
     A4_DEPS=$(grep -rhoE "from ['\"]components/[^'\"]+['\"]" "$a4f" 2>/dev/null \
       | grep -vE "^from ['\"]components/utils(/|['\"])" \
       | sed -E "s|from ['\"]components/([^'\"]+)['\"].*|\1|" | sort -u)
-    A4_ENTRY=$(grep -iE "^[[:space:]]+$A4_SEC:[[:space:]]*\[" "$DEPS_SRC" 2>/dev/null)
+    # ⚠️ 2026-09-22 修正假 FAIL：`Table: [` 为多行数组，原 grep 只取首行 → 依赖被判缺失；
+    # 且必须限定在 componentDependencies 区块内（componentsMap 也有同名键，否则会串行读到别的表）
+    A4_ENTRY=$(sed -n '/componentDependencies:/,/^}/p' "$DEPS_SRC" 2>/dev/null \
+      | awk -v k="$A4_SEC" '
+        $0 ~ "^[[:space:]]*" k "[[:space:]]*:" { f=1 }
+        f { print; if (index($0, "]")) exit }
+      ')
     if [ -z "$A4_DEPS" ]; then
       [ -n "$A4_ENTRY" ] && A4_WARN="$A4_WARN ${A4_SEC}(源码无组件依赖但表有条目)"
       continue
@@ -293,7 +376,7 @@ else
   elif [ -n "$A4_WARN" ]; then
     warn "A4 非确定项须人工核对：${A4_WARN}（表源=${DEPS_SRC_LABEL}${A4_HINT}）"
   else
-    ok "A4 componentDependencies 与源码 import 逐一对上（${A4_OKN}/${A4_TOTAL} 个组件，表源=${DEPS_SRC_LABEL}${A4_HINT}）"
+    ok "A4 componentDependencies 与源码 import 逐一对上（${A4_OKN}/${A4_TOTAL} 个组件，无组件依赖者已跳过，表源=${DEPS_SRC_LABEL}${A4_HINT}）"
   fi
 fi
 
@@ -306,7 +389,7 @@ else
 fi
 
 # ============================================================
-# B · 文档联动链路（对应 checklists.md B1-B7）
+# B · 文档联动链路（对应 checklists.md B1-B8）
 # ============================================================
 section "B 文档联动链路"
 
@@ -400,6 +483,36 @@ else
   fi
 fi
 
+# B8 ⭐ `## Slots` 表结构与用法列写法（2026-09-22 新增 · Dropdown 事故复盘）
+# 背景：Slots 表列头固定为「名称 | 说明 | 用法」，用法列写 `v-slot:xxx`（带作用域写
+#       `v-slot:xxx="{ a, b }"`）。仅 Dropdown 曾按参考库官网形态写成「名称 | 说明 | 参数」+
+#       `-` / `{ option: T }`，且此前**无任何校验项覆盖该结构** → 漂移进仓库；同日第一性原理
+#       复核把列头由「类型」定名为「用法」（见文件头 2026-09-22 变更 ②）。
+# 判定：① `## Slots` 区块内表头必须为「名称 | 说明 | 用法」；
+#       ② 数据行**第 3 格（用法列）**必须以 `v-slot:` 开头（表头行 / 分隔行除外）。
+#       ⚠️ 2026-09-22 收紧：原判定为「整行含 `v-slot:`」→ 说明列出现 `v-slot:` 而用法列
+#       写 `-` 时可蒙混（假阴性）；现按第 3 格前缀判定（末格写法不受列顺序影响）。
+if [ ! -f "$DOC_FILE" ]; then
+  skip "B8 文档缺失，跳过 Slots 表结构检查"
+elif ! grep -qE '^## Slots' "$DOC_FILE" 2>/dev/null; then
+  skip "B8 文档无 ## Slots 章节（组件无插槽），跳过"
+else
+  B8_BLOCK=$(awk '/^## Slots/{f=1;next} f && /^## /{exit} f' "$DOC_FILE" 2>/dev/null)
+  B8_ROWS=$(printf '%s\n' "$B8_BLOCK" | grep '|' | sed -E 's/^[[:space:]]*\|//; s/\|[[:space:]]*$//')
+  B8_BADHEAD=$(printf '%s\n' "$B8_ROWS" | grep -E '名称' | grep -vE '^[[:space:]]*名称[[:space:]]*\|[[:space:]]*说明[[:space:]]*\|[[:space:]]*用法[[:space:]]*$' | head -3)
+  # 数据行：取第 3 格并去首尾空白，要求以 v-slot: 开头（表头行 / 分隔行先剔除）
+  B8_BADROW=$(printf '%s\n' "$B8_ROWS" \
+    | grep -vE '^[[:space:]]*:?-+:?[[:space:]]*\|' \
+    | grep -vE '^[[:space:]]*名称[[:space:]]*\|' \
+    | awk -F'|' '{ c=$3; gsub(/^[[:space:]]+|[[:space:]]+$/, "", c); if (c !~ /^v-slot:/) print }' | head -3)
+  if [ -z "${B8_BADHEAD}" ] && [ -z "${B8_BADROW}" ]; then
+    ok "B8 ## Slots 表结构合规（列头=名称|说明|用法；用法列均以 v-slot: 开头）"
+  else
+    [ -n "${B8_BADHEAD}" ] && fail "B8 ## Slots 表列头应为「名称 | 说明 | 用法」（见 development/demo-doc-guide.md §约定），异常行：${B8_BADHEAD}"
+    [ -n "${B8_BADROW}" ] && fail "B8 ## Slots 用法列（第 3 格）应写 v-slot:xxx（带作用域写 v-slot:xxx=\"{ a, b }\"），异常行：${B8_BADROW}"
+  fi
+fi
+
 # ============================================================
 # C · 残留清理（对应 checklists.md C1-C4）
 # ============================================================
@@ -487,6 +600,14 @@ if [ -z "$BASE" ]; then
   done
 fi
 
+# base 可用性前置校验：--base / 工作上下文 base_ref 给了值但 ref 不存在时，若放任其进入
+# 后续 git diff，git 会静默失败 → 判定退化成「无改动」的假象（SKIP 而不报错）。
+# 这里显式检出并置空 BASE，交由下方判定链给出「判定不完整」WARN（S4 亦随之走保守口径）。
+C5_BAD_BASE=""
+if [ -n "$BASE" ] && ! git -C "$ROOT" rev-parse --verify --quiet "${BASE}^{commit}" >/dev/null 2>&1; then
+  C5_BAD_BASE="$BASE"; BASE=""
+fi
+
 # ⚠️ `antd` 必须单列：实测「// 对齐 antd 口径」这类只写 antd（不带 v）的注释是存量高频形态，
 #    仅写 antdv 会漏检（`ant-[a-z]+` 也匹配不到 antd——它没有连字符）
 BRAND_PAT='antd|antdv|ant-design-vue|ant design|ant-[a-z]+|naive|</?a-[a-z][a-z-]*[[:space:]>]'
@@ -494,66 +615,86 @@ BRAND_EXCL='(^|/)(package\.json|pnpm-lock\.yaml|components\.d\.ts|vite\.config\.
 BRAND_SCOPE='^(components|src|docs|types|tests)/|^README|^CHANGELOG'
 BRAND_ALLOW='@ant-design/(icons-vue|colors)'
 BRAND_HITS=/tmp/dc-brand-$$.txt
-BRAND_SEEN=/tmp/dc-brand-seen-$$.txt
-: > "$BRAND_HITS"; : > "$BRAND_SEEN"
+: > "$BRAND_HITS"
+# git 在 `---`/`+++` 头里会给「含空格的路径」追加一个 TAB（分隔用，`--name-only` 则不会），
+# 归因时必须剥掉，否则路径带 TAB 进入证据行、并破坏 BRAND_EXCL 的 `$` 锚定。
+BRAND_TAB=$(printf '\t')
 
-brand_scan_full() {   # ② 新增文件：全文扫描
-  local rel="$1" abs="$ROOT/$1"
-  [ -f "$abs" ] || return 0
-  echo "$rel" | grep -qE "$BRAND_EXCL" && return 0
-  echo "$rel" >> "$BRAND_SEEN"
-  grep -nE "$BRAND_PAT" "$abs" 2>/dev/null | grep -viE "$BRAND_ALLOW" \
-    | sed "s|^|${rel}|" >> "$BRAND_HITS"
+# ⚠️ 路径清单必须加 `-c core.quotePath=false`：默认 core.quotePath=true 会把含非 ASCII 字符
+#    的路径输出成 "docs/…\344\270\255…"（带引号 + 八进制转义）→ `^docs/` 这类范围正则匹配不上
+#    → 该文件被**静默漏扫**（假阴性；实测复现：中文文件名 / 未跟踪中文文件）。
+brand_scope_files() {   # stdin=路径清单 → 仅保留扫描范围内（scope 内 且 非豁免）的路径
+  grep -E "$BRAND_SCOPE" | grep -vE "$BRAND_EXCL"
 }
 
-brand_scan_diff() {   # ① 已跟踪文件：按 diff 范围取新增行（$2=基点 ref / HEAD，$3=标签）
-  local rel="$1" rng="$2" label="$3"
+brand_scan_full() {   # ② 新增（未跟踪）文件：全文扫描
+  local rel="$1" abs="$ROOT/$1"
+  [ -f "$abs" ] || return 0
+  grep -nE "$BRAND_PAT" "$abs" 2>/dev/null | grep -viE "$BRAND_ALLOW" \
+    | sed "s|^|${rel}:|" >> "$BRAND_HITS"
+}
+
+# ① 已跟踪文件：按 diff 范围取「新增行」（$1=diff 范围 ref，$2=标签），命中输出到 stdout
+# ⚠️ 必须**单遍全量 diff** 后按 `+++ b/` 头归因文件，不能逐文件加 pathspec：
+#    重命名时 pathspec 使 git 看不到旧侧 → 整文件被判为「new file」而全行计为新增行 →
+#    存量品牌注释被误报为残留（假 FAIL；实测复现：`git mv` 未改内容仍报残留）。
+brand_scan_range() {
+  local rng="$1" label="$2" rel="" line
   [ -n "$rng" ] || return 0
-  echo "$rel" | grep -qE "$BRAND_EXCL" && return 0
-  echo "$rel" >> "$BRAND_SEEN"
-  git -C "$ROOT" diff "$rng" -U0 -- "$rel" 2>/dev/null \
-    | grep -E '^\+' | grep -vE '^\+\+\+' | sed 's/^+//' \
-    | grep -viE "$BRAND_ALLOW" | grep -iE "$BRAND_PAT" \
-    | sed "s|^|${rel}（${label}）:|" >> "$BRAND_HITS"
+  git -C "$ROOT" -c core.quotePath=false diff -M "$rng" -U0 2>/dev/null \
+    | while IFS= read -r line; do
+        case "$line" in
+          '+++ b/'*) rel="${line#+++ b/}"; rel="${rel%"$BRAND_TAB"}"; continue ;;
+          '+++ '*)   rel=""; continue ;;   # 删除文件（+++ /dev/null）
+        esac
+        case "$line" in '+'*) ;; *) continue ;; esac
+        [ -n "$rel" ] || continue
+        printf '%s\n' "$rel" | grep -qE "$BRAND_SCOPE" || continue
+        printf '%s\n' "$rel" | grep -qE "$BRAND_EXCL" && continue
+        printf '%s\n' "${line#+}" | grep -viE "$BRAND_ALLOW" | grep -qiE "$BRAND_PAT" || continue
+        printf '%s（%s）:%s\n' "$rel" "$label" "${line#+}"
+      done
 }
 
 # ① 本分支净改动（基点 → 当前工作区）；base 缺失时退化为「工作区 vs HEAD」
-if [ -n "$BASE" ]; then
-  git -C "$ROOT" diff --name-only "$BASE" 2>/dev/null | grep -E "$BRAND_SCOPE" \
-    | while read -r rel; do brand_scan_diff "$rel" "$BASE" "本分支新增行"; done
-else
-  git -C "$ROOT" diff --name-only HEAD 2>/dev/null | grep -E "$BRAND_SCOPE" \
-    | while read -r rel; do brand_scan_diff "$rel" HEAD "工作区新增行"; done
-fi
-# ② 未跟踪新增文件
-git -C "$ROOT" ls-files --others --exclude-standard 2>/dev/null | grep -E "$BRAND_SCOPE" \
-  | while read -r rel; do brand_scan_full "$rel"; done
+C5_RNG="HEAD"; C5_RNG_LABEL="工作区新增行"
+if [ -n "$BASE" ]; then C5_RNG="$BASE"; C5_RNG_LABEL="本分支新增行"; fi
+C5_TRACKED=$(git -C "$ROOT" -c core.quotePath=false diff -M --name-only "$C5_RNG" 2>/dev/null | brand_scope_files)
+C5_UNTRACKED=$(git -C "$ROOT" -c core.quotePath=false ls-files --others --exclude-standard 2>/dev/null | brand_scope_files)
+C5_FILES_T=$(printf '%s\n' "$C5_TRACKED" | grep -c .)
+C5_FILES_U=$(printf '%s\n' "$C5_UNTRACKED" | grep -c .)
+C5_FILES=$((C5_FILES_T + C5_FILES_U))
+brand_scan_range "$C5_RNG" "$C5_RNG_LABEL" >> "$BRAND_HITS"
+# ② 未跟踪新增文件：全文
+printf '%s\n' "$C5_UNTRACKED" | grep . | while read -r rel; do brand_scan_full "$rel"; done
 
 C5_TOTAL=$(sort -u "$BRAND_HITS" 2>/dev/null | grep -c .)
 C5_HITS=$(sort -u "$BRAND_HITS" 2>/dev/null | head -8 | tr '\n' ' ')
-C5_FILES=$(sort -u "$BRAND_SEEN" 2>/dev/null | grep -c .)
-rm -f "$BRAND_HITS" "$BRAND_SEEN"
-if [ "${C5_FILES:-0}" = "0" ]; then
-  skip "C5 未扫描到改动文件（本分支净改动为空 + 无未跟踪文件）——请确认 base 解析与 git 状态（口径见 refine-spec.md §1.3）"
-elif [ -n "$C5_HITS" ]; then
+rm -f "$BRAND_HITS"
+# 附注「已提交批次」残留（base...HEAD）——必须先算，且判定顺序在 SKIP 之前：
+# 净改动口径下「工作区已删除」= 净改动归零，若此时先走「无扫描文件 → SKIP」，
+# 就恰好在最该报警的场景（删除尚未提交 → 会复活）漏报（refine-spec.md §1.3 附注机制）。
+C5_HEAD_HITS=0
+if [ -n "$BASE" ]; then
+  C5_HEAD_HITS=$(brand_scan_range "$BASE...HEAD" "已提交批次" | grep -c .)
+fi
+C5_REVIVE="C5 附注：本分支【已提交】批次中仍有 ${C5_HEAD_HITS} 处品牌残留，工作区已清除但**尚未提交**——请确保这些删除随本次 commit 一起提交（与 components.d.ts 幽灵声明同理，不提交会「复活」）"
+
+if [ -n "$C5_HITS" ]; then
   fail "C5 品牌信息残留共 ${C5_TOTAL} 处（品牌对比/差异说明类内容须【直接删除】；其余去品牌化或删除；例外仅 @ant-design/* 基础包；详见 refine-spec.md §1）：$C5_HITS"
+elif [ -n "$C5_BAD_BASE" ]; then
+  warn "C5 判定不完整：--base / 工作上下文 base_ref 指定的 ref「${C5_BAD_BASE}」在本仓库无法解析（已退化为「工作区 vs HEAD」，本分支【已提交】批次未纳入）——请核对 ref 名称后重跑（refine-spec.md §1.3）"
+elif [ "${C5_FILES:-0}" = "0" ] && [ "${C5_HEAD_HITS:-0}" != "0" ]; then
+  warn "$C5_REVIVE"
+elif [ "${C5_FILES:-0}" = "0" ]; then
+  skip "C5 未扫描到改动文件（本分支净改动为空 + 无未跟踪文件）——请确认 base 解析与 git 状态（口径见 refine-spec.md §1.3）"
 elif [ -z "$BASE" ]; then
   warn "C5 品牌信息 0 残留（扫描 ${C5_FILES} 个文件）⚠️ 但未解析到分支基点 base：本次仅比对「工作区 vs HEAD」，本分支【已提交】批次未纳入（分批提交会漏）——请显式 --base <ref> 或在工作上下文登记 base_ref"
+elif [ "${C5_HEAD_HITS:-0}" != "0" ]; then
+  ok "C5 品牌信息 0 残留（净改动口径，扫描 ${C5_FILES} 个文件：base=${BASE} → 当前工作区 + 新增文件全文）"
+  warn "$C5_REVIVE"
 else
-  # 附查「已提交批次」（base...HEAD）：若仍残留但工作区已清除 → 必须随本次 commit 提交，否则复活
-  C5_HEAD_HITS=$(git -C "$ROOT" diff --name-only "$BASE"...HEAD 2>/dev/null | grep -E "$BRAND_SCOPE" \
-    | while read -r rel; do
-        echo "$rel" | grep -qE "$BRAND_EXCL" && continue
-        git -C "$ROOT" diff "$BASE"...HEAD -U0 -- "$rel" 2>/dev/null \
-          | grep -E '^\+' | grep -vE '^\+\+\+' | sed 's/^+//' \
-          | grep -viE "$BRAND_ALLOW" | grep -iE "$BRAND_PAT"
-      done | grep -c .)
-  if [ "${C5_HEAD_HITS:-0}" != "0" ]; then
-    ok "C5 品牌信息 0 残留（净改动口径，扫描 ${C5_FILES} 个文件：base=${BASE} → 当前工作区 + 新增文件全文）"
-    warn "C5 附注：本分支【已提交】批次中仍有 ${C5_HEAD_HITS} 处品牌残留，工作区已清除但**尚未提交**——请确保这些删除随本次 commit 一起提交（与 components.d.ts 幽灵声明同理，不提交会「复活」）"
-  else
-    ok "C5 品牌信息 0 残留（扫描 ${C5_FILES} 个文件：本分支净改动新增行[base=${BASE}] + 新增文件全文）"
-  fi
+  ok "C5 品牌信息 0 残留（扫描 ${C5_FILES} 个文件：本分支净改动新增行[base=${BASE}] + 新增文件全文）"
 fi
 
 # ============================================================
@@ -744,20 +885,23 @@ fi
 section "G 交付前精修与三方一致性"
 
 # ---- 用例标题提取（G4 用；演示页 <h2> ↔ docs 二级标题）----
+# 标题归一化（2026-09-22 修正）：剥离 HTML 标签（兼容 h2 内联 <code>）、反引号、粗体与多余空白。
+#   docs 用反引号、演示页用 <code> 包裹代码标记属规范允许的「载体差异」（demo-description.md §3）——
+#   原「逐字比对」把 docs 的 `配合 List 组件`（反引号）误判为缺失 → 假 FAIL。
+norm_title() { sed -E 's/<[^>]*>//g; s/`//g; s/\*\*//g; s/&nbsp;/ /g' | sed -E 's/^[[:space:]]+//; s/[[:space:]]+$//' | tr -s ' '; }
 VT=/tmp/dc-vt-$$.txt; DT=/tmp/dc-dt-$$.txt; DTU=/tmp/dc-dtu-$$.txt
 : > "$VT"; : > "$DT"; : > "$DTU"
 if [ -n "$VIEW_DIR" ] && [ -f "$DEMO" ]; then
-  grep -oE '<h2[^>]*>[^<]+</h2>' "$DEMO" 2>/dev/null \
-    | sed -E 's/<[^>]+>//g' | sed -E 's/^[[:space:]]+//;s/[[:space:]]+$//' | grep -v '^$' > "$VT"
+  # `.*` 而非 `[^<]+`：h2 内可能含 <code> 等内联标签，否则整条用例会被静默漏掉
+  grep -oE '<h2[^>]*>.*</h2>' "$DEMO" 2>/dev/null | norm_title | grep -v '^$' > "$VT"
 fi
 # DT = docs 全部二级标题（用于子序列比对，避免白名单误伤真实用例标题）
 # DTU = 剔除固定章节后（用于数量比对；固定章节实测频次见 refine-spec.md §5.1 旁注）
 if [ -f "$DOC_FILE" ]; then
-  grep -E '^## ' "$DOC_FILE" 2>/dev/null | sed -E 's/^##[[:space:]]+//' \
-    | sed -E 's/[[:space:]]+$//' | grep -v '^$' > "$DT"
-  grep -vxE '何时使用|基本使用|APIs|Slots|Events|Methods|自定义样式' "$DT" > "$DTU"
+  grep -E '^## ' "$DOC_FILE" 2>/dev/null | sed -E 's/^##[[:space:]]+//' | norm_title | grep -v '^$' > "$DT"
+  grep -vxE '何时使用|基本使用|使用方式|在 setup 外使用|APIs|Slots|Events|Methods|自定义样式|主题变量|设计指引' "$DT" > "$DTU"
   # 白名单章节若本身也是演示页的用例标题（自定义样式等），补回 DTU，避免数量误判
-  for w in 何时使用 基本使用 APIs Slots Events Methods 自定义样式; do
+  for w in 何时使用 基本使用 使用方式 在 setup 外使用 APIs Slots Events Methods 自定义样式 主题变量 设计指引; do
     if grep -qxF -- "$w" "$VT" 2>/dev/null && grep -qxF -- "$w" "$DT" 2>/dev/null; then
       echo "$w" >> "$DTU"
     fi
@@ -769,9 +913,16 @@ skip "G1 组件源码注释精修为语义判断（半确定性），请按 refi
 
 # G2 源码 Props 顺序 ↔ docs `## APIs` → `### {组件名}` 表行顺序（refine-spec.md §3.3）
 # 支持复合组件：按 .vue 文件（含一层子目录）逐一与 docs 中同名 `### {子组件名}` 表比对
-src_props_of() {   # $1 = .vue → 字段序（逐行）
-  sed -n '/interface[[:space:]]*Props[[:space:]]*{/,/^}/p' "$1" 2>/dev/null \
-    | grep -E '^[[:space:]]+[A-Za-z_][A-Za-z0-9_]*\??[[:space:]]*:' \
+src_props_of() {   # $1 = .vue → **顶层**字段序（只取最小缩进层）
+  # ⚠️ 2026-09-22 修正：原实现按「缩进 + 名:」抓取，会把**跨行对象类型的内层键**误当顶层 prop
+  #    （实测 loading-bar/LoadingBar.vue 的 `loadingBarStyle?: { loading?: …; finish?: …; error?: … }`
+  #     → 假报「docs 未列出 loading/finish/error」）。改为只取最小缩进那一层。
+  local body minind
+  body=$(sed -n '/interface[[:space:]]*Props[[:space:]]*{/,/^}/p' "$1" 2>/dev/null \
+    | grep -E '^[[:space:]]+[A-Za-z_][A-Za-z0-9_]*\??[[:space:]]*:')
+  [ -n "$body" ] || return 0
+  minind=$(printf '%s\n' "$body" | sed -E 's/^([[:space:]]+).*/\1/' | awk '{print length($0)}' | sort -n | head -1)
+  printf '%s\n' "$body" | grep -E "^[[:space:]]{${minind}}[A-Za-z_][A-Za-z0-9_]*\??[[:space:]]*:" \
     | sed -E 's/^[[:space:]]+([A-Za-z0-9_]+).*/\1/' | awk '!seen[$0]++'
 }
 doc_props_of() {   # $1 = docs 中 ### 标题名 → 表首列（逐行，限定在 `## APIs` 之后）
@@ -785,8 +936,12 @@ doc_props_of() {   # $1 = docs 中 ### 标题名 → 表首列（逐行，限定
       f && /\|/ { print }
     ' "$DOC_FILE" 2>/dev/null \
     | sed -E 's/^[[:space:]]*\|//' | cut -d'|' -f1 \
-    | sed -E 's/<[^>]*>//g' | sed -E 's/[[:space:]`]//g' \
-    | sed -E 's/^v-model:(.*)/\1/' | grep -E '^[A-Za-z][A-Za-z0-9]*$'
+    | sed -E 's/<[^>]*>//g; s/`//g' | awk '{print $1}' \
+    | sed -E 's/^v-model://' | grep -oE '^[A-Za-z][A-Za-z0-9]*'
+    # ⚠️ 2026-09-22 修正（两轮）：首列常带徽标/类型后缀，不能整格当标识符——
+    #    `open <Tag color="cyan">v-model</Tag>` → 去标签得 `open v-model` → 取首个空白 token `open` ✓
+    #    `v-model:value` → 剥前缀得 `value` ✓；`size<'small'|'middle'>` → 取标识符前缀 `size` ✓
+    #    （若先去掉空格再取 token，会得到 `openv`、`openv-model` 之类错误结果 —— 故顺序不可颠倒）
 }
 g2_compare() {     # $1 = 源码字段序（空格分隔）$2 = docs 表列（换行）；结果写 G2R_*
   G2R_ORDER=1; G2R_MATCHED=0; G2R_TOTAL=0; G2R_MISS=""
@@ -864,7 +1019,11 @@ while IFS= read -r gt; do
     G4_LAST=$gln
   fi
 done < "$VT"
-rm -f "$VT" "$DT" "$DTU"
+# docs 多出的标题（DTU − VT）：自诊断用，便于区分「固定章节未入白名单」与「演示页真漏了分区」
+G4_VTS=/tmp/dc-vts-$$.txt; G4_DTUS=/tmp/dc-dtus-$$.txt
+sort "$VT" > "$G4_VTS"; sort "$DTU" > "$G4_DTUS"
+G4_EXTRA=$(comm -13 "$G4_VTS" "$G4_DTUS" 2>/dev/null | head -5 | tr '\n' '/')
+rm -f "$VT" "$DT" "$DTU" "$G4_VTS" "$G4_DTUS"
 if [ "${G4_V_N:-0}" = "0" ]; then
   skip "G4 演示页未解析到用例标题（<h2>），跳过 docs ↔ views 用例对齐校验"
 elif [ -n "$G4_MISS" ]; then
@@ -872,7 +1031,7 @@ elif [ -n "$G4_MISS" ]; then
 elif [ "$G4_ORDER" != "1" ]; then
   fail "G4 docs 用例顺序与演示页不一致（演示页为权威源，须同序；refine-spec.md §5.1）"
 elif [ "$G4_V_N" != "$G4_D_N" ]; then
-  warn "G4 用例数不一致：演示页 ${G4_V_N} 个 vs docs 用例类标题 ${G4_D_N} 个（docs 多出项须确认为固定章节「何时使用/APIs/Slots/Methods/Events/自定义样式」，或补齐演示页漏掉的分区）"
+  warn "G4 用例数不一致：演示页 ${G4_V_N} 个 vs docs 用例类标题 ${G4_D_N} 个；docs 多出=[${G4_EXTRA:-无}]（多出项若属固定章节请加入白名单，否则为演示页漏分区，须补齐）"
 else
   ok "G4 docs ↔ 演示页用例对齐（${G4_V_N} 个用例，数量与顺序一致）"
 fi
@@ -888,8 +1047,10 @@ skip "G6 精修记录（工作上下文「交付前精修记录」区）+ 精修
 # ============================================================
 section "S 提交红线"
 
-if [ -z "$CTX" ] || [ ! -f "$CTX" ]; then
+if [ -z "$CTX" ]; then
   skip "S1-S3 需工作上下文（--context {wc 文件}），未提供则跳过 git 身份 / 分支 / hash 校验"
+elif [ ! -f "$CTX" ]; then
+  warn "S1-S3 工作上下文文件不存在：${CTX}（--context 已提供但读不到 → S1-S3 跳过，C5 的 base_ref 亦未生效）——请核对路径后重跑"
 else
   # S1 git 身份实测 vs git_identity
   IDENT=$(sed -n 's/^git_identity: "\(.*\)"/\1/p' "$CTX")
@@ -940,6 +1101,23 @@ fi
 # 顺序上脚本常跑于沉淀前，缺失 → WARN 提示提交前补齐）
 section "S4 能力沉淀三件套"
 
+# 适用性判定（2026-09-22 修正 · **范围修正，非放宽红线**）：
+#   S4 的语义是「**本次在途开发**的组件，提交前必须补齐沉淀产物」（见 flow.md 阶段 5 第 3 步）。
+#   对**存量组件**（本次分支净改动未触碰其 components/views/docs 任一路径）跑校验时，
+#   缺 devlog/metrics/knowledge 属正常 → 整块 SKIP，避免对「顺手校验的历史组件」产生误导性 WARN。
+#   ⚠️ 在途组件仍严格要求（执行力度不变）；base 解析失败时保守按「适用」处理。
+S4_APPLICABLE=1
+if [ -n "$BASE" ] && [ -n "$COMP_DIR" ]; then
+  S4_PAT="^components/${COMP_DIR}/"
+  [ -n "$VIEW_DIR" ] && S4_PAT="${S4_PAT}|^src/views/${VIEW_DIR}/"
+  [ -n "$DOC_ENTRY" ] && S4_PAT="${S4_PAT}|^docs/guide/components/${DOC_ENTRY}$"
+  S4_TOUCHED=$(git -C "$ROOT" diff --name-only "$BASE" 2>/dev/null | grep -cE "$S4_PAT")
+  [ "${S4_TOUCHED:-0}" = "0" ] && S4_APPLICABLE=0
+fi
+if [ "$S4_APPLICABLE" = "0" ]; then
+  skip "S4 能力沉淀三件套：【${NAME} 不在本次分支净改动范围内（存量组件）】，无需 devlog/metrics/knowledge（若确在开发它，请核对 --base / 当前分支是否正确）"
+else
+
 # devlog 两种可能结构：① tech-doc 规范 {YYYYMMDD}_{类型}_{简述}/devlog.md
 # ② dev-comp 早期记载 <项目>/<分支>/devlog.md；按组件归一化名过滤路径。
 # 简述纯中文不含组件名时无法自动关联 → 保守报 WARN（人工确认），不误 PASS
@@ -984,6 +1162,8 @@ else
     warn "S4 knowledge 缺失：提交前须 use_skill('knowledge-loop') 沉淀"
   fi
 fi
+
+fi  # ← 结束 S4 适用性 else（存量组件已 SKIP）
 
 # S5 产物存放位置（2026-08-21 规范：产物统一留在运行时目录；artifacts 仅作历史归档读取兜底）
 section "S5 产物存放位置"

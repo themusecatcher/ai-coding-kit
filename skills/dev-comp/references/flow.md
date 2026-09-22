@@ -159,6 +159,7 @@
    - metrics：`mkdir -p ~/.codebuddy/dev-comp/metrics` 后按 `templates/metrics-lite.tpl.yaml` 写一份到 `CAP_METRICS_DIR`
    - knowledge：`use_skill('knowledge-loop')` 沉淀组件经验（接口/易错点）
    - ⚠️ **三件套为阶段 5 必做项**：被调 skill 缺失时允许降级跳过，但必须在 Gate 5 报告「能力沉淀三件套」区块登记 ❌ + 降级原因，并向用户明示、经用户确认后才视为收尾完成（历史事故：三次开发均跳过 devlog/knowledge，产物不完整）
+   - **适用范围（2026-09-22 修正）**：三件套只对**本次在途开发**的组件（分支净改动含其 `components/` / `src/views/` / `docs` 路径）必做；对**存量组件**（顺手校验的历史组件）脚本 S4 整块 **SKIP**——避免把「历史组件本就没有产物」当成待办（原实现会产生 3 条误导性 WARN）
 4. **提交**：`use_skill('smart-commit')` 生成 `feat: ...` message（无 scope）→ **等用户确认才提交**。提交前强制执行：
    a) **git 身份实测（红线）**：`git config user.name` + `git config user.email` 实测输出，与工作上下文 frontmatter `git_identity` 预期值逐字对比；不符 → 🔴 拦截提交，弹 `ask_followup_question` 呈现「实测值 vs 预期值」，用户决策后（修正 local config / 确认改用实测值 / 取消提交）方可继续（历史事故：comment 提交误用全局公司身份 `deardai@tencent.com`）
    b) **提交后 hash 实测回填**：`git log -1 --format='%h'` **实测** commit hash 回填工作上下文 frontmatter `commit` 字段，禁止凭记忆记录（历史事故：Dropdown 记录 `7c6ab6a5` 与真实 `e4d8c9a0` 不符）
@@ -239,6 +240,7 @@
 | B | ⭐ 组件总数 4 处 +1 | | grep 数字一致 |
 | B | API 章节标题按能力（APIs 必有 + ### 组件名 子标题；Events/Methods 按 emit/expose） | | 脚本 B5/B6 |
 | B | API 表类型列无 slot 写法 | | 脚本 B7 |
+| B | ⭐ `## Slots` 表结构与用法列写法（列头 名称\|说明\|用法 + `v-slot:xxx`） | | 脚本 B8 |
 | C | ⭐ components.d.ts 幽灵声明 | | grep 0 匹配 |
 | C | App.vue 孤儿变量（仅涉及时） | | 不涉及 N/A 或 grep |
 | C | 演示页对照清除 | | git diff 仅本库用例 |
@@ -295,7 +297,7 @@
 | S2 当前分支 = 工作上下文 branch | | |
 | commit message 预览 | | |
 | S3 commit hash 回填（提交后 `git log -1 --format='%h'` 实测） | | |
-| S4 能力沉淀三件套（devlog / metrics / knowledge） | | 脚本 S4 输出 |
+| S4 能力沉淀三件套（devlog / metrics / knowledge；**存量组件不适用 → SKIP**） | | 脚本 S4 输出 |
 | S5 产物存放位置（应在运行时目录，无新增归档副本） | | 脚本 S5 输出 |
 
 ### 工作上下文已同步（Gate 5 适用）

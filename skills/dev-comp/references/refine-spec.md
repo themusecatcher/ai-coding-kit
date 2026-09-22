@@ -61,7 +61,7 @@
 >
 > **附注机制**：净改动为 0 时会再查一次「已提交批次（base...HEAD）」——若仍有残留，说明**工作区已清除但删除尚未提交**，脚本给 **WARN** 提醒「必须随本次 commit 提交，否则复活」（与 `components.d.ts` 幽灵声明同理）。
 
-**base（分支基点）解析优先级**：`--base <ref>` 参数 → 工作上下文 frontmatter `base_ref` → `git merge-base origin/main|origin/master|main|master HEAD` 自动探测 → 均失败则退化为「工作区 vs HEAD」并 **WARN**（分批提交场景会漏检）。
+**base（分支基点）解析优先级**：`--base <ref>` 参数 → 工作上下文 frontmatter `base_ref` → `git merge-base origin/main|origin/master|main|master HEAD` 自动探测 → 均失败则退化为「工作区 vs HEAD」并 **WARN**（分批提交场景会漏检）。显式指定（或工作上下文登记）的 ref 若在本仓库**无法解析**，同样退化为「工作区 vs HEAD」，脚本给「**C5 判定不完整**」WARN 并回显该 ref——此 WARN ≠ 通过，须核对 ref 后重跑。
 
 **覆盖范围**（用户口径「开发过程中的所有相关改动」）：
 
@@ -185,7 +185,8 @@ bash scripts/validate-component.sh {组件名} {PROJECT_ROOT} --base {分支基�
 - docs 表是**用户阅读界面**，两边必须同步；顺序不一致即 **FAIL**（脚本 `G2`）。
 - 重排必然**同时改两处**；`Slots` / `Events` / `Methods` 表顺序也需与源码 `defineSlots` / `defineEmits` / `defineExpose` 定义顺序一致（如有）。
 - **复合组件支持**（2026-09-22 自查补充）：`G2` 按 `.vue` 文件（含一层子目录）**逐一**与 docs 中同名 `### {子组件名}` API 表比对（如 `Dropdown.vue ↔ ### Dropdown`、`DropdownButton.vue ↔ ### DropdownButton`）；单文件组件用 `### {组件名}`。docs 中同名的 `### Xxx` 会在 Slots / Methods 区重复出现，脚本**限定在 `## APIs` 之后**取表，避免取错。
-- ⚠️ **脚本判定为启发式（半确定性）**：`G2` 从 `interface Props { … }` 块提取字段序、从 API 表首列提取表序。以下情况报 **SKIP/WARN 而非误判 FAIL**，属设计使然——① 声明写作 `export interface Props extends Xxx {`（不匹配 `Props {`）或跨行；② 字段类型为跨行对象字面量（内层键可能被误提取）；③ 表首列用 `v-model:value`、`<Tag color="cyan">v-model</Tag>` 等非裸标识符写法（匹配率 <60% 报 WARN）；④ 子组件在 docs 中无独立 `### Xxx` 小节。**出现 SKIP/WARN 时必须人工比对**——脚本保「一致」，人工保「合理」。
+- ⚠️ **脚本判定为启发式（半确定性）**，以下情况报 **SKIP/WARN 而非误判 FAIL**，属设计使然：① 声明写作 `export interface Props extends Xxx {`（不匹配 `Props {`）或跨行；② 子组件在 docs 中无独立 `### Xxx` 小节。**出现 SKIP/WARN 时必须人工比对**——脚本保「一致」，人工保「合理」。
+  - **已修（2026-09-22 自查第二轮）**：㈠ **跨行对象类型的内层键不再被误当顶层 prop**（只取最小缩进层——原实现会把 `loadingBarStyle?: { loading?: …; finish?: … }` 的 `loading/finish/error` 计入）；㈡ 表首列**含徽标/类型后缀也能取到 prop 名**（`open <Tag>v-model</Tag>` → `open`；`v-model:value` → `value`；`size<'small'>` → `size`）。
 - 补充约定：docs API 表**未列出**的源码 prop（多为 `v-model:value` 命名差异）只出 WARN 提示，**不影响顺序一致性的 PASS 结论**。
 
 ### 3.4 反例 → 正例
@@ -265,7 +266,7 @@ export interface Props {
 |:--|:--|:--|:--|:--|
 | 用例数量 | — | `##` 用例标题数（剔除固定章节） | `<h2>` 数 | 脚本 `G4` |
 | 用例顺序 | — | 标题序列 | `<h2>` 序列 | 脚本 `G4`（同序） |
-| 用例标题文本 | — | 与演示页**逐字一致** | **权威源** | 脚本 `G4` |
+| 用例标题文本 | — | 与演示页**归一化后**逐字一致（剥离 `<code>`/反引号/粗体/多余空白——docs 反引号 ↔ 演示页 `<code>` 属规范允许的载体差异） | **权威源** | 脚本 `G4` |
 | 用例描述 | — | 斜体 `*...*` + 紧跟 `<br/>` | `<p class="mb10">` + `<code>`、无 `<br/>` | 人工 + `demo-description.md` §5 |
 | 用例示例代码 | 对外行为一致 | 与演示页同源（仅剔对照分区） | **权威源** | 人工 |
 | 用例布局 | — | 与演示页同布局（内联 demo） | **权威源** | 人工 |
@@ -273,7 +274,7 @@ export interface Props {
 | **Props 顺序** | **权威源**（六段式分组 + 段内语义相邻） | 与源码**逐项同序** | — | 脚本 `G2` |
 | 字段注释 | **权威源**（中文语义注释） | 说明列语义一致（可精简，**不得矛盾**） | — | 人工 |
 | Events | `defineEmits` | `## Events`（有 emit 才写） | 有演示（如适用） | 脚本 `B5` + 人工 |
-| Slots | `defineSlots` + `{名}Slots` | `## Slots` 表 | 有演示（如适用） | 脚本 `B5` + 人工 |
+| Slots | `defineSlots` + `{名}Slots` | `## Slots` 表：列头「名称 \| 说明 \| 用法」+ 用法列 `v-slot:xxx` | 有演示（如适用） | 脚本 `B5`/`B8` + 人工 |
 | Methods | `defineExpose` | `## Methods`（有 expose 才写） | 有演示（如适用） | 脚本 `B5` + 人工 |
 | 品牌信息 | 0 残留 | 0 残留 | 0 残留 | 脚本 `C5` |
 
