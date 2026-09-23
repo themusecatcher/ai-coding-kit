@@ -18,6 +18,33 @@
 #   ← references/flow.md 阶段 5 第 1/4/5/6 步
 #   ← SKILL.md §能力复用索引
 #
+# 2026-09-23（精修范围口径 · 同步 refine-spec.md §0.1）变更：
+#   ① 新增 **G0「精修范围清单」**（纯数据源，供人工逐项精修）：按本分支净改动
+#      `git diff --name-only <base>`（基点 → 当前工作区，一次覆盖「已提交的每一批 + 未提交改动」）
+#      + `git ls-files --others --exclude-standard`，把「组件源码 / 演示页 / docs」三载体涉及的
+#      文件分类列出。事故背景：精修被缩窄成「本轮改动过的文件」，且**分批提交场景只看工作区
+#      `git diff` 会整段漏检已提交批次**（→ 精修范围口径 = 四来源：三载体 + git 已提交批次）。
+#   ② G1 提示补「须留逐文件核对证据（抽检不算完成）」；范围为空 / base 未解析均给 WARN。
+#   ③ 同步：`SKILL.md` 核心红线「交付前精修必做」；`references/refine-spec.md` §0.1 / §6.2 / §7 /
+#      反模式清单；`references/flow.md` 阶段 5 第 5 步 + Gate 5 模板（G0 行 + 精修范围确认行）；
+#      `references/checklists.md` G0 / G1 / G3。
+#
+# 2026-09-23（全库 70 组件「非 S4/C5 的 WARN 存量」收敛 · 6 类脚本口径缺口）变更：
+#   ① B6 / G2 的子标题改按**注册键**查找（`map_keys_by_dir`，与 A2/A3 同口径）：修 qr-code →
+#      文档写 `### QRCode`（注册键大小写不同）与复合组件 grid → `### Row` / `### Col`
+#      （原判定只查 `### Grid`）两类假报。
+#   ② G2 提取 docs 表首列时先剥离 markdown 链接 `[text](url)` → `text`：修 date-picker 的
+#      `[format](#format-支持的格式化占位符列表)` 被 `^[A-Za-z]` 整行过滤 → 假报「docs 未列出 format」。
+#   ③ G2 豁免 Vue 编译器注入的内部 prop `valueModifiers` / `modelModifiers`（v-model 修饰符载体，
+#      非用户 API，docs 不列属合理）：修 Input / InputNumber / InputSearch / Textarea 四处假报。
+#   ④ A4 新增「样式载体镜像」判定：无 `components/` 依赖但表有条目的组件，若其为 styleSources 的键
+#      （命令式 Provider：ModalProvider / DialogProvider / NotificationProvider，源码为同目录相对
+#      import 如 `import Modal from './Modal.vue'`），则要求条目 ≡ 载体组件条目（原判据只认
+#      `components/` 绝对路径 → 假报「源码无组件依赖但表有条目」）；非 styleSources 键仍维持 WARN。
+#   ⑤ G4 白名单补 `参考文档`（Calendar / DatePicker / QRCode / Swiper 的外部库参考章节）与
+#      `与 Space 组件的区别`（Flex 的对比说明章节）——均为 docs 固定说明章节，演示页本无对应分区；
+#      并把「补回 DTU」的遍历改为按行读取，以兼容含空格的章节名。
+#
 # 2026-09-22（多次实践复盘 · 交付前精修）变更：
 #   ① 新增 C5：品牌信息残留扫描（两段口径 = 本分支净改动新增行[基点→当前工作区] +
 #      未跟踪新增文件全文，覆盖「分批开发 + 分批提交」场景；存量不追溯；
@@ -338,6 +365,18 @@ fi
 # A4 componentDependencies 与源码 import 对上
 # 表源同 A3；⚠️ 复合组件**逐子组件**核对（2026-09-22 自查修正）：原实现把整个目录的 import
 # 聚合后只与父条目（如 Dropdown）比对 → 子组件（DropdownButton）的依赖被误判缺失 → 假 FAIL。
+# 「自身无样式」组件的样式载体（styleSources 的键 → 载体组件），供下方 Provider 形态判定（2026-09-23 追加）
+style_src_of() {   # $1 = 组件名 → 载体组件名（非 styleSources 键则为空）
+  sed -n '/const styleSources/,/^}/p' "$DEPS_SRC" 2>/dev/null \
+    | sed -nE "s/^[[:space:]]*${1}:[[:space:]]*'([^']*)'.*/\1/p" | head -1
+}
+deps_entry_of() {  # $1 = 组件名 → componentDependencies 条目原文（完整多行数组）
+  sed -n '/componentDependencies:/,/^}/p' "$DEPS_SRC" 2>/dev/null \
+    | awk -v k="$1" '
+        $0 ~ "^[[:space:]]*" k "[[:space:]]*:" { f=1 }
+        f { print; if (index($0, "]")) exit }
+      '
+}
 A4_HINT=""
 [ "$DEPS_SRC_LABEL" = "style-deps.ts" ] && A4_HINT="；新结构下权威校验另跑 pnpm verify:deps"
 if [ -z "$COMP_DIR" ]; then
@@ -358,13 +397,29 @@ else
       | sed -E "s|from ['\"]components/([^'\"]+)['\"].*|\1|" | sort -u)
     # ⚠️ 2026-09-22 修正假 FAIL：`Table: [` 为多行数组，原 grep 只取首行 → 依赖被判缺失；
     # 且必须限定在 componentDependencies 区块内（componentsMap 也有同名键，否则会串行读到别的表）
-    A4_ENTRY=$(sed -n '/componentDependencies:/,/^}/p' "$DEPS_SRC" 2>/dev/null \
-      | awk -v k="$A4_SEC" '
-        $0 ~ "^[[:space:]]*" k "[[:space:]]*:" { f=1 }
-        f { print; if (index($0, "]")) exit }
-      ')
+    A4_ENTRY=$(deps_entry_of "${A4_SEC}")
     if [ -z "$A4_DEPS" ]; then
-      [ -n "$A4_ENTRY" ] && A4_WARN="$A4_WARN ${A4_SEC}(源码无组件依赖但表有条目)"
+      # ⚠️ 2026-09-23 修正假阳性：命令式 Provider（ModalProvider / DialogProvider / NotificationProvider）
+      #   源码是**同目录相对 import**（`import Modal from './Modal.vue'`），不含 `components/` 路径，
+      #   旧判定据此报「源码无组件依赖但表有条目」。此类组件是 styleSources 的键（目录内无独立样式文件），
+      #   其样式与依赖均来自载体组件 → 条目应为**载体条目的镜像**，按此判定；非 styleSources 键仍维持 WARN。
+      if [ -z "$A4_ENTRY" ]; then
+        continue
+      fi
+      A4_SRC=$(style_src_of "${A4_SEC}")
+      if [ -z "$A4_SRC" ]; then
+        A4_WARN="$A4_WARN ${A4_SEC}(源码无组件依赖但表有条目)"
+      else
+        # ⚠️ 归一化须先剥掉「键名:」只留值：条目原文形如 `DialogProvider: ['Button', 'Scrollbar']`，
+        #   两侧键名必然不同（Provider vs 载体），不剥会因键名差异误判为不一致。
+        A4_N_OWN=$(printf '%s' "$A4_ENTRY" | sed -E 's/^[^:]*://' | tr -d '[:space:]' | sed -E 's/[^A-Za-z]//g')
+        A4_N_SRC=$(deps_entry_of "${A4_SRC}" | sed -E 's/^[^:]*://' | tr -d '[:space:]' | sed -E 's/[^A-Za-z]//g')
+        if [ "$A4_N_OWN" = "$A4_N_SRC" ]; then
+          A4_OKN=$((A4_OKN+1))
+        else
+          A4_FAIL="$A4_FAIL ${A4_SEC}(条目 ${A4_N_OWN:-空} 与样式载体 ${A4_SRC} 的 ${A4_N_SRC:-空} 不一致)"
+        fi
+      fi
       continue
     fi
     A4_MISS=""
@@ -479,12 +534,22 @@ else
 fi
 
 # B6 `## APIs` 下 `### {组件名}` 子标题（实测：项目单组件文档均有）
+# ⚠️ 2026-09-23 修正假阳性：候选名 = 输入名 + 目录派生的**注册键**（与 A2/A3 同口径）。
+#    实测 ① qr-code → 注册键 QRCode，文档写 `### QRCode`；② 复合组件 grid → 注册键 Row / Col，
+#    文档分 `### Row` / `### Col`（原判定只查 `### Grid`，必失败）。
 if [ ! -f "$DOC_FILE" ]; then
   skip "B6 文档缺失，跳过 ### 子标题检查"
-elif grep -qE "^###[[:space:]]+$NAME[[:space:]]*$" "$DOC_FILE" 2>/dev/null; then
-  ok "B6 API 表 ### $NAME 子标题命中"
 else
-  warn "B6 未找到 '### $NAME' 子标题（项目单组件文档惯例为 \`## APIs\` 下分节，详见 checklists.md B6）"
+  B6_KEYS="${NAME} $(map_keys_by_dir)"
+  B6_HIT=""
+  for b6k in $B6_KEYS; do
+    if grep -qE "^###[[:space:]]+${b6k}[[:space:]]*$" "$DOC_FILE" 2>/dev/null; then B6_HIT="$b6k"; break; fi
+  done
+  if [ -n "$B6_HIT" ]; then
+    ok "B6 API 表 ### ${B6_HIT} 子标题命中（候选注册键：${B6_KEYS}）"
+  else
+    warn "B6 未找到 '### {组件名}' 子标题（候选：${B6_KEYS}；项目单组件文档惯例为 \`## APIs\` 下分节，详见 checklists.md B6）"
+  fi
 fi
 
 # B7 API 表类型列无 `string | slot` / `Array | slot` 残留（2.7.1 类型强化决策）
@@ -790,18 +855,23 @@ fi
 if [ -z "$COMP_VUES" ]; then
   skip "F4 组件 .vue 未解析到，跳过插槽探测检查"
 else
-  F4_ARR=$(grep -hoE "useSlotsExist\(\[[^]]*\]" $COMP_VUES 2>/dev/null | head -1)
+  # ⚠️ 2026-09-23 修正假阴性：原实现 `... | head -1` **只取整个组件的第一个数组**——
+  #    复合组件（一个目录多个 .vue）或同一文件多次调用时，其余数组内的插槽名从未被校验
+  #    （实测 components/list/：ListItem.vue 与 List.vue 各一个数组，原实现只查到前者）。
+  F4_ARR=$(grep -hoE "useSlotsExist\(\[[^]]*\]" $COMP_VUES 2>/dev/null | tr '\n' '|')
   if [ -z "$F4_ARR" ]; then
     ok "F4 未使用 useSlotsExist 数组形式（或无需插槽探测）"
   else
-    F4_NAMES=$(echo "$F4_ARR" | grep -oE "'[a-zA-Z]+'" | tr -d "'" | tr '\n' ' ')
+    F4_ARR_N=$(printf '%s' "$F4_ARR" | grep -oE "useSlotsExist" | wc -l | tr -d ' ')
+    F4_NAMES=$(printf '%s' "$F4_ARR" | grep -oE "'[a-zA-Z]+'" | tr -d "'" | tr '\n' ' ' \
+      | tr ' ' '\n' | awk '!seen[$0]++' | tr '\n' ' ')
     F4_UNUSED=""
     for s in $F4_NAMES; do
       cnt=$(grep -ohE "slotsExist\.$s" $COMP_VUES 2>/dev/null | wc -l | tr -d ' ')
       [ "${cnt:-0}" = "0" ] && F4_UNUSED="$F4_UNUSED $s"
     done
     if [ -z "$F4_UNUSED" ]; then
-      ok "F4 useSlotsExist 各插槽名均有消费点（${F4_NAMES}）"
+      ok "F4 useSlotsExist 各插槽名均有消费点（${F4_ARR_N} 个数组：${F4_NAMES}）"
     else
       warn "F4 useSlotsExist 可能含冗余探测项:${F4_UNUSED}（须人工确认，禁止多传未使用的插槽名）"
     fi
@@ -927,17 +997,43 @@ fi
 # DTU = 剔除固定章节后（用于数量比对；固定章节实测频次见 refine-spec.md §5.1 旁注）
 if [ -f "$DOC_FILE" ]; then
   grep -E '^## ' "$DOC_FILE" 2>/dev/null | sed -E 's/^##[[:space:]]+//' | norm_title | grep -v '^$' > "$DT"
-  grep -vxE '何时使用|基本使用|使用方式|在 setup 外使用|APIs|Slots|Events|Methods|自定义样式|主题变量|设计指引' "$DT" > "$DTU"
+  grep -vxE '何时使用|基本使用|使用方式|在 setup 外使用|APIs|Slots|Events|Methods|自定义样式|主题变量|设计指引|参考文档|与 Space 组件的区别' "$DT" > "$DTU"
   # 白名单章节若本身也是演示页的用例标题（自定义样式等），补回 DTU，避免数量误判
-  for w in 何时使用 基本使用 使用方式 在 setup 外使用 APIs Slots Events Methods 自定义样式 主题变量 设计指引; do
-    if grep -qxF -- "$w" "$VT" 2>/dev/null && grep -qxF -- "$w" "$DT" 2>/dev/null; then
-      echo "$w" >> "$DTU"
-    fi
-  done
+  # ⚠️ 2026-09-23：改按行读取（原 `for w in <裸词列表>` 无法承载含空格的章节名，如「与 Space 组件的区别」）
+  printf '%s\n' 何时使用 基本使用 使用方式 在 setup 外使用 APIs Slots Events Methods 自定义样式 主题变量 设计指引 参考文档 '与 Space 组件的区别' \
+    | while IFS= read -r w; do
+        if [ -n "$w" ] && grep -qxF -- "$w" "$VT" 2>/dev/null && grep -qxF -- "$w" "$DT" 2>/dev/null; then
+          echo "$w" >> "$DTU"
+        fi
+      done
 fi
 
+# G0 精修范围清单（2026-09-23 新增 · 权威源 refine-spec.md §0.1）
+# 事故背景（2026-09-22 Select P5）：①精修被缩窄成「本轮改动过的文件」（本轮只改 docs → 只精修 docs）；
+#   ②组件常「分批开发 + 分批提交」，收尾时大部分内容早已在 commit 里，只看 `git diff`（默认
+#     HEAD ↔ 工作区）会**整段漏检已提交批次**。
+# 口径：本分支净改动 `git diff --name-only <base>`（基点 → 当前工作区，一次覆盖「已提交的每一批 +
+#   未提交改动」）+ 未跟踪文件全文，按「组件源码 / 演示页 / docs」三载体分类列出，供人工逐项精修。
+# 判定：纯数据源（不判 PASS/FAIL —— 是人工项的范围输入）；范围为空 → WARN；base 未解析 → WARN。
+G0_RANGE="${BASE:-HEAD}"
+G0_FILES=$( { git -C "$ROOT" diff --name-only "$G0_RANGE" 2>/dev/null; git -C "$ROOT" ls-files --others --exclude-standard 2>/dev/null; } | sort -u )
+G0_SRC=$(printf '%s\n' "$G0_FILES" | grep -E "^components/${COMP_DIR:-@none@}/" 2>/dev/null | tr '\n' ' ')
+G0_DEMO=$(printf '%s\n' "$G0_FILES" | grep -E "^src/views/${VIEW_DIR:-@none@}/" 2>/dev/null | tr '\n' ' ')
+G0_DOCS=$(printf '%s\n' "$G0_FILES" | grep -E "^docs/guide/components/${DOC_ENTRY:-@none@}$|^docs/guide/(changelog|features|index)\.md$" 2>/dev/null | tr '\n' ' ')
+if [ -z "$G0_FILES" ]; then
+  warn "G0 精修范围清单为【空】（${G0_RANGE} 相对当前工作区无差异、且无未跟踪文件）——请先确认 git 状态，勿据此认为「无需精修」"
+elif [ -z "$BASE" ]; then
+  warn "G0 精修范围未解析到分支基点（当前按工作区 vs HEAD 取范围）——分批提交场景会漏掉【已提交批次】：请用 --base <ref> 或工作上下文 base_ref 重跑"
+else
+  skip "G0 精修范围清单见下方三载体列表（本分支净改动 base=${BASE:0:8} → 当前工作区 + 未跟踪文件，已含已提交批次）——请逐项核对（refine-spec.md §0.1）"
+fi
+printf '       [G0] 组件源码: %s\n' "${G0_SRC:-（本分支无改动）}"
+printf '       [G0] 演示页: %s\n' "${G0_DEMO:-（本分支无改动）}"
+printf '       [G0] docs: %s\n' "${G0_DOCS:-（本分支无改动）}"
+printf '       [G0] 精修对象 = 四来源（上述三载体 + git 已提交批次），与本轮改动面无关；清单内每个文件都须逐项核对并留证据（refine-spec.md §0.1）\n'
+
 # G1 注释精修（语义判断 → 人工）
-skip "G1 组件源码注释精修为语义判断（半确定性），请按 refine-spec.md §2 人工精修：三层结构 / 删复述与过期注释 / 删品牌来源标注"
+skip "G1 组件源码注释精修为语义判断（半确定性），请按 refine-spec.md §2 人工精修：三层结构 / 删复述与过期注释 / 删品牌来源标注；⚠️ 须留逐文件核对证据（抽检不算完成）"
 
 # G2 源码 Props 顺序 ↔ docs `## APIs` → `### {组件名}` 表行顺序（refine-spec.md §3.3）
 # 支持复合组件：按 .vue 文件（含一层子目录）逐一与 docs 中同名 `### {子组件名}` 表比对
@@ -964,17 +1060,21 @@ doc_props_of() {   # $1 = docs 中 ### 标题名 → 表首列（逐行，限定
       f && /\|/ { print }
     ' "$DOC_FILE" 2>/dev/null \
     | sed -E 's/^[[:space:]]*\|//' | cut -d'|' -f1 \
-    | sed -E 's/<[^>]*>//g; s/`//g' | awk '{print $1}' \
+    | sed -E 's/\[([^]]*)\]\([^)]*\)/\1/g; s/<[^>]*>//g; s/`//g' | awk '{print $1}' \
     | sed -E 's/^v-model://' | grep -oE '^[A-Za-z][A-Za-z0-9]*'
     # ⚠️ 2026-09-22 修正（两轮）：首列常带徽标/类型后缀，不能整格当标识符——
     #    `open <Tag color="cyan">v-model</Tag>` → 去标签得 `open v-model` → 取首个空白 token `open` ✓
     #    `v-model:value` → 剥前缀得 `value` ✓；`size<'small'|'middle'>` → 取标识符前缀 `size` ✓
     #    （若先去掉空格再取 token，会得到 `openv`、`openv-model` 之类错误结果 —— 故顺序不可颠倒）
+    #    2026-09-23 追加：首列可能整体是 markdown 链接（`[format](#anchor)`），须先剥离链接保留文字，
+    #    否则整行会被末尾的 `^[A-Za-z]` 过滤掉，假报「docs 未列出该 prop」（date-picker 的 format 实测）。
 }
 g2_compare() {     # $1 = 源码字段序（空格分隔）$2 = docs 表列（换行）；结果写 G2R_*
   G2R_ORDER=1; G2R_MATCHED=0; G2R_TOTAL=0; G2R_MISS=""
   local last=0 ln p
   for p in $1; do
+    # 2026-09-23：豁免 Vue 编译器注入的内部 prop（v-model 修饰符的载体，非用户 API，docs 不列属合理）
+    case "$p" in valueModifiers|modelModifiers) continue ;; esac
     G2R_TOTAL=$((G2R_TOTAL+1))
     ln=$(printf '%s\n' "$2" | grep -nx "$p" | head -1 | cut -d: -f1)
     if [ -z "$ln" ]; then
@@ -996,7 +1096,17 @@ else
   G2_FAIL=""; G2_UNCERTAIN=""; G2_MISSALL=""; G2_OKN=0; G2_CHECKED=0
   for vf in $COMP_VUES; do
     # 单文件组件用 `### {组件名}`；复合组件用 `### {子组件名}`（= .vue 文件名）
-    if [ "${G2_CNT:-0}" = "1" ]; then G2_SEC="$NAME"; else G2_SEC=$(basename "$vf" .vue); fi
+    # ⚠️ 2026-09-23 修正假阳性：单文件组件的**注册键**可能与目录派生名不同（qr-code → QRCode），
+    #    故候选 = 输入名 + 目录派生的注册键，取「docs 中确有该 `### X` 且有 API 表」的第一个。
+    if [ "${G2_CNT:-0}" = "1" ]; then
+      G2_SEC=""
+      for g2k in $NAME $(map_keys_by_dir); do
+        if [ -n "$(doc_props_of "${g2k}" | tr -d '[:space:]')" ]; then G2_SEC="$g2k"; break; fi
+      done
+      [ -n "$G2_SEC" ] || G2_SEC="$NAME"
+    else
+      G2_SEC=$(basename "$vf" .vue)
+    fi
     sp=$(src_props_of "$vf" | tr '\n' ' ')
     [ -n "$(printf '%s' "$sp" | tr -d ' ')" ] || continue
     dp=$(doc_props_of "$G2_SEC")
@@ -1032,7 +1142,7 @@ else
 fi
 
 # G3 演示用例排序与布局（语义判断 → 人工）
-skip "G3 演示用例排序与布局为语义判断（半确定性），请按 refine-spec.md §4 人工精修：官网保序 / 新增插回原序 / 同类型布局一致"
+skip "G3 演示用例排序与布局为语义判断（半确定性），请按 refine-spec.md §4 人工精修：先确认排序锚点（默认官网保序；用户明确「无需对齐官网」时用合理性优先＝主题聚簇 + 由浅入深）/ 同类型布局一致"
 
 # G4 views ↔ docs 用例对齐（数量 / 顺序 / 标题逐字；演示页为权威源）
 G4_V_N=$(grep -c . "$VT" 2>/dev/null | tr -d ' '); G4_D_N=$(grep -c . "$DTU" 2>/dev/null | tr -d ' ')
