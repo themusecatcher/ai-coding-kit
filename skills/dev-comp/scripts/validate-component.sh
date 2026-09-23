@@ -59,6 +59,13 @@
 #      与 kebab 输入（auto-complete，键为 AutoComplete）必然假 FAIL。
 #   ④ A4 条目提取限定在 componentDependencies 区块内并完整读取多行数组：原实现只取
 #      首行 → `Table: [` 这类多行条目的依赖被全部判缺失（假 FAIL）。
+#   ⑤ F8 支持**多行 import**：原按单行 grep，多行写法整段漏检（假阴性，实测 notification 页）；
+#      现先把跨行 import 语句拼接成一行再判定（PascalCase 组件值 → 违规；hook/工厂函数、import type 豁免）。
+#
+# 2026-09-22（全库 70 组件体检 · 其余假阳性/不可修项收敛）变更：
+#   ① C4 排除注释行（`: //` / `: *`）——被注释掉的 console.log 不算调试残留（Upload.vue 实测）。
+#   ② F6 `## future` 先剥离 `<!-- … -->` 注释块再判残留——搁置计划在站点不可见（Cascader/Table/Timeline 实测）。
+#   ③ B3 存量组件豁免：组件在**最早 git tag** 时已存在且 changelog 全无记录 → WARN（无版本可归属，不可机械补记）。
 #
 # 2026-09-15（Comment 事故复盘）变更：
 #   ① 修正 B5：原「API 章节四件套齐全」判定过严——项目多数组件无事件/无暴露方法，
@@ -409,7 +416,16 @@ CHANGELOG="$ROOT/docs/guide/changelog.md"
 if grep -qi "$NAME" "$CHANGELOG" 2>/dev/null; then
   ok "B3 changelog 变更记录命中"
 else
-  fail "B3 changelog 缺变更记录：grep '$NAME' docs/guide/changelog.md"
+  # ⚠️ 2026-09-22 存量豁免（Divider / Result 实测）：组件在**最早 git tag** 时即存在且 changelog
+  #    全无记录 → 无版本可归属（不可机械补记，凭空补写等于伪造历史）→ 降为 WARN 提示人工确认；
+  #    仍在开发 / 新引入的组件缺记录则维持 FAIL（语义不变）。
+  B3_TAG=$(git -C "$ROOT" tag 2>/dev/null | sort -V | head -1)
+  if [ -n "$B3_TAG" ] && [ -n "$COMP_DIR" ] \
+    && git -C "$ROOT" ls-tree -d --name-only "$B3_TAG" "components/$COMP_DIR" 2>/dev/null | grep -q .; then
+    warn "B3 changelog 无本组件记录，但该组件在最早 tag ${B3_TAG} 时已存在（存量组件，无版本可归属）→ 如需补记请人工确认版本；不判 FAIL"
+  else
+    fail "B3 changelog 缺变更记录：grep '$NAME' docs/guide/changelog.md"
+  fi
 fi
 VER_PKG=$(grep -oE '"version"[[:space:]]*:[[:space:]]*"[0-9.]+"' "$ROOT/package.json" 2>/dev/null | head -1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+')
 VER_LOG=$(grep -oE '[0-9]+\.[0-9]+\.[0-9]+' "$CHANGELOG" 2>/dev/null | head -1)
@@ -561,7 +577,10 @@ fi
 
 # C4 调试代码清理
 if [ -n "$COMP_DIR" ]; then
-  C4_HIT=$(grep -rnE "console\.(log|debug)" "$ROOT/components/$COMP_DIR/" 2>/dev/null | head -3)
+  # ⚠️ 2026-09-22 修正假阳性：被注释掉的 `// console.log(...)` 不是运行期调试输出；
+  #    排除「行内容以 // 或 *（块注释续行）开头」的命中（Upload.vue 的注释行实测即此类）。
+  C4_HIT=$(grep -rnE "console\.(log|debug)" "$ROOT/components/$COMP_DIR/" 2>/dev/null \
+    | grep -vE ":[[:space:]]*(//|/\*|\*)" | head -3)
 else
   C4_HIT=""
 fi
@@ -830,7 +849,11 @@ else
   F6_DUP=$(grep -oE '^## <VersionDateTag[^>]*>[0-9.]+' "$CHANGELOG" 2>/dev/null \
     | grep -oE '[0-9]+\.[0-9]+\.[0-9]+$' | sort | uniq -d | tr '\n' ' ')
   F6_BADLINK=$(grep -nE '\]\(https?://themusecatcher\.github\.io/vue-amazing-ui/guide/components/' "$CHANGELOG" 2>/dev/null | head -3)
-  F6_FUTURE=$(sed -n '/^## future/,$p' "$CHANGELOG" 2>/dev/null | grep -i "$NAME" | head -3)
+  # ⚠️ 2026-09-22 修正假阳性：`## future` 内被 `<!-- … -->` 整块搁置的计划在站点不可见，
+  #    不属「残留」（原判定把 Cascader / Table / Timeline 的搁置计划误判为残留）。
+  F6_FUTURE=$(sed -n '/^## future/,$p' "$CHANGELOG" 2>/dev/null \
+    | awk 'BEGIN{c=0} { l=$0; while (length(l)>0) { if (c==0) { i=index(l,"<!--"); if (i==0) break; l=substr(l,1,i-1); c=1 } else { i=index(l,"-->"); if (i==0) { l=""; break } l=substr(l,i+3); c=0 } } print l }' \
+    | grep -i "$NAME" | head -3)
   if [ -z "$F6_DUP" ] && [ -z "$F6_BADLINK" ] && [ -z "$F6_FUTURE" ]; then
     ok "F6 changelog 三查通过（版本章节唯一 / 组件链接站内相对路径 / future 无本组件残留）"
   else
@@ -858,7 +881,12 @@ fi
 #    全局包裹，这是演示页里能直接调用 useLoadingBar() 等的前提」。原判定只看包名 → 假 FAIL。
 #    判定：默认导入整库 → 违规；具名导入中**出现 PascalCase 标识符（组件值）** → 违规；纯 hook/工厂函数 → 允许。
 if [ -n "$VIEW_DIR" ] && [ -f "$DEMO" ]; then
-  F8_LINES=$(grep -nE "^import .*from 'vue-amazing-ui'" "$DEMO" 2>/dev/null | grep -v "import type")
+  # ⚠️ 2026-09-22 修正假阴性：原按「单行」grep，**多行 import**（`import {\n A,\n B\n} from '…'`）
+  #    整段漏检（实测 notification 页即如此）。改为先把跨行 import 语句拼成一行再判定。
+  F8_LINES=$(awk '
+      /^import[[:space:]]/ { stmt=$0; if ($0 !~ /from[[:space:]]/) { col=1; next } print stmt; next }
+      col==1 { stmt=stmt " " $0; if ($0 ~ /from[[:space:]]/) { col=0; print stmt } }
+    ' "$DEMO" 2>/dev/null | grep -F "from 'vue-amazing-ui'" | grep -v "import type")
   F8_DEFAULT=""; F8_BAD=""
   if [ -n "$F8_LINES" ]; then
     F8_DEFAULT=$(printf '%s\n' "$F8_LINES" | grep -vE "\{" | head -3)
