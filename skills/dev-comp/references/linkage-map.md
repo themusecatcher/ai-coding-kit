@@ -56,7 +56,7 @@ components.d.ts                      # ⑭ 幽灵声明清理（自动生成，�
 
 | 层 | 手段 | 说明 |
 |:--|:--|:--|
-| skill 脚本 | `A3` / `A4` | 映射存在 + 字母序（目录聚合组件如 `Row` / `Col` 仅提示人工核对，键随 `grid/` 目录聚合）；`componentDependencies` 与源码 import 逐一对上（复合组件逐子组件）；⚠️ 2026-09-23：`A4` 对 `styleSources` 的键（命令式 Provider，源码为**同目录相对 import** 如 `./Modal.vue`）改判「条目 ≡ 载体组件条目」的镜像关系，非 `styleSources` 键仍维持 WARN |
+| skill 脚本 | `A3` / `A4` | 映射存在 + 字母序（目录聚合组件如 `Row` / `Col` 按「相邻聚合」判定：键在表内连续 → PASS，分散才 WARN）；`componentDependencies` 与源码 import 逐一对上（复合组件逐子组件）；⚠️ 2026-09-23：`A4` 对 `styleSources` 的键（命令式 Provider，源码为**同目录相对 import** 如 `./Modal.vue`）改判「条目 ≡ 载体组件条目」的镜像关系，非 `styleSources` 键仍维持 WARN |
 | **项目权威** | **`pnpm verify:deps`** | `scripts/verify-style-deps.js`：以产物 chunk 依赖图闭包**双向**比对 `componentDependencies`（`closure ⊆ table` 抓漏写、`table ⊆ closure` 抓 stale）——**发布前 / CI 必跑** |
 
 ### ⑮ `types/global-components.d.ts`（全局组件类型声明登记）⭐ 2026-09-15 事故点

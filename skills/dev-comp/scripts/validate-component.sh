@@ -44,6 +44,9 @@
 #   ⑤ G4 白名单补 `参考文档`（Calendar / DatePicker / QRCode / Swiper 的外部库参考章节）与
 #      `与 Space 组件的区别`（Flex 的对比说明章节）——均为 docs 固定说明章节，演示页本无对应分区；
 #      并把「补回 DTU」的遍历改为按行读取，以兼容含空格的章节名。
+#   ⑥ A3 消音（用户决策：保持 componentsMap 现状）：目录聚合组件（如 grid → Row / Col）的字母序由
+#      「一律 WARN 请人工核对」改为「按**相邻聚合**判定」——键在表内连续 → PASS（键序无消费方，
+#      与 components.ts 目录聚合惯例一致）；键**分散**时仍 WARN，保留拦截力。
 #
 # 2026-09-22（多次实践复盘 · 交付前精修）变更：
 #   ① 新增 C5：品牌信息残留扫描（两段口径 = 本分支净改动新增行[基点→当前工作区] +
@@ -340,7 +343,29 @@ else
   fail "A3 ${DEPS_SRC_LABEL} componentsMap 缺映射：grep '$NAME:' components/utils/${DEPS_SRC_FILE}"
 fi
 if [ "$A3_AGGR" = "1" ]; then
-  warn "A3 目录聚合组件（$(map_keys_by_dir)）字母序请人工核对（键分散在表内，非单条目）"
+  # 2026-09-23（用户决策 · 全库 WARN 存量收敛）：目录聚合键在 componentsMap 中**相邻聚合**（行号连续、
+  #   中间无其它目录的键）→ 判为合规 PASS：与 `components.ts` 的目录聚合惯例一致，且键序无消费方
+  #   （resolver 按键取值；构建期 Object.keys 迭代顺序只影响样式入口生成先后、不影响产物内容；
+  #   tests/resolver.spec.ts 亦不断言顺序）。⚠️ 键在表内**分散**时仍 WARN 请人工核对——不做无脑消音。
+  A3_LINES=""
+  for a3k in $(map_keys_by_dir); do
+    a3ln=$(sed -n '/componentsMap[[:space:]]*=/,/^}/p' "$DEPS_SRC" 2>/dev/null \
+      | grep -nE "^[[:space:]]+${a3k}:" | head -1 | cut -d: -f1)
+    [ -n "$a3ln" ] && A3_LINES="$A3_LINES $a3ln"
+  done
+  A3_LINES=$(printf '%s\n' $A3_LINES | sort -n)
+  A3_N=$(printf '%s\n' "$A3_LINES" | grep -c . | tr -d ' ')
+  if [ "${A3_N:-0}" = "0" ]; then
+    warn "A3 目录聚合组件（$(map_keys_by_dir)）未能在 componentsMap 中定位键行——请人工核对"
+  else
+    A3_FIRST=$(printf '%s\n' "$A3_LINES" | head -1)
+    A3_LAST=$(printf '%s\n' "$A3_LINES" | tail -1)
+    if [ "$((A3_LAST - A3_FIRST + 1))" = "$A3_N" ]; then
+      ok "A3 目录聚合组件（$(map_keys_by_dir)）按目录相邻聚合（表内序号 ${A3_FIRST}-${A3_LAST}；键序无消费方，与 components.ts 目录聚合惯例一致）"
+    else
+      warn "A3 目录聚合组件（$(map_keys_by_dir)）的键在表内分散（表内序号 $(printf '%s' "$A3_LINES" | tr '\n' '/')）——字母序请人工核对（linkage-map.md §④ 要求按字母序插入）"
+    fi
+  fi
 elif [ "$A3_OK" = "1" ]; then
 KEYS=$(sed -n '/componentsMap[[:space:]]*=/,/^}/p' "$DEPS_SRC" 2>/dev/null \
   | grep -E '^[[:space:]]+[A-Za-z][A-Za-z0-9]*:' \

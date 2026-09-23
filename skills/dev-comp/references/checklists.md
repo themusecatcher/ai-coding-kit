@@ -20,7 +20,7 @@
 - [ ] 多子组件：外层 `index.ts` 聚合 `export { Menu, MenuItem }` + 导出所有子类型
 - [ ] 确认无需手动修改 `components/index.ts`（自动 install 循环）和 `src/router/index.ts`（glob 自动扫描）
 - [ ] withInstall 时的 `utils/type` import 路径层级：单层 `../utils/type`，双层 `../../utils/type`
-- [ ] **⭐ `components/utils/style-deps.ts` `componentsMap`**（2026-09-22 修正：四张表已从 `resolver.ts` 收敛到此单一数据源，`resolver.ts` 只读不再定义表）：组件名 → 样式目录映射（按字母序插入，value 用 `ls` 实测目录名，详见 `linkage-map.md` §④）；⚠️ 目录聚合组件（`grid` → `Row` / `Col` 等，键分散在表内）不按字母序分散插入，与 `components.ts` 的目录聚合惯例一致 → 脚本仅给「字母序人工核对」提示，不需修改
+- [ ] **⭐ `components/utils/style-deps.ts` `componentsMap`**（2026-09-22 修正：四张表已从 `resolver.ts` 收敛到此单一数据源，`resolver.ts` 只读不再定义表）：组件名 → 样式目录映射（按字母序插入，value 用 `ls` 实测目录名，详见 `linkage-map.md` §④）；⚠️ 目录聚合组件（`grid` → `Row` / `Col` 等，键分散在表内）不按字母序分散插入，与 `components.ts` 的目录聚合惯例一致 → 脚本按「**相邻聚合**」判定：键在表内连续（中间无其它键）→ PASS 不再提示；仅当键**分散**时才 WARN 请人工核对（2026-09-23 用户决策：消音但不失拦截力）
 - [ ] **⭐ `components/utils/style-deps.ts` `componentDependencies`**：列出组件 `.vue` 内 `import ... from 'components/xxx'` 的实际组件依赖（**复合组件逐子组件各自登记**，无依赖则跳过）；必要时同步 `styleSources`（自身无样式文件时指向来源组件）——详见 `linkage-map.md` §④，权威校验 `pnpm verify:deps`
 - [ ] **⭐ `types/global-components.d.ts` 登记全局组件声明**：按字母序插入 `Xxx: typeof VueAmazingUI.Xxx`，覆盖 `componentsMap` 全量（含复合子组件 / Provider）——见 F5 与 `linkage-map.md` §⑮
 
@@ -108,7 +108,7 @@
 
 - [ ] A1 `components/{组件名}/index.ts`：`withInstall` + 类型导出。⚠️ **复合组件**：聚合层 index.ts 只做 `import/export 子组件`，**withInstall 在子组件层** index.ts（如 `dropdown/dropdown/index.ts`）——脚本已按此适配（2026-09-22 自查修正假 FAIL）
 - [ ] A2 `components/components.ts`：`export type { XxxProps }`（汇总级透传）+ 组件导出两条都在；组件导出**两种形态均可**——单组件 `export { default as Xxx }`、复合组件 `export { Xxx, XxxButton }`（脚本已适配，避免误命中 `XxxProps`/`XxxKey` 等类型导出）。⚠️ 2026-09-22 再修正：**类型导出按键名判定**（键依次取 components.ts 值导出行里的组件名 → componentsMap 按目录派生键 → 输入名），原直接查 `${NAME}Props` 会假 FAIL——「目录名 ≠ 组件名」（`grid` → `Row`/`Col`）与 kebab 输入（`auto-complete`，键为 `AutoComplete`）均属此列
-- [ ] A3 ⭐ **`components/utils/style-deps.ts`** `componentsMap` 按需样式映射（`grep -n "{组件名}:" components/utils/style-deps.ts` 命中且按字母序，value 为实测目录名，详见 `linkage-map.md` §④）。⚠️ 2026-09-22 修正：表源已从 `resolver.ts` 迁到 `style-deps.ts`（D 方案）；脚本按结构自动选源（`style-deps.ts` 优先，缺失回退 `resolver.ts`）；⚠️ 2026-09-22 再修正：输入名未命中时按**目录派生键**兜底通过（`grid` → `Row` / `Col`，目录聚合组件），并提示字母序人工核对
+- [ ] A3 ⭐ **`components/utils/style-deps.ts`** `componentsMap` 按需样式映射（`grep -n "{组件名}:" components/utils/style-deps.ts` 命中且按字母序，value 为实测目录名，详见 `linkage-map.md` §④）。⚠️ 2026-09-22 修正：表源已从 `resolver.ts` 迁到 `style-deps.ts`（D 方案）；脚本按结构自动选源（`style-deps.ts` 优先，缺失回退 `resolver.ts`）；⚠️ 2026-09-22 再修正：输入名未命中时按**目录派生键**兜底通过（`grid` → `Row` / `Col`，目录聚合组件）；⚠️ 2026-09-23：聚合键**相邻**（表内连续）→ PASS；**分散**才 WARN 人工核对
 - [ ] A4 ⭐ **`components/utils/style-deps.ts`** `componentDependencies` 样式依赖（`grep -rn "import .* from 'components/" components/{组件名}/` 逐一与映射条目对上；**复合组件逐子组件各自核对**，无依赖则确认跳过，详见 `linkage-map.md` §④）；权威校验另跑 `pnpm verify:deps`（项目自带双向比对）。⚠️ 2026-09-22 修正假 FAIL：脚本条目提取限定在 `componentDependencies` 区块内并**完整读取多行数组**（原只取首行 → `Table: [` 这类条目依赖被全判缺失）。⚠️ 2026-09-23 新增「样式载体镜像」判定：无 `components/` 依赖但有表条目的组件，若其为 `styleSources` 的键（命令式 Provider `ModalProvider` / `DialogProvider` / `NotificationProvider`，源码为**同目录相对 import**），则要求条目 ≡ 载体组件条目（原判据只认 `components/` 绝对路径 → 三类假报「源码无组件依赖但表有条目」）；非 `styleSources` 键仍维持 WARN
 - [ ] A5 自动注册确认：`git diff` 中无 `components/index.ts` / `src/router/index.ts` 手改痕迹（glob 自动扫描，无需手改）
 
