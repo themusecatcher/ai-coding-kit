@@ -1,0 +1,18 @@
+<svg width="128" height="128" viewBox="0 0 128 128" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="AI Coding Kit">
+  <defs>
+    <linearGradient id="ackGrad" x1="16" y1="16" x2="112" y2="112" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#3c8772"/>
+      <stop offset="1" stop-color="#41b883"/>
+    </linearGradient>
+  </defs>
+  <!-- 圆角方形底：象征「工具箱 / Kit」 -->
+  <rect x="8" y="8" width="112" height="112" rx="28" fill="url(#ackGrad)"/>
+  <!-- 左尖括号 < （代码符号） -->
+  <path d="M48 40L28 64L48 88" stroke="#ffffff" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- 右尖括号 > （代码符号） -->
+  <path d="M80 40L100 64L80 88" stroke="#ffffff" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- 中间三个流程节点：象征 dev-flow 工作流的步骤流转 -->
+  <circle cx="64" cy="44" r="6" fill="#ffffff"/>
+  <circle cx="64" cy="64" r="6" fill="#ffffff" fill-opacity="0.85"/>
+  <circle cx="64" cy="84" r="6" fill="#ffffff" fill-opacity="0.7"/>
+</svg>
