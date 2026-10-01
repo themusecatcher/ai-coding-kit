@@ -13,13 +13,14 @@ git_identity: "{name} / {email}"
 commit: ""
 start_date: "{YYYY-MM-DD}"
 artifacts:
-  component: components/{组件名}/
-  demo: src/views/{组件名}/Index.vue
-  doc: docs/guide/components/{组件名}.md
+  component: components/{组件目录名}/
+  demo: src/views/{演示目录名}/Index.vue
+  doc: docs/guide/components/{组件目录名}.md
   devlog: null
   knowledge: []
 ---
 
+> **占位符口径（2026-10-01）**：`{组件名}` = 组件导出名 PascalCase（`DatePicker`）；`{组件目录名}` = 项目 `components/` 实测目录名 kebab（`date-picker`）；`{演示目录名}` = `src/views/` 下 camelCase 目录名（`datePicker`）。**文件名** = `vaui-{组件目录名}-{YYYYMMDD}.md`（形态定义见 `references/capability-reuse.md` §命名规则）。
 > `git_identity`：阶段 0 用 `git config user.name` + `git config user.email` **实测**登记（vue-amazing-ui 仓库预期为 `themusecatcher / themusecatcher@163.com`）；阶段 5 提交前实测比对，不符拦截（详见 `references/flow.md` 阶段 5 第 4 步）。
 > `commit`：提交后 `git log -1 --format='%h'` 实测回填，禁止凭记忆记录。
 > `base_ref`：**阶段 1 分支确认后**实测登记分支基点（`git merge-base origin/main HEAD`）。用途：组件分批开发、每批单独提交时，阶段 5 的 C5 品牌扫描需用基点回溯**已提交批次**（只查工作区会漏），详见 `references/refine-spec.md` §1.3。

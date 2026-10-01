@@ -42,7 +42,7 @@
 1. **删除 feat 分支（本地 + 远程）**（用户确认后执行）：
    - 本地：`git branch -d feat/{组件名}`
    - 远程：`git push origin --delete feat/{组件名}`
-2. **工作上下文收尾**：更新 `~/.codebuddy/dev-comp/working-context/vaui-{组件名}-*.md` 的 status → `released`，补记发布版本号与日期，可归档
+2. **工作上下文收尾**：更新 `~/.codebuddy/dev-comp/working-context/vaui-{组件目录名}-*.md`（kebab 形态，见 `capability-reuse.md` §命名规则）的 status → `released`，补记发布版本号与日期，可归档
 3. **知识沉淀补记**：knowledge-loop 沉淀中补记本次发布的版本号与 changelog 位置（若有此环节）
 
 ## 4. 自检命令速查

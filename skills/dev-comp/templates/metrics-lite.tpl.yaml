@@ -1,5 +1,6 @@
 # dev-comp 精简度量报告
-# 每个组件/阶段完成时，写入 ~/.codebuddy/dev-comp/metrics/vaui-{组件名}-{日期}.yaml
+# 每个组件/阶段完成时，写入 ~/.codebuddy/dev-comp/metrics/vaui-{组件目录名}-{YYYYMMDD}[-{阶段标签}].yaml
+# {组件目录名} = 项目 components/ 实测目录名（kebab，如 date-picker）；{阶段标签} 枚举：P{n} / cleanup / finalize（无标签 = 组件级报告）
 # 仅保留对组件开发有意义的核心字段
 
 component: {组件名}

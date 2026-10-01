@@ -10,12 +10,14 @@
 **目标**：判断是新组件还是接续已有组件，建立/恢复工作上下文，列出计划。
 
 1. **目录自举 + 两级扫描已有工作上下文**（首次使用专属目录不存在，禁止假设已存在；扫描顺序固定：运行时目录优先 → artifacts 兜底）：
-   - 先建目录：`mkdir -p ~/.codebuddy/dev-comp/working-context ~/.codebuddy/dev-comp/metrics`
-   - **第一级（运行时目录，优先）**：`ls ~/.codebuddy/dev-comp/working-context/ | grep -i {组件名}`
-   - **第二级（归档兜底）**：`ls {ARTIFACTS_FALLBACK_DIR}/{组件名}-*/working-context/ | grep -i {组件名}`（`ARTIFACTS_FALLBACK_DIR` 配置留空则跳过本级）
+   - 先建目录：`mkdir -p ~/.codebuddy/dev-comp/working-context ~/.codebuddy/dev-comp/notes ~/.codebuddy/dev-comp/metrics`
+   - **第一级（运行时目录，优先）**：**归一化匹配**（小写去 `-_`，兼容 `date-picker` / `DatePicker` / `datepicker` 三种历史形态，禁止裸 `grep -i {组件名}`——连字符差异会漏检）：
+     `ls ~/.codebuddy/dev-comp/working-context/ | awk -v k="$(printf '%s' '{组件名}' | tr -d '_-' | tr 'A-Z' 'a-z')" '{n=tolower($0); gsub(/[_-]/,"",n); if (index(n,k)) print}'`
+   - **第二级（归档兜底）**：同法扫 `{ARTIFACTS_FALLBACK_DIR}/{组件名}-*/working-context/`（配置留空则跳过本级）
    - 第一级命中 → 读取该文件，恢复 phase/进度/决策，跳到「下一步动作」继续，**不新建**
    - 第一级未命中、第二级命中 → `cp` 复制回运行时目录后读取恢复，向用户一句话说明「已从 skill artifacts 归档副本恢复运行时状态」
-   - 两级均未命中 → 用 `templates/working-context-lite.tpl.md` 新建到运行时目录（命名：`vaui-{组件名}-{YYYYMMDD}.md`）
+   - 两级均未命中 → 用 `templates/working-context-lite.tpl.md` 新建到运行时目录（命名：`vaui-{组件目录名}-{YYYYMMDD}.md`，`{组件目录名}` = 项目 `components/` 实测目录名 kebab-case，形态定义见 `capability-reuse.md` §命名规则）
+   - **新建后立即校验**：`bash ~/.codebuddy/skills/dev-comp/scripts/lint-working-context-name.sh <新文件路径>`（返回非 0 → 改名后重跑，禁止带病继续）
    - ⚠️ 归档兜底同样适用于 devlog（`{ARTIFACTS_FALLBACK_DIR}/{组件名}-*/devlog/`）、knowledge（`{ARTIFACTS_FALLBACK_DIR}/{组件名}-*/knowledge/`）与 metrics（`{ARTIFACTS_FALLBACK_DIR}/{组件名}-*/metrics/`）：运行时目录检索不到时提示用户归档副本存在，经用户同意后复制回运行时目录（⚠️ 二者为软复用 skill（tech-doc/knowledge-loop）产物，**不自动复制**，避免干扰其自身检索逻辑；与工作上下文「命中即自动恢复」的行为差异是**有意设计**）
 2. **复杂度与分阶段决策**：
    - 简单组件（单文件、无子组件、API < 8个）→ 单轮做完，不分 P（Gate 仍逐阶段确认，不因单轮而跳过）
@@ -174,7 +176,7 @@
    ⚠️ 精修记录（品牌清除 / 注释 / Props 排序 / 用例排序布局 / 三方一致性）写入工作上下文「交付前精修记录」区，Gate 5 回显。
 6. **发布前配置项终检（核心红线）**：**先跑轻量校验脚本** `bash scripts/validate-component.sh {组件名} {PROJECT_ROOT} --context {工作上下文文件}`（⚠️ 分批提交 / 长生命周期分支加 `--base <ref>` 或依赖工作上下文 `base_ref`，确保 C5 回溯已提交批次）一次性获取 A/B/C/E/F/G + S 全部勾销证据（脚本是确定性检查的权威执行体，见 `checklists.md` §发布前配置项终检 顶部声明；S1-S5 对应提交红线：git 身份 / 分支核对 / commit hash 回填真实性 / 沉淀三件套 / 归档双份），再读 `references/checklists.md` §发布前配置项终检 逐项核对。⚠️ 埋入阶段（1/4）的检查不能替代本终检——埋入后文件可能再被改动，发布前必须全量回检。脚本输出 `[PASS/FAIL/WARN/SKIP]` 逐项回显到 Gate 5 报告（A/B/C/E/F/G 回显「发布前配置项终检」区块，S 回显「提交前检查」区块）：FAIL 阻断收尾须修复后重跑；WARN/SKIP 须人工确认；❌ 项必带处置码，禁止摘要式报告。
 7. **引导发布（组件全部 P 完成且验收通过时）**：读 `references/release-flow.md`，向用户呈现「合入 main（GitHub PR）→ main 上构建发布 → 发布后清理」完整链路并引导执行；若用户本轮不发布，将「待发布：合入 main + 发布」写入工作上下文接续指引，**验收完成 ≠ 任务结束**（历史事故：AutoComplete 验收后停 8 个提交在 feat 分支，npm 与源码脱节）
-8. **收尾**：更新工作上下文 status + `release` 字段（本 P 完成 → 标注下一 P 接续指引；全部 P 完成但未发布 → `release: pending` + 接续指引标注「待发布」；本轮已完成发布 → `release: released: {版本号}` + 可归档）
+8. **收尾**：更新工作上下文 status + `release` 字段（本 P 完成 → 标注下一 P 接续指引；全部 P 完成但未发布 → `release: pending` + 接续指引标注「待发布」；本轮已完成发布 → `release: released: {版本号}` + 可归档）；**收尾时跑一次命名体检**：`bash ~/.codebuddy/skills/dev-comp/scripts/lint-working-context-name.sh --all`（有 FAIL → 先改名再收尾；形态定义见 `references/capability-reuse.md` §命名规则）
 9. **产物归档（统一运行时目录 · 无需决策 · 2026-08-21 修订）**：产物一律留在 `~/.codebuddy/` 运行时目录（原位即归档，**不搬移、不产生副本**）；**禁止再弹归档决策**（2026-08-19/20 的 A/B 决策做法已废止）。收尾时只需在 Gate 5 报告的「能力沉淀三件套与产物位置」表中**列出四项产物路径**（working-context / metrics / devlog / knowledge），让用户知道文件在哪。⚠️ `ARTIFACTS_FALLBACK_DIR` 仅用于**读取历史归档**（阶段 0 两级扫描兜底），不再作为新产物的归档目标
 
 **产出**：验收通过 + devlog/metrics/knowledge + commit（待用户确认）。
@@ -344,4 +346,8 @@
 
 ## dc:st / dc:status 子命令
 
-两级扫描 `vaui-{组件名}-*.md`：**第一级** `~/.codebuddy/dev-comp/working-context/`；**第一级无结果时第二级兜底** `{ARTIFACTS_FALLBACK_DIR}/{组件名}-*/working-context/`（配置留空则跳过，两级均无 → 提示「该组件无工作上下文，可能未开始或已归档」）。读取后输出：组件名/当前 phase/进度/下一步/未完成的 P/发布状态（`release` 字段：pending → 提示「待发布：合入 main + 发布」，released → 显示已发布版本号）；来源为 artifacts 时标注「归档副本」。
+**命名体检（先跑）**：`bash ~/.codebuddy/skills/dev-comp/scripts/lint-working-context-name.sh --all` —— 输出违规文件 + 建议名；有 FAIL 时在状态报告末尾附一行提示「命名待收敛（形态定义见 `capability-reuse.md` §命名规则）」，**不自动改名**。
+
+⚠️ **notes/ 待办可见性**：顺带 `ls ~/.codebuddy/dev-comp/notes/` 并列出（跨分支移交 / 待办类一次性记录，非工作上下文、不参与命名体检）；存在未闭环待办时在状态报告末尾提示，避免事项因迁出 working-context 而失联。
+
+两级扫描工作上下文（**归一化匹配**组件名，兼容 `date-picker` / `DatePicker` 等历史形态）：**第一级** `~/.codebuddy/dev-comp/working-context/`；**第一级无结果时第二级兜底** `{ARTIFACTS_FALLBACK_DIR}/{组件名}-*/working-context/`（配置留空则跳过，两级均无 → 提示「该组件无工作上下文，可能未开始或已归档」）。读取后输出：组件名/当前 phase/进度/下一步/未完成的 P/发布状态（`release` 字段：pending → 提示「待发布：合入 main + 发布」，released → 显示已发布版本号）；来源为 artifacts 时标注「归档副本」。

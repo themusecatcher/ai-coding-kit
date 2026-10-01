@@ -10,10 +10,34 @@
 - dev-flow 模板 400+ 行，绑 TAPD/iWiki/跨项目/门控字段，对开源组件库基本不适用
 - dev-comp 自建精简版，只留：组件名/phase/参考源/进度/接续指引/决策记录/可复用资产索引/对齐清单（API 四维 + Demo 用例）/naive 差异登记/项目特有需求/**交付前精修记录**/release 发布状态
 - **交付前精修记录**（阶段 5 第 5 步写入，2026-09-22 新增）：品牌清除命中数 / 注释精修改动点 / Props 排序是否重排 + docs 表是否同步 / 用例排序与布局调整 / 三方一致性差异与处置——规范见 `refine-spec.md` §6.2，Gate 5 回显
-- 命名沿用 `vaui-{组件名}-{YYYYMMDD}.md`，存储改用 dev-comp 专属目录 `~/.codebuddy/dev-comp/working-context/`（与 dev-flow 产物物理隔离，不被 dev-flow lint/dashboard 扫描误伤）
+- 命名沿用 `vaui-{组件目录名}-{YYYYMMDD}.md`，存储改用 dev-comp 专属目录 `~/.codebuddy/dev-comp/working-context/`（与 dev-flow 产物物理隔离，不被 dev-flow lint/dashboard 扫描误伤）
+
+### 命名规则（唯一权威源 · 2026-10-01 定型）
+
+> 其余文件（`flow.md` / `release-flow.md` / `README.md` / 模板）只引用本节，**禁止另写一份**（历史漂移根因：4 处各写「`{组件名}`」，形态无人定义）。
+
+```text
+vaui-{组件目录名}-{YYYYMMDD}.md
+```
+
+| 段 | 取值 | 说明 |
+|:--|:--|:--|
+| `vaui-` | 固定 | vue-amazing-ui 前缀 |
+| `{组件目录名}` | **项目 `components/` 实测目录名（kebab-case）** | 多单词必带连字符：`date-picker` / `loading-bar` / `time-picker`；单单词全小写：`menu` / `select`。落地前实测：`ls {PROJECT_ROOT}/components/ \| grep -i {关键词}` |
+| `{YYYYMMDD}` | 8 位创建日期 | 创建时写入；**禁止因日期推移改文件名**（文件名日期 = 创建日期） |
+
+- **组件尚未落地**（工作上下文先行，如计划中的 `time-picker`）：组件段取**计划目录名**（kebab，遵循 `project-map.md` §命名惯例），落地后**不再改名**
+- **口径依据**：与 `changelog-spec.md` §3.2「组件链接用实测 kebab 目录名」同源——项目 `components/` 与 `docs/guide/components/` 均为 kebab，仅 `src/views/` 为 camelCase，故锚定前者（`project-map.md` §命名惯例）
+- **frontmatter `component:` 字段口径相反**：取**组件导出名 PascalCase**（`DatePicker`），与演示页 `title` / EnglishName 一致。文件名段 kebab + 字段段 PascalCase 是**刻意分工**，不是不一致
+- ❌ 反例：`vaui-DatePicker-20260929.md`（PascalCase 进文件名）、文件名 `select` 配 `component: select`（字段未用 PascalCase）、目录内混放非工作上下文文件
+- **历史豁免（登记制 · 勿按违规处理）**：`vaui-autocomplete-20260814.md` 保留旧形态——创建于 2026-08-14，早于项目 2026-08-28「组件目录及文档统一 kebab」重构（现目录为 `auto-complete`），依「文件名日期 = 创建日期锚点、落地后不改名」原则豁免；lint 因归一化匹配判 PASS
+- **异构文件禁令**：本目录**只放工作上下文**。跨分支移交 / 待办 / 一次性记录放 `~/.codebuddy/dev-comp/notes/`，命名 `{YYYYMMDD}_{简述-kebab}_{类型}.md`（如 `notes/20260930_font-migration_cross-branch.md`）；`notes/` 不参与命名 lint，但 `dc:status` 会列出以保证待办可见
+- **阶段 0 检索必须归一化**（小写去 `-_`），禁止 `grep -i {组件名}` 裸匹配——`grep -i autocomplete` 与 `grep -i auto-complete` **互相不命中**（历史隐患）
+- **校验**：`bash ~/.codebuddy/skills/dev-comp/scripts/lint-working-context-name.sh [--all] [--suggest]`；调用点 = `flow.md` §阶段 0 第 1 条（新建后，单文件模式）/ §阶段 5 第 8 条（收尾，`--all`）/ §dc:st 子命令（`--all` 全量体检）。脚本顶部注释登记 **2 条「已评估 · 刻意不加」的边界**（交叉校验 / 子目录检测）及触发条件——**勿当缺陷重复提案**
+- **metrics 同口径**：`dev-comp/metrics/` 命名 `vaui-{组件目录名}-{YYYYMMDD}[-{阶段标签}].yaml`（阶段标签枚举 `P{n}` / `cleanup` / `finalize`；无标签 = 组件级报告，“组件目录名”同上，非组件级报告用 `{主题-kebab}`）。⚠️ **存量不追溯**（2026-10-01 决策：metrics 存量被工作上下文 11 处正文引用，改名风险 > 收益，差异登记为已知欠账）
 - **接续两级扫描**：运行时目录优先 → `ARTIFACTS_FALLBACK_DIR` 兜底（命中归档副本时复制回运行时目录恢复活跃状态，详见 `flow.md` 阶段 0）
-- 写前 `mkdir -p ~/.codebuddy/dev-comp/working-context/`（首次使用目录不存在，禁止假设已存在）
-- 不调 `validate-working-context.sh`，不做 JSON Schema 校验
+- 写前 `mkdir -p ~/.codebuddy/dev-comp/working-context/ ~/.codebuddy/dev-comp/notes/`（首次使用目录不存在，禁止假设已存在）
+- **不在 dev-flow 校验链路内**：不调 `validate-working-context.sh`、不做 JSON Schema 校验（与 dev-flow 体系隔离）；**但 dev-comp 自身命名 lint 必跑**（见上「校验」行，L1-L5 确定性检查）
 
 ## plan
 

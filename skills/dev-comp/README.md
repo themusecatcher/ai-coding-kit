@@ -16,6 +16,7 @@ L2 参考层    references/（按需加载）
 L3 模板层    templates/（组件/演示/工作上下文/度量 骨架模板）
               ↓
 L4 校验层    scripts/validate-component.sh（Gate 5 确定性检查数据源，非门控）
+             scripts/lint-working-context-name.sh（工作上下文命名体检：阶段 0 新建后 / 阶段 5 收尾 / dc:status）
 
 软复用层    use_skill('tech-doc')    → devlog
             use_skill('knowledge-loop') → 知识沉淀/检索
@@ -83,7 +84,8 @@ dev-comp/
 │   ├── release-flow.md              #   发布流程（合入 main + 构建发布 + 清理）
 │   └── capability-reuse.md          #   软复用 dev-flow 能力策略 + 降级
 ├── scripts/                       # 轻量校验脚本（确定性检查数据源）
-│   └── validate-component.sh      #   阶段 5 收尾必跑：A/B/C/E/F/G 配置项 + S 提交红线检查
+│   ├── validate-component.sh      #   阶段 5 收尾必跑：A/B/C/E/F/G 配置项 + S 提交红线检查
+│   └── lint-working-context-name.sh #  工作上下文命名体检（L1 格式/L2 目录纯净/L3 目录一致/L4 component/L5 重名）
 ├── .gitignore                     #   忽略 artifacts/ 私有归档产物（仅保留 README.md）
 ├── artifacts/                       # 产物归档兜底目录（用户主动归档时写入，两级扫描第二级）
 └── templates/                     # 骨架模板
@@ -110,6 +112,7 @@ dev-comp/
 | `references/release-flow.md` | 发布流程（合入 main + 构建发布 + 清理） | AI | 阶段 5（验收通过后） |
 | `references/capability-reuse.md` | 软复用策略 + 降级方案 | AI | 阶段 5（能力沉淀时） |
 | `scripts/validate-component.sh` | 确定性检查权威执行体（A/B/C/E/F/G 配置项 + S 提交红线） | AI | 阶段 5 收尾必跑（Gate 5 数据源） |
+| `scripts/lint-working-context-name.sh` | 工作上下文命名确定性检查（L1 格式 / L2 目录纯净 / L3 项目目录一致 / L4 component 口径 / L5 归一化重名） | AI | 阶段 0 新建后 / 阶段 5 收尾 / `dc:status` |
 | `templates/*` | 组件/演示/上下文/度量 骨架模板 | AI | 建新文件时 |
 
 ## 关联 Skill 调用关系
@@ -128,7 +131,8 @@ dev-comp 在以下环节调用独立 Skill（缺失则降级跳过，不阻断�
 
 | 目录 | 用途 | 哪个阶段写入 |
 |:--|:--|:--|
-| `~/.codebuddy/dev-comp/working-context/` | 工作上下文（命名 `vaui-{组件}-{日期}.md`，dev-comp 专属） | 阶段 0 创建，各阶段更新 |
+| `~/.codebuddy/dev-comp/working-context/` | 工作上下文（命名 `vaui-{组件目录名}-{YYYYMMDD}.md`，kebab；形态定义见 `references/capability-reuse.md` §命名规则） | 阶段 0 创建，各阶段更新 |
+| `~/.codebuddy/dev-comp/notes/` | 跨分支移交 / 待办 / 一次性记录（**非**工作上下文，命名 `{YYYYMMDD}_{简述}_{类型}.md`） | 按需 |
 | `~/.codebuddy/dev-logs/` | 开发日志（由 tech-doc 生成） | 阶段 5 |
 | `~/.codebuddy/dev-comp/metrics/` | 度量报告（精简 YAML，dev-comp 专属） | 阶段 5 |
 | `~/.codebuddy/knowledge/vue-amazing-ui/` | 组件知识沉淀 | 阶段 5 |
@@ -151,10 +155,12 @@ dev-comp 在以下环节调用独立 Skill（缺失则降级跳过，不阻断�
 
 ```bash
 bash scripts/validate-component.sh <组件名> [项目根] [--context <工作上下文.md>] [--base <git ref>]
+bash scripts/lint-working-context-name.sh [--all] [--suggest] [<工作上下文.md>]
 ```
 
 - `--base`：C5 品牌扫描的分支基点（**分批开发 / 分批提交 / 长生命周期分支必填**；缺省按「工作上下文 `base_ref` → `merge-base 主干`」自动解析）——组件分批提交时，只查工作区会漏掉已提交批次的品牌残留。
 - 输出 `[PASS]/[FAIL]/[WARN]/[SKIP]` 逐项证据；退出码 `0`=无 FAIL，`1`=存在 FAIL，`2`=参数错误。
+- `lint-working-context-name.sh`：无参等价 `--all`（扫描 `~/.codebuddy/dev-comp/working-context/`）；传单文件路径走阶段 0 新建后校验；`--suggest` 输出建议新名与 `mv` 命令（**改名仍由用户决策**）。命名形态定义见 `references/capability-reuse.md` §命名规则。
 
 ## 安装
 
