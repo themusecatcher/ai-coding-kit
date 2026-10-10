@@ -16,7 +16,8 @@
 //   5. ⚠️ 品牌信息红线 + 交付前精修（阶段 5 第 5 步，权威源 references/refine-spec.md）：
 //      本骨架注释里的 antdv/naive 仅用于指导对照，【落地后必须清干净】——
 //      对照分区、真身组件/数据（avalue*/aoptions*）、ant-design-vue import、antdv 专属图标，
-//      以及全部品牌字样（含注释与文案；「对齐 antd 口径」类来源标注改中性表述）都要删；
+//      以及全部品牌字样与**来源指代**（含注释与文案；品牌名，以及「参考实现 / 参考库 / 真身 / 官网」
+//      等**不点名**写法，都要删 —— ❌ 不允许「改中性表述」保留，见 references/refine-spec.md §1.4 B 类）都要删；
 //      最终交付文件不得出现 antdv / antd / ant-design-vue / naive 等字样
 //      （例外：@ant-design/icons-vue 图标依赖）；脚本 C5 拦截，收尾还需做用例排序/布局精修
 import { ref } from 'vue'

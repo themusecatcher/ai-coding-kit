@@ -18,6 +18,29 @@
 #   ← references/flow.md 阶段 5 第 1/4/5/6 步
 #   ← SKILL.md §能力复用索引
 #
+# 2026-10-10（来源指代词表缺口 · 回填 1 项）变更：
+#   背景：DatePicker 阶段 5 收尾把品牌名去标识化为「与参考实现同口径」后 C5 判定通过，但用户指出
+#   该写法仍属来源标注 → 全库实测 102 处（本轮 98 + 存量 4，另有演示页/文档「官网」4 处）。
+#   ⑤ BRAND_PAT 增补「不点名的来源指代」：参考实现|参考库|参考源码|真身|官网（判定不看是否点名品牌）。
+#      不收录「上游」（carousel / number-animation 里指真实依赖 @vueuse/core）。
+#   同步：references/refine-spec.md §1.1 ⭐ 行 + §1.4 B 类（「改中性表述」明令不合规）+ 反模式清单 §7；
+#        references/checklists.md C5；templates/demo.tpl.vue；SKILL.md 品牌红线。
+#
+# 2026-10-09（DatePicker P3b 终检预跑暴露的脚本口径缺口 · 回填 4 项）变更：
+#   背景：预跑 PASS=28 FAIL=5 WARN=3 SKIP=8，其中 3 FAIL + C5 误报 + S5 SKIP 经逐项归因判定为
+#   「脚本口径缺口」（样式依赖表本身与源码一致），故回填本脚本，而非改组件源码。
+#   ① S4/S5 产物检索改**归一化匹配**（新增 norm_grep）：产物目录名形如 vaui-date-picker-20260929
+#      （连字符分隔），与 LCNAME（datepicker）形态不同口径 → 原裸 grep -i 永远不命中，产生假 SKIP。
+#   ② B4/E1 的 NON_COMPONENT_DIRS 增 picker、F5 的 NON_PUBLIC_COMPS 增 picker 内核组件名：
+#      日期时间选择的内部共享内核（DatePicker / TimePicker 复用面板与时间列），与 popup 同类
+#      —— 不进 components.ts、不登记全局声明，但需存在于 componentsMap 供依赖解析。
+#   ③ A4 依赖名归一化：源码 import 写「深路径 + .vue」（components/picker/DatePanel.vue）或
+#      「目录 barrel」（components/popup），表内一律写组件注册键（Popup）→ 原实现拿 import
+#      字面量去表内比对必然假 FAIL；改为 basename 去 .vue + 小写 + 去连字符 + 按 componentsMap
+#      键集过滤（剔除非组件模块）+ 剔除 stylelessComponents（无独立 CSS，本就不该登记）。
+#   ④ C5 的 ant-[a-z]+ 加「词首」边界：font-variant-numeric 内含的 ant-numeric 被误判为品牌名
+#      （Countdown 注释与 changelog 条目两处假 FAIL 实测）。
+#
 # 2026-09-23（精修范围口径 · 同步 refine-spec.md §0.1）变更：
 #   ① 新增 **G0「精修范围清单」**（纯数据源，供人工逐项精修）：按本分支净改动
 #      `git diff --name-only <base>`（基点 → 当前工作区，一次覆盖「已提交的每一批 + 未提交改动」）
@@ -163,6 +186,16 @@ fi
 # 项目目录命名约定不统一（components/ 与 docs/ 为 kebab-case、src/views/ 为 camelCase），
 # 禁止用固定形态猜测路径，必须解析真实条目（详见 project-map.md §目录命名约定）。
 LCNAME=$(echo "$NAME" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]//g')
+# 归一化行匹配（S4/S5 产物检索共用）：
+# 产物目录名形如 `vaui-date-picker-20260929`（连字符分隔），与 LCNAME（已去分隔符的 `datepicker`）不同口径，
+# 直接用 `grep -i "$LCNAME"` 永远命中不了 → 假 SKIP / 假 WARN（实测 2026-10-09）。故两侧都归一化后再比。
+norm_grep() {
+  while IFS= read -r _l; do
+    case "$(printf '%s' "$_l" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]//g')" in
+      *"$LCNAME"*) printf '%s\n' "$_l" ;;
+    esac
+  done
+}
 FALLBACK="${VAUI_ARTIFACTS_DIR:-$HOME/myGithub/ai-coding-kit/skills/dev-comp/artifacts}"
 
 # ------------------------------------------------------------
@@ -173,11 +206,13 @@ FALLBACK="${VAUI_ARTIFACTS_DIR:-$HOME/myGithub/ai-coding-kit/skills/dev-comp/art
 #   - popup           ：内部浮层宿主（Tooltip 等的「参照容器 + 面板」承载层），
 #                       无对外文档、不在 components.ts 导出，但需存在于 resolver.componentsMap
 #                       供 componentDependencies 依赖解析（如 Tooltip: [..., 'Popup']）
+#   - picker          ：日期时间选择内部共享内核（DatePicker / TimePicker 复用面板与时间列），
+#                       同样不在 components.ts 导出，但其成员需存在于 componentsMap（见 style-deps.ts）
 # 二者口径差异：目录名（小写 kebab）/ 组件导出名（大驼峰），故分别维护。
 # ⚠️ 新增此类内部目录/组件时必须同步本定义，否则 B4/E1、F5 会产生假 FAIL。
 # ------------------------------------------------------------
-NON_COMPONENT_DIRS="style|utils|discrete|popup"
-NON_PUBLIC_COMPS="Popup"
+NON_COMPONENT_DIRS="style|utils|discrete|popup|picker"
+NON_PUBLIC_COMPS="Popup|PickerPanel|PickerPanelHeader|PickerTrigger|RangePanel|DatePanel|DatetimePanel|TimePanel|TimeUnitColumn|PickerIcon|PresetPanel"
 
 # resolve_entry <目录>：按归一化名（去 .md 后缀）在该目录下匹配真实条目名，
 # 命中输出条目名（可能带 .md 后缀），未命中输出空。
@@ -402,6 +437,11 @@ deps_entry_of() {  # $1 = 组件名 → componentDependencies 条目原文（完
         f { print; if (index($0, "]")) exit }
       '
 }
+# 归一化辅助（2026-10-09 回填 ③，见文件头变更记录）：A4 须把源码 import 归一到「注册键」再与表比对。
+map_keys_all() { awk -F: '/^const componentsMap/,/^}/ { if ($0 ~ /^[[:space:]]+[A-Za-z][A-Za-z0-9]*:[[:space:]]/) { k=$1; gsub(/[[:space:]]/, "", k); printf "%s ", tolower(k) } }' "$DEPS_SRC"; }
+styleless_list() { awk '/^const stylelessComponents/,/^]/ { if ($0 !~ /const stylelessComponents/ && $0 !~ /^]/) { gsub(/[^A-Za-z0-9]/, " "); n=split($0, a, " "); for (i=1;i<=n;i++) if (a[i] != "") printf "%s ", tolower(a[i]) } }' "$DEPS_SRC"; }
+A4_KEYS_LC=$(map_keys_all)
+A4_STYLELESS_LC=$(styleless_list)
 A4_HINT=""
 [ "$DEPS_SRC_LABEL" = "style-deps.ts" ] && A4_HINT="；新结构下权威校验另跑 pnpm verify:deps"
 if [ -z "$COMP_DIR" ]; then
@@ -416,10 +456,20 @@ else
   for a4f in $COMP_VUES; do
     if [ "${A4_CNT:-0}" = "1" ]; then A4_SEC="$NAME"; else A4_SEC=$(basename "$a4f" .vue); fi
     A4_TOTAL=$((A4_TOTAL+1))
-    # 单双引号两种 import 写法都要覆盖
+    # 单双引号两种 import 写法都要覆盖；随后把 import 路径**归一化为注册键**（2026-10-09 回填 ③）：
+    #   components/picker/DatePanel.vue → datepanel（basename、去 .vue、转小写、去连字符）；
+    #   剔除 ① 非组件模块（picker/date-utils、目录 barrel picker —— 不在 componentsMap 键集内）
+    #        ② stylelessComponents（PickerIcon 等无独立 CSS，本就不该登记）。
     A4_DEPS=$(grep -rhoE "from ['\"]components/[^'\"]+['\"]" "$a4f" 2>/dev/null \
       | grep -vE "^from ['\"]components/utils(/|['\"])" \
-      | sed -E "s|from ['\"]components/([^'\"]+)['\"].*|\1|" | sort -u)
+      | sed -E "s|from ['\"]components/([^'\"]+)['\"].*|\1|" \
+      | sed -E 's|.*/||; s|\.vue$||' \
+      | tr "[:upper:]" "[:lower:]" | tr -d "-" | sort -u | while IFS= read -r a4d; do
+          [ -n "$a4d" ] || continue
+          if ! echo " $A4_KEYS_LC " | grep -qwF -- "$a4d"; then continue; fi
+          if echo " $A4_STYLELESS_LC " | grep -qwF -- "$a4d"; then continue; fi
+          echo "$a4d"
+        done)
     # ⚠️ 2026-09-22 修正假 FAIL：`Table: [` 为多行数组，原 grep 只取首行 → 依赖被判缺失；
     # 且必须限定在 componentDependencies 区块内（componentsMap 也有同名键，否则会串行读到别的表）
     A4_ENTRY=$(deps_entry_of "${A4_SEC}")
@@ -719,7 +769,13 @@ fi
 
 # ⚠️ `antd` 必须单列：实测「// 对齐 antd 口径」这类只写 antd（不带 v）的注释是存量高频形态，
 #    仅写 antdv 会漏检（`ant-[a-z]+` 也匹配不到 antd——它没有连字符）
-BRAND_PAT='antd|antdv|ant-design-vue|ant design|ant-[a-z]+|naive|</?a-[a-z][a-z-]*[[:space:]>]'
+# ⚠️ ant-[a-z]+ 必须限定「词首」（2026-10-09 回填 ④）：否则 font-variant-numeric 里包含的
+#    ant-numeric 会被当成品牌名（Countdown 注释与 changelog 条目两处假 FAIL 实测）。
+# ⚠️ 「不点名的来源指代」必须同列（2026-10-10 补充 ⑤ · refine-spec.md §1.1 ⭐ 行）：上一轮把品牌名
+#    换成「参考实现」后 C5 判定为通过，但残留性质不变（全库实测 102 处）。故词表补
+#    参考实现|参考库|参考源码|真身|官网 —— 判定不看是否点名品牌，只看是否把外部实现当说明依据。
+#    ⚠️ 不收录「上游」：它在 carousel / number-animation 里指真实依赖 @vueuse/core（合法表述）。
+BRAND_PAT='antd|antdv|ant-design-vue|ant design|(^|[^a-z0-9_-])ant-[a-z]+|naive|</?a-[a-z][a-z-]*[[:space:]>]|参考实现|参考库|参考源码|真身|官网'
 BRAND_EXCL='(^|/)(package\.json|pnpm-lock\.yaml|components\.d\.ts|vite\.config\.ts|tsconfig[^/]*\.json)$|\.eslintrc|pnpm-workspace\.yaml$|(^|/)(node_modules|dist|lib|coverage|\.temp)/|^es/'
 BRAND_SCOPE='^(components|src|docs|types|tests)/|^README|^CHANGELOG'
 BRAND_ALLOW='@ant-design/(icons-vue|colors)'
@@ -790,7 +846,7 @@ fi
 C5_REVIVE="C5 附注：本分支【已提交】批次中仍有 ${C5_HEAD_HITS} 处品牌残留，工作区已清除但**尚未提交**——请确保这些删除随本次 commit 一起提交（与 components.d.ts 幽灵声明同理，不提交会「复活」）"
 
 if [ -n "$C5_HITS" ]; then
-  fail "C5 品牌信息残留共 ${C5_TOTAL} 处（品牌对比/差异说明类内容须【直接删除】；其余去品牌化或删除；例外仅 @ant-design/* 基础包；详见 refine-spec.md §1）：$C5_HITS"
+  fail "C5 品牌信息 / 来源指代残留共 ${C5_TOTAL} 处（品牌对比/差异说明类内容须【直接删除】；⚠️ 不点名的「参考实现 / 参考库 / 真身 / 官网」与品牌名同等处置——只能删除或改为本项目自身口径陈述，「改中性表述」不合规；例外仅 @ant-design/* 基础包；详见 refine-spec.md §1.1 ⭐ 行与 §1.4 B 类）：$C5_HITS"
 elif [ -n "$C5_BAD_BASE" ]; then
   warn "C5 判定不完整：--base / 工作上下文 base_ref 指定的 ref「${C5_BAD_BASE}」在本仓库无法解析（已退化为「工作区 vs HEAD」，本分支【已提交】批次未纳入）——请核对 ref 名称后重跑（refine-spec.md §1.3）"
 elif [ "${C5_FILES:-0}" = "0" ] && [ "${C5_HEAD_HITS:-0}" != "0" ]; then
@@ -1285,11 +1341,11 @@ else
 # ② dev-comp 早期记载 <项目>/<分支>/devlog.md；按组件归一化名过滤路径。
 # 简述纯中文不含组件名时无法自动关联 → 保守报 WARN（人工确认），不误 PASS
 DEVLOG_HIT=$(find "$HOME/.codebuddy/dev-logs" -maxdepth 3 -iname "devlog.md" 2>/dev/null \
-  | grep -i "$LCNAME" | head -1)
+  | norm_grep | head -1)
 if [ -n "$DEVLOG_HIT" ]; then
   ok "S4 devlog 已存在（${DEVLOG_HIT}）"
 else
-  AF_DEVLOG=$(find "$FALLBACK" -maxdepth 2 -type d -iname "devlog" 2>/dev/null | grep -i "$LCNAME" | head -1)
+  AF_DEVLOG=$(find "$FALLBACK" -maxdepth 2 -type d -iname "devlog" 2>/dev/null | norm_grep | head -1)
   if [ -n "$AF_DEVLOG" ]; then
     warn "S4 devlog 仅存归档副本（${AF_DEVLOG}）——接续时经用户同意复制回运行时目录；已收尾归档则属正常"
   else
@@ -1297,7 +1353,7 @@ else
   fi
 fi
 
-METRIC_HIT=$(ls "$HOME/.codebuddy/dev-comp/metrics/" 2>/dev/null | grep -i "$LCNAME" | head -1)
+METRIC_HIT=$(ls "$HOME/.codebuddy/dev-comp/metrics/" 2>/dev/null | norm_grep | head -1)
 if [ -n "$METRIC_HIT" ]; then
   M_F="$HOME/.codebuddy/dev-comp/metrics/$METRIC_HIT"
   if grep -q "^component:" "$M_F" 2>/dev/null; then
@@ -1306,7 +1362,7 @@ if [ -n "$METRIC_HIT" ]; then
     warn "S4 metrics 文件存在但缺 component 字段：${M_F}"
   fi
 else
-  AF_METRIC=$(ls "$FALLBACK"/ 2>/dev/null | grep -i "$LCNAME" | head -1)
+  AF_METRIC=$(ls "$FALLBACK"/ 2>/dev/null | norm_grep | head -1)
   if [ -n "$AF_METRIC" ] && [ -d "$FALLBACK/$AF_METRIC/metrics" ] && ls "$FALLBACK/$AF_METRIC/metrics/" 2>/dev/null | grep -qi .; then
     warn "S4 metrics 仅存归档副本（$FALLBACK/$AF_METRIC/metrics/）——接续时经用户同意复制回运行时目录；已收尾归档则属正常"
   else
@@ -1314,11 +1370,11 @@ else
   fi
 fi
 
-KNOW_HIT=$(find "$HOME/.codebuddy/knowledge/vue-amazing-ui" -maxdepth 3 -iname "*$LCNAME*" 2>/dev/null | head -1)
+KNOW_HIT=$(find "$HOME/.codebuddy/knowledge/vue-amazing-ui" -maxdepth 2 -type d 2>/dev/null | norm_grep | head -1)
 if [ -n "$KNOW_HIT" ]; then
   ok "S4 knowledge 已沉淀（${KNOW_HIT}）"
 else
-  AF_KNOW=$(ls "$FALLBACK"/ 2>/dev/null | grep -i "$LCNAME" | head -1)
+  AF_KNOW=$(ls "$FALLBACK"/ 2>/dev/null | norm_grep | head -1)
   if [ -n "$AF_KNOW" ] && [ -d "$FALLBACK/$AF_KNOW/knowledge" ] && ls "$FALLBACK/$AF_KNOW/knowledge/" 2>/dev/null | grep -qi .; then
     warn "S4 knowledge 仅存归档副本（$FALLBACK/$AF_KNOW/knowledge/）——接续时经用户同意复制回运行时目录；已收尾归档则属正常"
   else
@@ -1331,8 +1387,8 @@ fi  # ← 结束 S4 适用性 else（存量组件已 SKIP）
 # S5 产物存放位置（2026-08-21 规范：产物统一留在运行时目录；artifacts 仅作历史归档读取兜底）
 section "S5 产物存放位置"
 
-RT_HIT=$(ls "$HOME/.codebuddy/dev-comp/working-context/" 2>/dev/null | grep -i "$LCNAME" | head -1)
-AF_HIT=$(ls "$FALLBACK"/ 2>/dev/null | grep -i "$LCNAME" | head -1)
+RT_HIT=$(ls "$HOME/.codebuddy/dev-comp/working-context/" 2>/dev/null | norm_grep | head -1)
+AF_HIT=$(ls "$FALLBACK"/ 2>/dev/null | norm_grep | head -1)
 if [ -n "$RT_HIT" ] && [ -n "$AF_HIT" ]; then
   warn "S5 工作上下文双份：运行时[$RT_HIT] 与 artifacts[$AF_HIT] 同时存在（产物应统一留在运行时目录；artifacts 若为历史归档请按需清理）"
 elif [ -n "$RT_HIT" ]; then
