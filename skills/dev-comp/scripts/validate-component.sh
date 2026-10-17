@@ -18,6 +18,15 @@
 #   ← references/flow.md 阶段 5 第 1/4/5/6 步
 #   ← SKILL.md §能力复用索引
 #
+# 2026-10-13（QRCode 阶段 5 终检暴露的脚本口径缺口 · 回填 1 项）变更：
+#   ① A4 单文件组件的表键改按**注册键**取（map_keys_by_dir），不再用输入名 NAME：kebab 输入
+#      （qr-code）时 `deps_entry_of qr-code` 取不到 `QRCode: [...]` 条目 → 依赖全判缺失（假 FAIL）。
+#      与 A2/A3/B6/G2 的注册键口径对齐（此前仅这几项修过）。
+#   ② G4 白名单补 `FAQ`：QRCode 文档的「## FAQ」是 docs 固定说明章节（演示页无对应分区），
+#      此前被计入「docs 用例类标题」→ 用例数 WARN（12 vs 13）。
+#   ③ S2 的 branch 取值改「引号可选」：frontmatter 标量无引号（`branch: feat/xxx`）同样合法，
+#      原实现只匹配双引号 → 判为「无字段」而 SKIP，分支核对整条失效（QRCode 工作上下文实测）。
+#
 # 2026-10-10（来源指代词表缺口 · 回填 1 项）变更：
 #   背景：DatePicker 阶段 5 收尾把品牌名去标识化为「与参考实现同口径」后 C5 判定通过，但用户指出
 #   该写法仍属来源标注 → 全库实测 102 处（本轮 98 + 存量 4，另有演示页/文档「官网」4 处）。
@@ -454,7 +463,14 @@ else
   A4_CNT=$(printf '%s\n' "$COMP_VUES" | grep -c .)
   A4_FAIL=""; A4_WARN=""; A4_OKN=0; A4_TOTAL=0
   for a4f in $COMP_VUES; do
-    if [ "${A4_CNT:-0}" = "1" ]; then A4_SEC="$NAME"; else A4_SEC=$(basename "$a4f" .vue); fi
+    # 2026-10-13 回填：单文件组件的表键须用**注册键**（map_keys_by_dir），而非输入名 NAME ——
+    #   kebab 输入（qr-code）与目录名 ≠ 注册键时，用 NAME 取条目必然落空 → 假 FAIL（QRCode 实测）。
+    if [ "${A4_CNT:-0}" = "1" ]; then
+      A4_SEC=$(map_keys_by_dir | awk '{print $1}')
+      [ -n "$A4_SEC" ] || A4_SEC="$NAME"
+    else
+      A4_SEC=$(basename "$a4f" .vue)
+    fi
     A4_TOTAL=$((A4_TOTAL+1))
     # 单双引号两种 import 写法都要覆盖；随后把 import 路径**归一化为注册键**（2026-10-09 回填 ③）：
     #   components/picker/DatePanel.vue → datepanel（basename、去 .vue、转小写、去连字符）；
@@ -1078,10 +1094,10 @@ fi
 # DTU = 剔除固定章节后（用于数量比对；固定章节实测频次见 refine-spec.md §5.1 旁注）
 if [ -f "$DOC_FILE" ]; then
   grep -E '^## ' "$DOC_FILE" 2>/dev/null | sed -E 's/^##[[:space:]]+//' | norm_title | grep -v '^$' > "$DT"
-  grep -vxE '何时使用|基本使用|使用方式|在 setup 外使用|APIs|Slots|Events|Methods|自定义样式|主题变量|设计指引|参考文档|与 Space 组件的区别' "$DT" > "$DTU"
+  grep -vxE '何时使用|基本使用|使用方式|在 setup 外使用|APIs|Slots|Events|Methods|自定义样式|主题变量|设计指引|参考文档|与 Space 组件的区别|FAQ' "$DT" > "$DTU"
   # 白名单章节若本身也是演示页的用例标题（自定义样式等），补回 DTU，避免数量误判
   # ⚠️ 2026-09-23：改按行读取（原 `for w in <裸词列表>` 无法承载含空格的章节名，如「与 Space 组件的区别」）
-  printf '%s\n' 何时使用 基本使用 使用方式 在 setup 外使用 APIs Slots Events Methods 自定义样式 主题变量 设计指引 参考文档 '与 Space 组件的区别' \
+  printf '%s\n' 何时使用 基本使用 使用方式 在 setup 外使用 APIs Slots Events Methods 自定义样式 主题变量 设计指引 参考文档 '与 Space 组件的区别' FAQ \
     | while IFS= read -r w; do
         if [ -n "$w" ] && grep -qxF -- "$w" "$VT" 2>/dev/null && grep -qxF -- "$w" "$DT" 2>/dev/null; then
           echo "$w" >> "$DTU"
@@ -1272,7 +1288,10 @@ elif [ ! -f "$CTX" ]; then
   warn "S1-S3 工作上下文文件不存在：${CTX}（--context 已提供但读不到 → S1-S3 跳过，C5 的 base_ref 亦未生效）——请核对路径后重跑"
 else
   # S1 git 身份实测 vs git_identity
-  IDENT=$(sed -n 's/^git_identity: "\(.*\)"/\1/p' "$CTX")
+  # 2026-10-13 回填：frontmatter 标量**带不带引号都合法**（YAML 两种写法），原实现只认双引号 →
+  #   无引号时判为「无字段」而 SKIP，身份/分支/hash 三条核对整条失效。S1/S2/S3 统一改「引号可选」。
+  #   ⚠️ 必须用 `sed -E`（ERE）：BSD sed 的 BRE 不支持 `\?` 量词（实测静默不匹配）。
+  IDENT=$(sed -nE 's/^git_identity:[[:space:]]*"?([^"#]*[^"#[:space:]])"?[[:space:]]*$/\1/p' "$CTX" | head -1)
   NAME_ACT=$(git -C "$ROOT" config user.name)
   EMAIL_ACT=$(git -C "$ROOT" config user.email)
   if [ -z "$IDENT" ]; then
@@ -1288,7 +1307,7 @@ else
   fi
 
   # S2 当前分支 vs 工作上下文 branch（Gate 5「提交前检查」对应项；分支不符时 S3 hash 对比必然失真，先拦截）
-  CTX_BRANCH=$(sed -n 's/^branch: *"\(.*\)"/\1/p' "$CTX")
+  CTX_BRANCH=$(sed -nE 's/^branch:[[:space:]]*"?([^"#]*[^"#[:space:]])"?[[:space:]]*$/\1/p' "$CTX" | head -1)
   CUR_BRANCH=$(git -C "$ROOT" branch --show-current 2>/dev/null)
   if [ -n "$CTX_BRANCH" ] && [ "$CTX_BRANCH" = "$CUR_BRANCH" ]; then
     ok "S2 当前分支与工作上下文一致（${CUR_BRANCH}）"
@@ -1299,7 +1318,7 @@ else
   fi
 
   # S3 commit hash 回填真实性（frontmatter 有 commit 时才校验；字段可能为 "hash" 或 "hash message"，取首个 token）
-  CTX_COMMIT=$(sed -n 's/^commit: "\([^ "]*\).*/\1/p' "$CTX")
+  CTX_COMMIT=$(sed -nE 's/^commit:[[:space:]]*"?([^"[:space:]#]+)[^"#]*"?[[:space:]]*$/\1/p' "$CTX" | head -1)
   HEAD_HASH=$(git -C "$ROOT" log -1 --format='%h')
   if [ -n "$CTX_COMMIT" ]; then
     if git -C "$ROOT" cat-file -e "${CTX_COMMIT}^{commit}" 2>/dev/null; then
