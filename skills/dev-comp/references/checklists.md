@@ -4,6 +4,7 @@
 > ⚠️ 项目内已有权威规范 `development/*.md`（见 `project-map.md` §项目规范权威源索引），本清单与之冲突时**以项目规范为准**并立即回填本文件。
 > 2026-09-15（Comment 事故）扩充：新增 **F 类（组件本体与跨文件规范）**、修正 B5、补演示页/文档写法条目。
 > 2026-09-22（多次实践复盘）扩充：新增 **G 类（交付前精修与三方一致性）** + **C5（品牌信息残留）**，权威源 `references/refine-spec.md`；对应脚本 `C5` / `G2` / `G4`。
+> 2026-10-19（Radio/Checkbox 复盘）扩充：新增 **F9 源码多余空行检查**（脚本拦截），Props 排序条目补「不用空行分段」。
 
 ---
 
@@ -34,6 +35,7 @@
 - [ ] **F4 `useSlotsExist` 只传实际使用的插槽名**（半确定性：脚本仅提示，须人工确认无冗余探测项）；⚠️ 2026-09-23：脚本改为**遍历组件内全部 `useSlotsExist([...])` 数组**（原只查第一个 → 复合组件漏检）
 - [ ] Props：`withDefaults(defineProps<Props>())` + `export interface Props`（重命名在组件级 index.ts 完成，入口透传 `XxxProps`）；❌ 不用内联 `defineProps<{...}>()`
 - [ ] **Props 定义时就按六段式排序**（双向绑定 → 内容数据 → 形态外观 → 状态反馈 → 行为交互 → 进阶透传；段内语义相邻，**不强制字母序**）——阶段 2 就按序写，避免收尾返工；权威源 `refine-spec.md` §3，收尾由 G2 校验
+- [ ] **源码不留多余空行**：`interface Props` / `{组件名}Slots` / 类型对象 / `withDefaults` 默认值对象内部**字段之间不留空行**，分组语义由行尾注释表达；❌ 禁止用空行给 Props 分段、❌ 禁止连续 ≥2 空行（收尾由 F9 校验）
 - [ ] 事件用 `defineEmits`；暴露方法用 `defineExpose`（有则定义）
 - [ ] **实现分支对齐（阶段 2）**：对照参考库源码的**渲染分支/兜底逻辑**逐条核对（非仅 API 四维），差异显式决策；详见 `reference-sources.md` §渲染分支与兜底逻辑对齐
 - [ ] **单测**：组件含分支/合并/边界逻辑（prop×slot 双源、多形态 prop、空值/空数组）时补 `tests/{组件名}.spec.ts`（Vitest + @vue/test-utils，中文 describe/it）
@@ -102,7 +104,7 @@
 > ⚠️ **埋入阶段检查不能替代终检**：阶段 1/4 埋入时检查过 ≠ 发布前仍正确（埋入后文件可能再被改动），收尾必须全量回检。
 > 详细判定规则 → `linkage-map.md` 对应小节；类别 D「质量验证」（lint/type-check/浏览器实测）并入下方 §验收。
 >
-> **🔧 确定性检查的权威执行体 = `scripts/validate-component.sh`**（设计哲学「确定性用代码」落地）：Gate 5 前置跑 `bash scripts/validate-component.sh {组件名} {PROJECT_ROOT} --context {工作上下文文件}`（**分批提交 / 长生命周期分支加 `--base <ref>`**，确保 C5 回溯已提交批次），一次性获取 A/B/C/E/F/G + S 全部勾销证据（输出 `[PASS/FAIL/WARN/SKIP]`），**禁止逐条手敲 grep**。本节 ID（A1-A5/B1-B8/C1-C5/E1-E2/F1-F8/G1-G6）与下方 §验收 的提交红线（S1 git 身份 / S2 分支核对 / S3 commit hash 回填真实性 / S4 沉淀三件套 / S5 归档双份）均与脚本输出一一对应；本节定义规则语义（人类阅读），脚本是执行真相，**规则变更必须同步改脚本**，禁止只改文档（详见 `rules/按需-Skill设计-跨文件协作.mdc` §2.1 双向引用）。FAIL 阻断收尾，WARN/SKIP 须人工确认并回显 Gate 5 报告。脚本对 components/views/docs 三处目录按归一化名解析真实路径（项目命名约定不统一，禁止猜测路径）。
+> **🔧 确定性检查的权威执行体 = `scripts/validate-component.sh`**（设计哲学「确定性用代码」落地）：Gate 5 前置跑 `bash scripts/validate-component.sh {组件名} {PROJECT_ROOT} --context {工作上下文文件}`（**分批提交 / 长生命周期分支加 `--base <ref>`**，确保 C5 回溯已提交批次），一次性获取 A/B/C/E/F/G + S 全部勾销证据（输出 `[PASS/FAIL/WARN/SKIP]`），**禁止逐条手敲 grep**。本节 ID（A1-A5/B1-B8/C1-C5/E1-E2/F1-F9/G1-G6）与下方 §验收 的提交红线（S1 git 身份 / S2 分支核对 / S3 commit hash 回填真实性 / S4 沉淀三件套 / S5 归档双份）均与脚本输出一一对应；本节定义规则语义（人类阅读），脚本是执行真相，**规则变更必须同步改脚本**，禁止只改文档（详见 `rules/按需-Skill设计-跨文件协作.mdc` §2.1 双向引用）。FAIL 阻断收尾，WARN/SKIP 须人工确认并回显 Gate 5 报告。脚本对 components/views/docs 三处目录按归一化名解析真实路径（项目命名约定不统一，禁止猜测路径）。
 
 ### A · 代码注册链路（埋入于阶段 1）
 
@@ -139,7 +141,7 @@
 ### F · 组件本体与跨文件规范（阶段 1/2 埋入 · 阶段 5 全量回检）⭐ 2026-09-15 新增
 
 > 事故背景：Comment 开发漏了 `types/global-components.d.ts` 登记（静默失效、type-check 仍 PASS），并暴露 `defineSlots` 缺失、根类名 `m-` 前缀、Props 注释 `string | slot` 残留、演示页序号注释与组件库 import 等无检查项覆盖的问题。
-> 本类全部进 `scripts/validate-component.sh`（F1-F8），Gate 5 必跑。
+> 本类全部进 `scripts/validate-component.sh`（F1-F9），Gate 5 必跑。
 
 - [ ] **F1** `defineSlots` + `export interface {组件名}Slots` 存在于**每个使用插槽的**组件 SFC（`grep -n "defineSlots" components/{组件名}/**/*.vue`）。⚠️ 2026-09-22 修正：① **无插槽组件豁免**（无 `<slot` / `useSlotsExist` / `$slots` 的内部渲染内核组件，如 `loading-bar/LoadingBar.vue`，原判定假 FAIL）；② 复合组件**逐 .vue 校验**
 - [ ] **F2** 根类名 = `{组件名}-wrap`，无 `m-` / `vui-` 自拟前缀（`grep -nE 'class="[a-z]+-{组件名}|class="m-|class="vui-' components/{组件名}/*.vue` 应为 0 命中）
@@ -149,6 +151,7 @@
 - [ ] **F6** ⭐ changelog 三查：版本章节唯一（无重复版本号）/ 严格递减 / 组件链接为站内相对路径 + kebab 目录名 / `## future` 无已落地组件残留（`<!-- -->` 内搁置项不算）
 - [ ] **F7** 演示页与文档 script 注释、`<h2>` 标题无数字序号（`grep -nE "^// [0-9]\.|<h2[^>]*>[0-9]+\." src/views/{组件名}/ docs/guide/components/{组件名}.md`）
 - [ ] **F8** 演示页无本项目**组件值** import（默认导入整库、或具名导入中出现 PascalCase 组件名 → 违规）。⚠️ 2026-09-22 修正：**命令式 API / hook 允许 import**（`useLoadingBar` / `useMessage` / `createDiscreteApi`，规范依据 `development/demo-doc-guide.md`）；`import type` 允许；⚠️ 2026-09-22：**多行 import 同样在检**（脚本先拼接跨行语句再判定）
+- [ ] **F9 ⭐ 源码多余空行（2026-10-19 新增 · Radio/Checkbox 复盘）**：`components/{组件名}/**` 的 `.vue` / `.ts` 中 ① 无连续 ≥2 空行；② `interface` / `type` 对象类型 / `withDefaults` 默认值对象**内部无空行**。分组语义用**行尾注释**表达，❌ 不用空行分段。权威源 `refine-spec.md` §2.4 / §3.2.4；脚本 `F9` 拦截（实测可检出「Props 内单个空行」与「连续空行」两种形态）
 
 ### G · 交付前精修与三方一致性（阶段 5 第 5 步 · ⭐ 2026-09-22 新增 · 2026-09-23 补 G0 范围）
 
@@ -173,6 +176,7 @@
 - [ ] `pnpm test` 全量通过（新增/修改组件时）
 - [ ] `pnpm docs:build` 通过（阶段 4 改了文档 demo/内联 script 时，验证文档站可编译）
 - [ ] `pnpm prettier --check src/ components/`（或 `pnpm format:check`）通过
+- [ ] **源码空行已清理**（F9）：Props / Slots / 类型对象 / `withDefaults` 内无空行，全文件无连续空行——❌ 不保留「视觉分组」性质的空行
 - [ ] **浏览器实测**：`pnpm dev` 与真身 1:1 对照，覆盖多实例/边界/交互/主题切换
 - [ ] 控制台 0 error / 0 warning
 - [ ] 后台端口已关闭

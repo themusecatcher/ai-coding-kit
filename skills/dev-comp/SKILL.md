@@ -1,7 +1,7 @@
 ---
 name: dev-comp
 category: dev-tools
-description: 面向 vue-amazing-ui 组件库的单组件开发迭代工作流。轻量领域流程（6 阶段）+ 软交付前精修与三方一致性收口（品牌信息清除 / 注释精修 / Props 排序 / 演示用例排序布局 / docs↔views↔源码对账，兼容分批提交）+ 软复用 dev-flow 生态能力（工作上下文/plan/开发日志/度量/知识沉淀/提交），全程不进入 dev-flow 流程状态机与门控，因此轻量不臃肿。适用于在该组件库中新增或完善单个组件（如Menu/Table），参考源为 Ant Design Vue 与 Naive UI（官网+ 本地 clone 源码）。触发命令：dc: / 组件开发 / 开发 xxx 组件 / 完善 xxx 组件。
+description: 面向 vue-amazing-ui 组件库的单组件开发迭代工作流。轻量领域流程（6 阶段）+ 软交付前精修与三方一致性收口（品牌信息清除 / 注释精修 / 源码空行清理 / Props 排序 / 演示用例排序布局 / docs↔views↔源码对账，兼容分批提交）+ 软复用 dev-flow 生态能力（工作上下文/plan/开发日志/度量/知识沉淀/提交），全程不进入 dev-flow 流程状态机与门控，因此轻量不臃肿。适用于在该组件库中新增或完善单个组件（如Menu/Table），参考源为 Ant Design Vue 与 Naive UI（官网+ 本地 clone 源码）。触发命令：dc: / 组件开发 / 开发 xxx 组件 / 完善 xxx 组件。
 ---
 
 # dev-comp —— 组件库开发迭代工作流
@@ -43,7 +43,7 @@ description: 面向 vue-amazing-ui 组件库的单组件开发迭代工作流。
 
 | 必读文件 | 关键内容 | 对应阶段 |
 |:--|:--|:--|
-| `development/component-design.md` | SFC 三段式 / `export interface Props` / **`defineSlots` + `<组件名>Slots`** / 主题注入 / 样式与 CSS 变量 / **根类名 `{组件名}-wrap`** | 1-2 |
+| `development/component-design.md` | SFC 三段式 / `export interface Props` / **字段之间不留空行** / **`defineSlots` + `<组件名>Slots`** / 主题注入 / 样式与 CSS 变量 / **根类名 `{组件名}-wrap`** | 1-2 |
 | `development/import-export.md` | 三层导出模型 / 组件 `index.ts` 三件套 / **新增组件「三步接线」Checklist** / **`style-deps.ts` 四张表**（D 方案单一数据源） | 1 |
 | `development/demo-doc-guide.md` | 演示页结构 / 自动路由 / 组件文档模板 / 侧边栏维护 / **演示与文档必须一致** | 3-4 |
 | `development/project-structure.md` | 顶层目录职责 / 命名规范速查 | 1/3/4 |
@@ -119,7 +119,7 @@ description: 面向 vue-amazing-ui 组件库的单组件开发迭代工作流。
 | 参考源路径 + antdv/naive 取舍 + **渲染分支对齐** | `references/reference-sources.md` |
 | 找可复用的项目已有资产 | `references/reusable-assets.md` |
 | 全链路 checklist（含 **F 类组件规范** + **G 类交付前精修**）+ 发布前配置项终检 | `references/checklists.md` |
-| **交付前精修与三方一致性**（品牌清除 / 注释精修 / Props 排序 / 用例排序布局 / docs↔views↔源码对账） | `references/refine-spec.md` |
+| **交付前精修与三方一致性**（品牌清除 / 注释精修 / **空行清理** / Props 排序 / 用例排序布局 / docs↔views↔源码对账） | `references/refine-spec.md` |
 | 新增组件联动配置地图（⭐易遗漏点全集，含 ⑮ 全局类型声明） | `references/linkage-map.md` |
 | 用例标题/简介描述规范（权威源 + 同步） | `references/demo-description.md` |
 | changelog 编写规范（版本号升级 + 双处同步 + 章节唯一性） | `references/changelog-spec.md` |
@@ -140,9 +140,9 @@ description: 面向 vue-amazing-ui 组件库的单组件开发迭代工作流。
 - ✅ **联动清单即注册基线**：`references/linkage-map.md` 是「新增组件全量联动点」唯一权威源（含 ⭐ 易遗漏点：**`style-deps.ts` 四张表**（D 方案单一数据源，含复合组件逐子组件登记）/ 组件总数 4 处 / components.d.ts 幽灵声明 / App.vue 孤儿变量 / **⑮ types/global-components.d.ts 全局类型声明登记**）。阶段 1/4/5 逐项勾销，**禁止靠记忆「顺手补几处」**；确定性 grep 自检已收拢于 `scripts/validate-component.sh`（Gate 5 必跑），宣告完成前必须实测
 - ✅ **配置项终检即发布基线**：`references/checklists.md` §发布前配置项终检 是阶段 5 验收时固定配置项（代码注册/文档联动/残留清理/一致性/**组件规范**/**交付前精修**）的唯一权威源，Gate 5 必须全量逐项回显勾销 + grep 自检实测；**埋入阶段（1/4）的检查不能替代终检**，发布前必须全量回检
 - ✅ **品牌信息 0 残留红线**（脚本 C5 拦截）：交付物不得残留 antdv / naive 的品牌内容与信息——库名（`antdv`/`antd`/`ant-design-vue`/`Ant Design Vue`/`naive`/`naive-ui`）、`<a-xxx>` 真身标签、`avalue*`·`aoptions*`·`antdTheme` 等残留，**以及注释里的来源标注——含一切「不点名」的指代**（`参考实现` / `参考库` / `参考源码` / `真身` / `官网`、「与参考实现同口径」等，2026-10-10 补充）；**处置只有「删除」或「改为本项目自身口径陈述」两种，「改中性表述」不属合规做法**；**范围含 docs 全部内容（组件文档 + changelog/features/index）**、组件源码、演示页、单测、根级 README。**两段口径**（⚠️ 兼容分批开发/分批提交）=「①本分支**净改动**新增行（`git diff <base>` 基点→当前工作区，一次覆盖已提交的每一批 + 未提交改动）②未跟踪新增文件全文」（**存量不追溯**）——只查工作区会漏掉已提交的批次，base 取 `--base` / 工作上下文 `base_ref` / `merge-base 主干`（指定或登记的 ref **无法解析**时脚本给「C5 判定不完整」WARN 并回显该 ref——此 WARN ≠ 通过，须核对 ref 后重跑）；净改动为 0 但已提交批次仍有残留时会 WARN「删除须随本次 commit 提交，否则复活」。**处置**：品牌对比/差异说明类内容（docs「与 XX 的差异」段落、changelog「对齐 XX」说明）**整段直接删除、不保留**。**例外**：`@ant-design/*` 基础包（图标/色板）不清除。详见 `references/refine-spec.md` §1
-- ✅ **交付前精修必做**（阶段 5 第 5 步，红线）：**范围 = 四来源**（`refine-spec.md` §0.1）——组件源码 / 演示页 / docs / **git 已提交批次**；**起手先取范围清单**：`git diff --name-only <base>` + `git ls-files --others --exclude-standard`（脚本 **`G0`** 已按三载体分类输出），一次覆盖「已提交的每一批 + 未提交改动」；❌ **只看工作区 `git diff`** 在分批提交场景会整段漏检已提交批次，❌ **范围与本轮改动面无关**（本轮没改的载体也要逐项过）。每次组件开发收尾都要①**组件源码注释精修**（三层结构 / 删复述与过期注释 / 删品牌来源标注）②**Props 排序**（六段式分组 → 双向绑定→内容数据→形态外观→状态反馈→行为交互→进阶透传，段内语义相邻；增量属性**插入所属段**、❌ 禁追末尾；源码顺序 ≡ docs `## APIs` 表顺序）③**演示用例排序与布局**（**排序锚点先确认**，见 `refine-spec.md` §4.1：A 官网保序＝默认，官网用例保序 / 新增插回原序 / 特有用例归末尾；B 合理性优先＝用户明确「无需对齐官网」时启用，主题聚簇 + 由浅入深 / 特有用例就近插入；单例整块 / 多例并排 / 交互类全宽，同类型布局一致）④**docs ↔ views 用例对齐**（数量/顺序/标题逐字）+ **三方一致性对照**（源码↔docs↔views 全维度）。⚠️ 结论为「无需改动」也必须附**逐载体核对证据**（逐层 / 逐区结论），`grep` 抽检 ≠ 精修。精修属实质改动 → **必须复验**（lint + type-check + 浏览器实测）。权威源 `references/refine-spec.md`，脚本 `G0`/`C5`/`G2`/`G4` 拦截
+- ✅ **交付前精修必做**（阶段 5 第 5 步，红线）：**范围 = 四来源**（`refine-spec.md` §0.1）——组件源码 / 演示页 / docs / **git 已提交批次**；**起手先取范围清单**：`git diff --name-only <base>` + `git ls-files --others --exclude-standard`（脚本 **`G0`** 已按三载体分类输出），一次覆盖「已提交的每一批 + 未提交改动」；❌ **只看工作区 `git diff`** 在分批提交场景会整段漏检已提交批次，❌ **范围与本轮改动面无关**（本轮没改的载体也要逐项过）。每次组件开发收尾都要①**组件源码注释与空行精修**（三层结构 / 删复述与过期注释 / 删品牌来源标注 / 删 Props·Slots·类型对象·`withDefaults` 内空行与连续空行，见 `refine-spec.md` §2.4）②**Props 排序**（六段式分组 → 双向绑定→内容数据→形态外观→状态反馈→行为交互→进阶透传，段内语义相邻；增量属性**插入所属段**、❌ 禁追末尾；源码顺序 ≡ docs `## APIs` 表顺序）③**演示用例排序与布局**（**排序锚点先确认**，见 `refine-spec.md` §4.1：A 官网保序＝默认，官网用例保序 / 新增插回原序 / 特有用例归末尾；B 合理性优先＝用户明确「无需对齐官网」时启用，主题聚簇 + 由浅入深 / 特有用例就近插入；单例整块 / 多例并排 / 交互类全宽，同类型布局一致）④**docs ↔ views 用例对齐**（数量/顺序/标题逐字）+ **三方一致性对照**（源码↔docs↔views 全维度）。⚠️ 结论为「无需改动」也必须附**逐载体核对证据**（逐层 / 逐区结论），`grep` 抽检 ≠ 精修。精修属实质改动 → **必须复验**（lint + type-check + 浏览器实测）。权威源 `references/refine-spec.md`，脚本 `G0`/`C5`/`G2`/`G4` 拦截
 - ✅ **验收完成 ≠ 任务结束**：验收通过后按 `references/release-flow.md` 引导「合入 main（GitHub PR）→ main 上构建发布（`pnpm pub`，执行前用户逐条确认）→ 发布后清理（删 feat 分支）」；❌ 严禁在 feat 分支上执行发布；用户本轮不发布则写入工作上下文接续指引
-- ✅ **组件规范红线**（权威源 `development/component-design.md`，脚本 F1-F3 拦截）：插槽类型 `export interface {组件名}Slots` + `defineSlots<{组件名}Slots>()`（⚠️ **无插槽组件豁免**——内部渲染内核等无 `<slot`/`useSlotsExist`/`$slots` 的 .vue 不强制声明；复合组件逐 .vue 校验）；根类名 = `{组件名}-wrap`（❌ 禁 `m-` / `vui-` 等自拟前缀）；Props/Slots 注释禁写 `string | slot`；`useSlotsExist` 只传实际使用的插槽名
+- ✅ **组件规范红线**（权威源 `development/component-design.md`，脚本 F1-F3 / F9 拦截）：插槽类型 `export interface {组件名}Slots` + `defineSlots<{组件名}Slots>()`（⚠️ **无插槽组件豁免**——内部渲染内核等无 `<slot`/`useSlotsExist`/`$slots` 的 .vue 不强制声明；复合组件逐 .vue 校验）；根类名 = `{组件名}-wrap`（❌ 禁 `m-` / `vui-` 等自拟前缀）；Props/Slots 注释禁写 `string | slot`；`useSlotsExist` 只传实际使用的插槽名；**源码不留多余空行**——`interface Props` / `{组件名}Slots` / 类型对象 / `withDefaults` 内部字段紧邻排列（❌ 不用空行分段），全文件无连续空行（`refine-spec.md` §2.4 / §3.2.4）
 - ✅ **全局类型声明必登记**（脚本 F5 拦截）：新增组件 / 复合子组件 / Provider 必须在 `types/global-components.d.ts` 登记（`linkage-map.md` §⑮）——⚠️ 漏登记**不报错、`pnpm type-check` 仍 PASS**，属静默失效，只能靠脚本兜底
 - ✅ **对齐维度 = API 四维 + 渲染分支 + Demo 用例**（三者缺一不可）：必须读参考库渲染实现**逐分支**核对（字符串/VNode/空值兜底/双源优先级/数组归一/falsy 边界），差异显式决策并登记（详见 `reference-sources.md` §渲染分支与兜底逻辑对齐）
 - ✅ **演示页红线**（脚本 F7/F8 拦截）：分区按已确认排序锚点**排列**（默认官网原序，锚点定义见 `refine-spec.md` §4.1），但标题与 script 注释**不带数字序号**；本项目组件**无需 import**（全局注册，直接写 `<Xxx>` 标签）

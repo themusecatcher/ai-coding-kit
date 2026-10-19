@@ -9,7 +9,7 @@
 
 | 项目规范文件 | 覆盖内容 | 对应阶段 |
 |:--|:--|:--|
-| `development/component-design.md` | SFC 三段式 / `export interface Props` + `withDefaults` / **插槽类型 `defineSlots` + `<组件名>Slots`** / `useInject` 主题注入 / `useSlotsExist` / 样式与 CSS 变量 / 复合组件 / 无样式组件登记 | 1-2 |
+| `development/component-design.md` | SFC 三段式 / `export interface Props` + `withDefaults` / **字段之间不留空行** / **插槽类型 `defineSlots` + `<组件名>Slots`** / `useInject` 主题注入 / `useSlotsExist` / 样式与 CSS 变量 / 复合组件 / 无样式组件登记 | 1-2 |
 | `development/import-export.md` | 三层导出模型 / 组件级 `index.ts` 三件套 / 复合组件目录级聚合 / `withInstall` 实现 / **`style-deps.ts` 四张表**（D 方案单一数据源）/ **新增组件「三步接线」Checklist** / 新增工具函数 Checklist | 1 |
 | `development/demo-doc-guide.md` | `src/views/` 演示页结构（`h1` + `h2.mt30.mb10` + `<Space>`）/ 自动路由机制 / 文档站结构 / 组件文档模板 / 内联 demo 机制 / 侧边栏维护 / **演示与文档必须一致** | 3-4 |
 | `development/project-structure.md` | 顶层目录职责 / `components/` 内部结构 / `src/` 演示环境 / `docs/` 文档站 / 命名规范速查 | 1/3/4 |

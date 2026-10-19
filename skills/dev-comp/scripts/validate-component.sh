@@ -18,6 +18,13 @@
 #   ← references/flow.md 阶段 5 第 1/4/5/6 步
 #   ← SKILL.md §能力复用索引
 #
+# 2026-10-19（Radio/Checkbox 源码空行复盘 · 新增 1 项）变更：
+#   新增 F9「组件源码多余空行」：① 连续 ≥2 空行；② interface / type 对象类型 / withDefaults
+#   默认值对象**内部**空行。背景：`interface Props` 按语义分组留空行（旧 refine-spec §3.4 正例
+#   即示范了这种写法）→ 用户要求「多余、无意义的空行不要保留」。分组语义改由行尾注释表达。
+#   同步：references/refine-spec.md §2.4 新增 + §3.2.4 + §3.4 正例改无空行 + 反模式清单；
+#        references/checklists.md F9 + Props 条目 + 验收条目；templates/component.tpl.vue；SKILL.md 红线。
+#
 # 2026-10-13（QRCode 阶段 5 终检暴露的脚本口径缺口 · 回填 1 项）变更：
 #   ① A4 单文件组件的表键改按**注册键**取（map_keys_by_dir），不再用输入名 NAME：kebab 输入
 #      （qr-code）时 `deps_entry_of qr-code` 取不到 `QRCode: [...]` 条目 → 依赖全判缺失（假 FAIL）。
@@ -1067,6 +1074,59 @@ if [ -n "$VIEW_DIR" ] && [ -f "$DEMO" ]; then
   fi
 else
   skip "F8 演示页不存在，跳过组件 import 检查"
+fi
+
+# F9 组件源码多余空行（2026-10-19 新增 · Radio/Checkbox 复盘）
+# 事故背景：`interface Props` 内按语义分段留空行，交付后被用户要求「多余、无意义的空行不要保留」。
+#   分组语义用行尾注释表达，**不用空行分段**（refine-spec.md §3.2.4）；连续空行一律视为排版残留。
+# 判定：① 连续 ≥2 空行；② interface / type 对象类型 / withDefaults 默认值对象内部出现空行。
+F9_FILES=""
+if [ -n "$COMP_DIR" ]; then
+  F9_FILES=$(find "$ROOT/components/$COMP_DIR" -maxdepth 2 \( -name '*.vue' -o -name '*.ts' \) 2>/dev/null | sort)
+fi
+if [ -z "$F9_FILES" ]; then
+  skip "F9 组件源码未解析到，跳过空行检查"
+else
+  F9_HIT=$(awk '
+    function netbraces(s,   t, o, c) {
+      t = s; o = gsub(/\{/, "{", t)
+      t = s; c = gsub(/\}/, "}", t)
+      return o - c
+    }
+    {
+      line = $0
+      blank = (line ~ /^[[:space:]]*$/)
+
+      if (blank) {
+        run++
+        if (run == 2) printf "%s:%d 连续空行; ", FILENAME, NR
+      } else {
+        run = 0
+      }
+
+      if (depth > 0 && blank) printf "%s:%d 类型/默认值块内空行; ", FILENAME, NR
+
+      if (depth == 0 && line ~ /^[[:space:]]*(export[[:space:]]+)?(interface|type)[[:space:]]+[A-Za-z_][A-Za-z0-9_]*[[:space:]]*(=[[:space:]]*)?(extends[^{]*)?\{[[:space:]]*(\/\/.*)?$/) {
+        d = netbraces(line)
+        if (d > 0) depth = d
+        next
+      }
+      if (depth == 0 && line ~ /withDefaults\(/ && line ~ /\{[[:space:]]*(\/\/.*)?$/) {
+        d = netbraces(line)
+        if (d > 0) depth = d
+        next
+      }
+      if (depth > 0) {
+        depth += netbraces(line)
+        if (depth <= 0) depth = 0
+      }
+    }
+  ' $F9_FILES 2>/dev/null | head -5)
+  if [ -z "$F9_HIT" ]; then
+    ok "F9 组件源码无多余空行（无连续空行；interface / type / withDefaults 块内无空行）"
+  else
+    fail "F9 组件源码存在多余空行（分组语义用行尾注释表达、不用空行分段；连续空行须合并）：$F9_HIT"
+  fi
 fi
 
 # ============================================================
