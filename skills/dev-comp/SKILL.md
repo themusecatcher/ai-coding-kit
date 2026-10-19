@@ -7,7 +7,7 @@ description: 面向 vue-amazing-ui 组件库的单组件开发迭代工作流。
 # dev-comp —— 组件库开发迭代工作流
 
 > 定位：vue-amazing-ui 单组件开发迭代领域 SOP。
-> 架构：**轻量领域流程 + 软复用 dev-flow 能力模块**。全程❌ 不产生 `.flow` 锁、❌ 不走 dev-flow 重型门控（`.validated` 物理检查点 / JSON 逐步校验 / 门控 subagent / post-step 脚本 / 工具门禁）；✅ 仅保留**轻量交互式 Gate**——每阶段完成后输出「阶段完成报告」并弹 `ask_followup_question`，等用户确认再进入下一阶段（详见「6 阶段 + Gate 流程总览」）；✅ 另配 1 个**轻量校验脚本** `scripts/validate-component.sh` 承载 Gate 5 确定性检查（A/B/C/E/F/G 配置项 + S 提交红线，设计哲学「确定性用代码」，详见「能力复用索引」）。
+> 架构：**轻量领域流程 + 软复用 dev-flow 能力模块**。全程❌ 不产生 `.flow` 锁、❌ 不走 dev-flow 重型门控（`.validated` 物理检查点 / JSON 逐步校验 / 门控 subagent / post-step 脚本 / 工具门禁）；✅ 仅保留**轻量交互式 Gate**——每阶段完成后输出「阶段完成报告」并弹 `ask_followup_question`，等用户确认再进入下一阶段（详见「6 阶段 + Gate 流程总览」）；✅ 另配 2 个**轻量校验脚本**——`scripts/validate-component.sh` 承载 Gate 5 确定性检查（A/B/C/E/F/G 配置项 + S 提交红线，设计哲学「确定性用代码」，详见「能力复用索引」）+ `scripts/lint-working-context-name.sh` 工作上下文命名体检（L1-L5，调用点见 `references/flow.md` 阶段 0 新建后 / 阶段 5 收尾 / `dc:status`）。
 
 ## ⚙️ 个人化配置区（复用/分享时只改这一块）
 
@@ -35,6 +35,7 @@ description: 面向 vue-amazing-ui 组件库的单组件开发迭代工作流。
 | `CAP_METRICS_DIR` | `~/.codebuddy/dev-comp/metrics/` | 度量报告目录（dev-comp 专属） |
 
 > 本地 clone 不存在时：降级为仅用官网（web_fetch）参考，并提示用户可clone 以获得源码级复用。
+> 脚本默认路径兜底：两个脚本内的硬编码默认值（`validate-component.sh` 的项目根 / 归档兜底目录、`lint-working-context-name.sh` 的工作上下文目录 / 项目根）可用环境变量 `VAUI_PROJECT_ROOT` / `VAUI_ARTIFACTS_DIR` / `VAUI_WC_DIR` 覆盖；主流程调用已显式传 `{PROJECT_ROOT}`，此处仅供换人换机兜底。
 
 ## 📋 项目规范权威源（必读 · 2026-09-15 新增）
 
@@ -72,7 +73,7 @@ description: 面向 vue-amazing-ui 组件库的单组件开发迭代工作流。
 | `组件开发` / `开发 {X} 组件` / `完善 {X} 组件` / `补全 {X} 组件` | 进入 dev-comp |
 | 仅提及组件但无开发意图（如"看看 Menu 怎么实现的"）| 不触发，普通对话 |
 
-**优先级**：incident-triage（告警硬触发）> 用户显式 dev-flow 命令 > dev-comp > 普通对话。
+**优先级**：issue-trace（告警硬触发）> 用户显式 dev-flow 命令 > dev-comp > 普通对话。
 **与 dev-flow 互斥**：用户显式用 `dev-flow` 命令时走 dev-flow；用 `dc:` / `dev-comp` 或组件开发意图时走本 skill。二者不同时激活。
 
 ## 6 阶段 + Gate 流程总览
@@ -107,6 +108,7 @@ description: 面向 vue-amazing-ui 组件库的单组件开发迭代工作流。
 | 提交 | `use_skill('smart-commit')` | 阶段 5 提交 | `references/capability-reuse.md` |
 | 交互验收 e2e | `use_skill('e2e-testing')`（可选） | 阶段 5 关键交互用例 | `references/checklists.md` §交互操作清单 |
 | 配置项终检 + 精修校验 + 提交红线校验 | `scripts/validate-component.sh`（本 skill 自带） | 阶段 5 收尾必跑（Gate 5 数据源） | `references/checklists.md` §发布前配置项终检 |
+| 工作上下文命名体检 | `scripts/lint-working-context-name.sh`（本 skill 自带） | 阶段 0 新建后 / 阶段 5 收尾 / `dc:status`（--all） | `references/capability-reuse.md` §命名规则 |
 
 > ⚠️ 上述被调 skill 缺失时**优雅降级**：跳过该环节并一句话提示用户，不阻断主流程。
 

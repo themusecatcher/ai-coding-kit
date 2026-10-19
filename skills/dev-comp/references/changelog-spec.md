@@ -115,7 +115,7 @@ grep -n '^## future' -A 15 docs/guide/changelog.md
 | 新增组件只升 patch（2.4.28 AutoComplete 事故） | 新增组件 → minor+1，patch 归 0 |
 | 只改 changelog 不改 package.json（或反之） | 双处同步，发布前对照校验 |
 | 新版本块插入位置错误（追加到文件尾部） | 插在顶部，最新版本在最上方 |
-| 组件链接写错目录名（如全小写连写 `auto-complete` → `autocomplete.html`） | 用 `docs/guide/components/` **实测**目录名（kebab）：`auto-complete.html` |
+| 组件链接写错目录名（写成全小写连写 `autocomplete.html`） | 用 `docs/guide/components/` **实测**目录名（kebab）：`auto-complete.html` |
 | 组件条目用完整 URL（历史写法） | 站内相对路径 `/guide/components/{目录名}.html` |
 | **合并后出现两个同名版本章节**（Comment 2.6.0 事故） | 预写块改名到下一个未发布版本 + 上移顶部；合并/rebase 后回检 §4 ③ |
 | **分支沿用旧目标版本号合入主干** | 合并前实测 `package.json` version，取下一个未发布值 |

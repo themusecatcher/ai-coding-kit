@@ -31,8 +31,8 @@
    - 升级幅度与发布内容匹配（`changelog-spec.md` §4）✅
    - npm 登录状态有效（`npm whoami` 非空）
 2. **执行发布**：`pnpm pub "feat: 发布 {X.Y.Z} 版本"`（用户明确确认后执行）
-   - 脚本链路：`check`（lint+type-check）→ `build` → commit+push 当前待提交更改 → `npm publish` → `pnpm up vue-amazing-ui@版本` → commit `feat: update 版本` + push → `docs:deploy`（构建文档站 + 推 gh-pages + commit+push）
-   - ⚠️ 脚本内嵌 git 操作，执行前向用户说明完整链路再等确认
+   - 脚本链路（`scripts/publish.sh` 实测）：`pnpm check`（`lint:check` + `format:check` + `type-check` + `test` **4 项串行**，非仅 lint+type-check）→ `pnpm build` → commit `"{传入的 message}"` + push → `npm publish` → `pnpm up vue-amazing-ui@版本` → commit `chore: update vue-amazing-ui@版本` + push → 打并推送版本 tag `v{版本}` → `pnpm docs:deploy`（构建文档站 + 推 gh-pages + commit+push）
+   - ⚠️ 脚本内嵌 git 操作（含 commit/push/tag，发布 commit 与 tag 均不可轻易撤回），执行前向用户说明完整链路再等确认
 3. **发布验证**：
    - `npm view vue-amazing-ui version` 返回新版本号
    - 文档站更新：`https://themusecatcher.github.io/vue-amazing-ui/` 可见新组件

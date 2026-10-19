@@ -30,6 +30,7 @@ vaui-{组件目录名}-{YYYYMMDD}.md
 - **口径依据**：与 `changelog-spec.md` §3.2「组件链接用实测 kebab 目录名」同源——项目 `components/` 与 `docs/guide/components/` 均为 kebab，仅 `src/views/` 为 camelCase，故锚定前者（`project-map.md` §命名惯例）
 - **frontmatter `component:` 字段口径相反**：取**组件导出名 PascalCase**（`DatePicker`），与演示页 `title` / EnglishName 一致。文件名段 kebab + 字段段 PascalCase 是**刻意分工**，不是不一致
 - ❌ 反例：`vaui-DatePicker-20260929.md`（PascalCase 进文件名）、文件名 `select` 配 `component: select`（字段未用 PascalCase）、目录内混放非工作上下文文件
+- **单文件覆盖式更新（L5 判定依据）**：同一组件同一时间只保留**一个**工作上下文——阶段 0 第一级命中即恢复该文件继续写（**不新建**，见 `flow.md` 阶段 0 第 1 条），后续每轮进度直接覆写同一文件；禁止按轮次/日期新建第二个文件。脚本 `L5` 按归一化组件名检重，命中即 FAIL
 - **历史豁免（登记制 · 勿按违规处理）**：`vaui-autocomplete-20260814.md` 保留旧形态——创建于 2026-08-14，早于项目 2026-08-28「组件目录及文档统一 kebab」重构（现目录为 `auto-complete`），依「文件名日期 = 创建日期锚点、落地后不改名」原则豁免；lint 因归一化匹配判 PASS
 - **异构文件禁令**：本目录**只放工作上下文**。跨分支移交 / 待办 / 一次性记录放 `~/.codebuddy/dev-comp/notes/`，命名 `{YYYYMMDD}_{简述-kebab}_{类型}.md`（如 `notes/20260930_font-migration_cross-branch.md`）；`notes/` 不参与命名 lint，但 `dc:status` 会列出以保证待办可见
 - **阶段 0 检索必须归一化**（小写去 `-_`），禁止 `grep -i {组件名}` 裸匹配——`grep -i autocomplete` 与 `grep -i auto-complete` **互相不命中**（历史隐患）

@@ -104,7 +104,7 @@
 > ⚠️ **埋入阶段检查不能替代终检**：阶段 1/4 埋入时检查过 ≠ 发布前仍正确（埋入后文件可能再被改动），收尾必须全量回检。
 > 详细判定规则 → `linkage-map.md` 对应小节；类别 D「质量验证」（lint/type-check/浏览器实测）并入下方 §验收。
 >
-> **🔧 确定性检查的权威执行体 = `scripts/validate-component.sh`**（设计哲学「确定性用代码」落地）：Gate 5 前置跑 `bash scripts/validate-component.sh {组件名} {PROJECT_ROOT} --context {工作上下文文件}`（**分批提交 / 长生命周期分支加 `--base <ref>`**，确保 C5 回溯已提交批次），一次性获取 A/B/C/E/F/G + S 全部勾销证据（输出 `[PASS/FAIL/WARN/SKIP]`），**禁止逐条手敲 grep**。本节 ID（A1-A5/B1-B8/C1-C5/E1-E2/F1-F9/G1-G6）与下方 §验收 的提交红线（S1 git 身份 / S2 分支核对 / S3 commit hash 回填真实性 / S4 沉淀三件套 / S5 归档双份）均与脚本输出一一对应；本节定义规则语义（人类阅读），脚本是执行真相，**规则变更必须同步改脚本**，禁止只改文档（详见 `rules/按需-Skill设计-跨文件协作.mdc` §2.1 双向引用）。FAIL 阻断收尾，WARN/SKIP 须人工确认并回显 Gate 5 报告。脚本对 components/views/docs 三处目录按归一化名解析真实路径（项目命名约定不统一，禁止猜测路径）。
+> **🔧 确定性检查的权威执行体 = `scripts/validate-component.sh`**（设计哲学「确定性用代码」落地）：Gate 5 前置跑 `bash ~/.codebuddy/skills/dev-comp/scripts/validate-component.sh {组件名} {PROJECT_ROOT} --context {工作上下文文件}`（**分批提交 / 长生命周期分支加 `--base <ref>`**，确保 C5 回溯已提交批次），一次性获取 A/B/C/E/F/G + S 全部勾销证据（输出 `[PASS/FAIL/WARN/SKIP]`），**禁止逐条手敲 grep**。本节 ID（A1-A5/B1-B8/C1-C5/E1-E2/F1-F9/G0-G6）与下方 §验收 的提交红线（S1 git 身份 / S2 分支核对 / S3 commit hash 回填真实性 / S4 沉淀三件套 / S5 产物存放位置）均与脚本输出一一对应；本节定义规则语义（人类阅读），脚本是执行真相，**规则变更必须同步改脚本**，禁止只改文档（详见 `rules/按需-Skill设计-跨文件协作.mdc` §2.1 双向引用）。FAIL 阻断收尾，WARN/SKIP 须人工确认并回显 Gate 5 报告。脚本对 components/views/docs 三处目录按归一化名解析真实路径（项目命名约定不统一，禁止猜测路径）。
 
 ### A · 代码注册链路（埋入于阶段 1）
 
@@ -182,7 +182,7 @@
 - [ ] 后台端口已关闭
 - [ ] **基线全量勾销**：Gate 5 报告已全量回显「对齐清单」（API 四维 + 源码实现分支 + Demo 用例）+「naive 差异登记」+「项目特有需求」，逐行 ✅/❌，❌ 项均带处置码（`延后 P{n}` / `不覆盖（理由）` / `待用户确认`）
 - [ ] 「待用户确认」缺失项已在 Gate 5 汇总呈现，用户已逐项决策
-- [ ] **交付前精修全量勾销（G1-G6 + C5）**：品牌 0 残留、注释精修、Props 六段式排序（与 docs 表逐项同序）、用例排序与布局、docs↔views 对齐、三方矩阵逐格勾销；精修后已复验（`lint:check` + `type-check` + 浏览器实测）——权威源 `refine-spec.md`，Gate 5 报告「交付前精修」区块回显
+- [ ] **交付前精修全量勾销（G0-G6 + C5）**：品牌 0 残留、注释精修、Props 六段式排序（与 docs 表逐项同序）、用例排序与布局、docs↔views 对齐、三方矩阵逐格勾销；精修后已复验（`lint:check` + `type-check` + 浏览器实测）——权威源 `refine-spec.md`，Gate 5 报告「交付前精修」区块回显
 - [ ] **能力沉淀三件套必做**：devlog（tech-doc）+ metrics（lite YAML）+ knowledge（knowledge-loop）已全部生成并在 Gate 5 报告勾销；降级跳过须登记 ❌ + 原因 + 用户确认（详见 `flow.md` 阶段 5 第 3 步）。⚠️ **适用范围（2026-09-22 修正）**：仅**本次在途开发**的组件（其 `components/` / `src/views/` / `docs` 路径在分支净改动内）必做；**存量组件**（顺手校验的历史组件）脚本 S4 整块 SKIP，无需产出
 - [ ] **提交前 git 身份实测**：`git config user.name/email` 实测值与工作上下文 `git_identity` 一致，不符已拦截并经用户决策（详见 `flow.md` 阶段 5 第 4 步）
 - [ ] **提交后 hash 实测回填**：`git log -1 --format='%h'` 实测值已回填工作上下文 frontmatter `commit`，禁止凭记忆记录

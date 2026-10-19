@@ -6,7 +6,7 @@
 # 物理锁、不接状态机、不做 gate 链、不做 hooks 自动触发）。
 # 把 references/checklists.md §发布前配置项终检（A/B/C/E/F/G 类）+
 # 提交红线（S 类：S1 git 身份 / S2 分支核对 / S3 commit hash 回填真实性 /
-# S4 能力沉淀三件套 / S5 归档双份）中的确定性 grep 检查收拢为单一可执行体，
+# S4 能力沉淀三件套 / S5 产物存放位置）中的确定性 grep 检查收拢为单一可执行体，
 # 作为 Gate 5 报告「发布前配置项终检」区块的数据来源。
 #
 # 规则权威源（双向引用，规则变更必须同步改本脚本）：
@@ -17,6 +17,22 @@
 #   ← references/refine-spec.md §1 §3.3 §5（C5 品牌残留 / G2 Props 顺序 / G4 用例对齐）
 #   ← references/flow.md 阶段 5 第 1/4/5/6 步
 #   ← SKILL.md §能力复用索引
+#
+# 2026-10-19（品牌词表漏检回填 · 全量复核发现 · 补 2 个模式）变更：
+#   ① BRAND_PAT 增补 `avalue` / `aoptions`（对照期演示数据变量）：refine-spec.md §1.1 与
+#      SKILL.md 品牌红线早已把它们列为须清除残留，但 C5 自 2026-09-22 建立起从未覆盖，
+#      C3 也只查 import / `<a-` 标签、不查变量名 → 漏删的对照数据变量可 C3/C5 双 PASS 进库
+#      （原有兜底只剩 ESLint unused-vars，覆盖不到「变量仍被引用」的情形）。
+#      两个模式都必须带**左边界** `(^|[^A-Za-z0-9_])`：实测 src/views/select/Index.vue 的合法
+#      变量 `bigDataOptions` 含 `aoptions` 子串（"…bigDat" + "aOptions"），裸补必误报。
+#   ② S5 措辞同步：文件头与 checklists.md 的「S5 归档双份」→「S5 产物存放位置」
+#      （2026-08-21 产物统一留运行时目录后，语义已从"查双份"变为"查位置"）。
+#   ③ 同步 references/flow.md 阶段 5 第 4 步（提交语义订正：执行统一到 Gate 5）+ 第 6 步
+#      （脚本调用路径相对→绝对，与 lint 脚本三处调用形态统一）；references/checklists.md
+#      §发布前配置项终检（同一路径口径 + ID 列表补 G0 + S5 措辞）；references/refine-spec.md
+#      §1.5（同一路径口径）；SKILL.md 架构行与能力复用索引（第 2 个脚本
+#      lint-working-context-name.sh）；references/release-flow.md §2（pnpm pub 链路对齐
+#      publish.sh 实测）；references/changelog-spec.md 反模式清单（链接示例措辞订正）。
 #
 # 2026-10-19（Radio/Checkbox 源码空行复盘 · 新增 1 项）变更：
 #   新增 F9「组件源码多余空行」：① 连续 ≥2 空行；② interface / type 对象类型 / withDefaults
@@ -794,11 +810,17 @@ fi
 #    仅写 antdv 会漏检（`ant-[a-z]+` 也匹配不到 antd——它没有连字符）
 # ⚠️ ant-[a-z]+ 必须限定「词首」（2026-10-09 回填 ④）：否则 font-variant-numeric 里包含的
 #    ant-numeric 会被当成品牌名（Countdown 注释与 changelog 条目两处假 FAIL 实测）。
+# ⚠️ avalue/aoptions 必须同列且带**左边界**（2026-10-19 回填）：对照期演示数据变量，
+#    refine-spec.md §1.1 与 SKILL.md 品牌红线列为须清除残留，但 C5 自建立起从未覆盖、
+#    C3 也不查变量名 → 漏删可双 PASS 进库。边界原因：实测 src/views/select/Index.vue 的
+#    合法变量 `bigDataOptions` 含 `aoptions` 子串（"…bigDat" + "aOptions"），裸写必误报。
 # ⚠️ 「不点名的来源指代」必须同列（2026-10-10 补充 ⑤ · refine-spec.md §1.1 ⭐ 行）：上一轮把品牌名
 #    换成「参考实现」后 C5 判定为通过，但残留性质不变（全库实测 102 处）。故词表补
 #    参考实现|参考库|参考源码|真身|官网 —— 判定不看是否点名品牌，只看是否把外部实现当说明依据。
 #    ⚠️ 不收录「上游」：它在 carousel / number-animation 里指真实依赖 @vueuse/core（合法表述）。
-BRAND_PAT='antd|antdv|ant-design-vue|ant design|(^|[^a-z0-9_-])ant-[a-z]+|naive|</?a-[a-z][a-z-]*[[:space:]>]|参考实现|参考库|参考源码|真身|官网'
+#    ⚠️ 不收录「同源」：实测 components/picker/ 3 处合法技术用法（如「与 `RRRR-II周` 展示格式同源」），
+#       误报风险 > 收益（2026-10-19 复核结论，勿当缺陷重复提案）。
+BRAND_PAT='antd|antdv|ant-design-vue|ant design|(^|[^a-z0-9_-])ant-[a-z]+|naive|</?a-[a-z][a-z-]*[[:space:]>]|(^|[^A-Za-z0-9_])avalue|(^|[^A-Za-z0-9_])aoptions|参考实现|参考库|参考源码|真身|官网'
 BRAND_EXCL='(^|/)(package\.json|pnpm-lock\.yaml|components\.d\.ts|vite\.config\.ts|tsconfig[^/]*\.json)$|\.eslintrc|pnpm-workspace\.yaml$|(^|/)(node_modules|dist|lib|coverage|\.temp)/|^es/'
 BRAND_SCOPE='^(components|src|docs|types|tests)/|^README|^CHANGELOG'
 BRAND_ALLOW='@ant-design/(icons-vue|colors)'
@@ -1130,7 +1152,7 @@ else
 fi
 
 # ============================================================
-# G · 交付前精修与三方一致性（对应 checklists.md G1-G6，2026-09-22 新增）
+# G · 交付前精修与三方一致性（对应 checklists.md G0-G6，2026-09-22 新增 G 节 · 2026-09-23 增 G0 范围清单）
 # 权威源：references/refine-spec.md
 #   §2 注释精修 / §3 Props 排序 / §4 演示用例排序与布局 / §5 三方一致性对照
 # 确定性下沉：G2（源码 Props 顺序 ↔ docs API 表顺序，支持复合组件按子组件比对）、
@@ -1154,9 +1176,14 @@ fi
 # DTU = 剔除固定章节后（用于数量比对；固定章节实测频次见 refine-spec.md §5.1 旁注）
 if [ -f "$DOC_FILE" ]; then
   grep -E '^## ' "$DOC_FILE" 2>/dev/null | sed -E 's/^##[[:space:]]+//' | norm_title | grep -v '^$' > "$DT"
-  grep -vxE '何时使用|基本使用|使用方式|在 setup 外使用|APIs|Slots|Events|Methods|自定义样式|主题变量|设计指引|参考文档|与 Space 组件的区别|FAQ' "$DT" > "$DTU"
+  # ⚠️ 2026-10-19：`与 .+ 组件的区别` 泛化（原仅特化 `与 Space 组件的区别`）——对齐 refine-spec.md §5.1
+  #    的通用表述；任何「与 Xxx 组件的区别」docs 对比说明章节均属固定章节，演示页本无对应分区。
+  grep -vxE '何时使用|基本使用|使用方式|在 setup 外使用|APIs|Slots|Events|Methods|自定义样式|主题变量|设计指引|参考文档|与 .+ 组件的区别|FAQ' "$DT" > "$DTU"
   # 白名单章节若本身也是演示页的用例标题（自定义样式等），补回 DTU，避免数量误判
   # ⚠️ 2026-09-23：改按行读取（原 `for w in <裸词列表>` 无法承载含空格的章节名，如「与 Space 组件的区别」）
+  # ⚠️ 2026-10-19：本列表是 grep -qxF **字面量**匹配（补回机制），泛化标题「与 Xxx 组件的区别」
+  #    （Xxx≠Space）若同时也是演示页用例标题则不会被自动补回——理论边界（固定章节与用例同名，实测未出现），
+  #    命中时 G4 计数 WARN 会提示人工核对，不误 PASS。
   printf '%s\n' 何时使用 基本使用 使用方式 在 setup 外使用 APIs Slots Events Methods 自定义样式 主题变量 设计指引 参考文档 '与 Space 组件的区别' FAQ \
     | while IFS= read -r w; do
         if [ -n "$w" ] && grep -qxF -- "$w" "$VT" 2>/dev/null && grep -qxF -- "$w" "$DT" 2>/dev/null; then
@@ -1338,7 +1365,7 @@ skip "G6 精修记录（工作上下文「交付前精修记录」区）+ 精修
 # ============================================================
 # S · 提交红线（对应 flow.md 阶段 5 第 4 步 + checklists.md §验收：
 # S1 git 身份 / S2 分支核对 / S3 commit hash 回填真实性 /
-# S4 能力沉淀三件套 / S5 归档双份）
+# S4 能力沉淀三件套 / S5 产物存放位置）
 # ============================================================
 section "S 提交红线"
 

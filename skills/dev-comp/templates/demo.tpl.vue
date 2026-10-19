@@ -46,7 +46,7 @@ function handleClick(info: unknown) {
 <template>
   <div class="demo-container">
     <!-- 用例：基础用法（官网用例名：xxx） -->
-    <h2>基础用法</h2>
+    <h2 class="mt30 mb10">基础用法</h2>
     <!-- 简介描述（可选）：仅信息增量时添加；代码标记原生 <code>；演示页 <p> 自带间距，【无需 <br/>】；
          class 落地到项目时替换为目标项目既有间距 class（vue-amazing-ui 为 mb10，.demo-desc 仅骨架占位） -->
     <p class="demo-desc">通过 <code>xxx</code> 控制 xxx（隐藏行为/区分点的必要说明）</p>
@@ -65,7 +65,7 @@ function handleClick(info: unknown) {
 
     <!-- 用例：禁用（官网用例名：xxx） -->
     <!-- 标题「禁用」已自解释，无需简介描述（反例：禁止给自解释标题加描述） -->
-    <h2>禁用</h2>
+    <h2 class="mt30 mb10">禁用</h2>
     <div class="demo-row">
       <div class="demo-col">
         <h3>本项目组件</h3>
@@ -80,7 +80,7 @@ function handleClick(info: unknown) {
     <!-- 官网剩余用例按官网顺序逐一复制分区，一个不落（标题不带序号，顺序由排列体现） -->
 
     <!-- 项目特有场景（官网没有的用例，单独追加分区；也用于覆盖官方 demo 未触及的渲染分支） -->
-    <h2>主题切换（项目特有）</h2>
+    <h2 class="mt30 mb10">主题切换（项目特有）</h2>
     <div class="demo-row">
       <div class="demo-col">
         <h3>light</h3>

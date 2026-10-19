@@ -151,10 +151,10 @@ git ls-files --others --exclude-standard           # 未跟踪新增文件（尚
 
 ```bash
 # 默认：base 自动探测（--base 参数 > 工作上下文 base_ref > merge-base 主干）
-bash scripts/validate-component.sh {组件名} {PROJECT_ROOT} --context {工作上下文文件}
+bash ~/.codebuddy/skills/dev-comp/scripts/validate-component.sh {组件名} {PROJECT_ROOT} --context {工作上下文文件}
 
 # 分批提交 / 长生命周期分支：显式指定基点，确保「已提交的每一批」都被回溯
-bash scripts/validate-component.sh {组件名} {PROJECT_ROOT} --base {分支基点或 origin/main}
+bash ~/.codebuddy/skills/dev-comp/scripts/validate-component.sh {组件名} {PROJECT_ROOT} --base {分支基点或 origin/main}
 # 看 C5 项输出：0 残留 = PASS；有命中 = FAIL（附文件 + 命中行 + 总处数）
 ```
 
