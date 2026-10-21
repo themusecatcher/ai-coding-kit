@@ -135,7 +135,7 @@
 
 ### E · 一致性校验（阶段 5 执行）
 
-- [ ] E1 组件总数 4 处数字一致：`grep -rEn "共包含|includes.*components|个基础" README.md README.zh-CN.md docs/index.md docs/guide/features.md`，4 处数字一致且 = 实际组件数（`ls -d components/*/ | grep -v -E 'components/(style|utils|discrete)/' | wc -l`）
+- [ ] E1 组件总数 4 处数字一致：`grep -rEn "共包含|includes.*components|个基础" README.md README.zh-CN.md docs/index.md docs/guide/features.md`，4 处数字一致且 = 实际组件数（`ls -d components/*/ | grep -v -E 'components/(style|utils|discrete|theme)/' | wc -l`）
 - [ ] E2 演示页 ↔ docs 简介描述同源：按 `references/demo-description.md` §5 用 grep 双向对比——文本逐字一致、段落数一致、`.vue` 用 `<code>` 而 `.md` 用反引号、`.md` 有 `<br/>` 而 `.vue` 无
 
 ### F · 组件本体与跨文件规范（阶段 1/2 埋入 · 阶段 5 全量回检）⭐ 2026-09-15 新增

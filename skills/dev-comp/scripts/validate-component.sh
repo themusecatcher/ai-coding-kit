@@ -240,10 +240,12 @@ FALLBACK="${VAUI_ARTIFACTS_DIR:-$HOME/myGithub/ai-coding-kit/skills/dev-comp/art
 #                       供 componentDependencies 依赖解析（如 Tooltip: [..., 'Popup']）
 #   - picker          ：日期时间选择内部共享内核（DatePicker / TimePicker 复用面板与时间列），
 #                       同样不在 components.ts 导出，但其成员需存在于 componentsMap（见 style-deps.ts）
+#   - theme           ：主题派生纯函数目录（derive / vars / 组件令牌注册表），非 UI 组件，
+#                       不参与组件总数统计（主题系统重构新增）
 # 二者口径差异：目录名（小写 kebab）/ 组件导出名（大驼峰），故分别维护。
 # ⚠️ 新增此类内部目录/组件时必须同步本定义，否则 B4/E1、F5 会产生假 FAIL。
 # ------------------------------------------------------------
-NON_COMPONENT_DIRS="style|utils|discrete|popup|picker"
+NON_COMPONENT_DIRS="style|utils|discrete|popup|picker|theme"
 NON_PUBLIC_COMPS="Popup|PickerPanel|PickerPanelHeader|PickerTrigger|RangePanel|DatePanel|DatetimePanel|TimePanel|TimeUnitColumn|PickerIcon|PresetPanel"
 
 # resolve_entry <目录>：按归一化名（去 .md 后缀）在该目录下匹配真实条目名，
