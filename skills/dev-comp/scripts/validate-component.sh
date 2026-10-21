@@ -18,6 +18,13 @@
 #   ← references/flow.md 阶段 5 第 1/4/5/6 步
 #   ← SKILL.md §能力复用索引
 #
+# 2026-10-21（G4 标题归一化缺口 · 回填 1 项）变更：
+#   背景：docs 文档给二级标题写 VitePress 显式锚点（`## 能改什么：从整体到单个实例 {#四层配置面}`）
+#   属合法形态，但 G4 抽标题时未剥离 `{#...}` → `grep -xF` 逐字比对全部 miss →
+#   ConfigProvider 文档 12 个用例整批误报「docs 缺演示页用例」（实际标题与演示页一一对应）。
+#   ① 修复：`grep '^## '` 后、`norm_title` 前增加 `s/[[:space:]]*\{#[^}]*\}[[:space:]]*$//`。
+#   本项只修实现口径，规则语义（标题逐字对齐）未变，故 sync 仅落脚本。
+#
 # 2026-10-19（品牌词表漏检回填 · 全量复核发现 · 补 2 个模式）变更：
 #   ① BRAND_PAT 增补 `avalue` / `aoptions`（对照期演示数据变量）：refine-spec.md §1.1 与
 #      SKILL.md 品牌红线早已把它们列为须清除残留，但 C5 自 2026-09-22 建立起从未覆盖，
@@ -1177,7 +1184,9 @@ fi
 # DT = docs 全部二级标题（用于子序列比对，避免白名单误伤真实用例标题）
 # DTU = 剔除固定章节后（用于数量比对；固定章节实测频次见 refine-spec.md §5.1 旁注）
 if [ -f "$DOC_FILE" ]; then
-  grep -E '^## ' "$DOC_FILE" 2>/dev/null | sed -E 's/^##[[:space:]]+//' | norm_title | grep -v '^$' > "$DT"
+  # 2026-10-21：先剥掉行尾 VitePress 显式锚点 `{#anchor}`（docs 合法形态），否则标题带 `{...}`
+  #   尾巴 → 与演示页标题逐字比对必然 miss，导致全部用例误报「docs 缺演示页用例」。
+  grep -E '^## ' "$DOC_FILE" 2>/dev/null | sed -E 's/^##[[:space:]]+//; s/[[:space:]]*\{#[^}]*\}[[:space:]]*$//' | norm_title | grep -v '^$' > "$DT"
   # ⚠️ 2026-10-19：`与 .+ 组件的区别` 泛化（原仅特化 `与 Space 组件的区别`）——对齐 refine-spec.md §5.1
   #    的通用表述；任何「与 Xxx 组件的区别」docs 对比说明章节均属固定章节，演示页本无对应分区。
   grep -vxE '何时使用|基本使用|使用方式|在 setup 外使用|APIs|Slots|Events|Methods|自定义样式|主题变量|设计指引|参考文档|与 .+ 组件的区别|FAQ' "$DT" > "$DTU"
