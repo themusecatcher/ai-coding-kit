@@ -15,8 +15,19 @@
 #   ← references/changelog-spec.md §3.2 §3.4 §4（F6）
 #   ← references/project-map.md §目录命名约定 / §项目规范权威源索引
 #   ← references/refine-spec.md §1 §3.3 §5（C5 品牌残留 / G2 Props 顺序 / G4 用例对齐）
+#   ← references/doc-tables-spec.md（B9 表格结构 / 列名统一 / 类型标题命名 / Props 后缀）
 #   ← references/flow.md 阶段 5 第 1/4/5/6 步
 #   ← SKILL.md §能力复用索引
+#
+# 2026-10-23（docs 表格规范落地 · 新增 B9 + 修订 B6）变更：
+#   背景：全量盘点 73 个组件文档 346 张表格，发现 ① `## APIs` 下首列「参数 / 名称」5:5 分裂
+#   （Props 表 84 张用「参数」、Type 表 65 张用「名称」）；② Type 表 4 种形态（四列/三列/两列/表头截断）；
+#   ③ 39/95 个类型标题与属性表引用的公开名不一致（TabsItem → ### Item Type）；
+#   ④ 复合组件页无 `Props` 后缀，与 `### Xxx Type` 无法区分。此前 B 类只校验章节存在性与 Slots 结构，
+#   表格列名 / 列数 / 必填标记 / 标题命名全部无校验。
+#   ① 新增 B9（a 首列列名 / b 表头截断 / c 类型标题名 / d Props 后缀 / e 锚点可达）。
+#   ② 修订 B6：`### {组件名}` → `### {组件名} Props`（带后缀 PASS；无后缀 WARN，存量不阻断）。
+#   权威源 references/doc-tables-spec.md；规则语义见 checklists.md B9（双向引用）。
 #
 # 2026-10-21（G4 标题归一化缺口 · 回填 1 项）变更：
 #   背景：docs 文档给二级标题写 VitePress 显式锚点（`## 能改什么：从整体到单个实例 {#四层配置面}`）
@@ -656,22 +667,32 @@ else
   fail "B5 API 章节缺失:${B5_MISSING:-无}（组件能力 emit=${B5_HAS_EMIT} expose=${B5_HAS_EXPOSE}）；## Expose 出现 ${B5_EXPOSE:-0} 次"
 fi
 
-# B6 `## APIs` 下 `### {组件名}` 子标题（实测：项目单组件文档均有）
+# B6 `## APIs` 下 `### {组件名} Props` 子标题（实测：项目单组件文档均有）
 # ⚠️ 2026-09-23 修正假阳性：候选名 = 输入名 + 目录派生的**注册键**（与 A2/A3 同口径）。
 #    实测 ① qr-code → 注册键 QRCode，文档写 `### QRCode`；② 复合组件 grid → 注册键 Row / Col，
 #    文档分 `### Row` / `### Col`（原判定只查 `### Grid`，必失败）。
+# ⚠️ 2026-10-23 修订：标题由 `### {组件名}` 改为 `### {组件名} Props`（与 `### Xxx Type` 平行，
+#    权威源 references/doc-tables-spec.md §1.1）。迁移期：带 Props 后缀 → PASS；无后缀 → WARN（不阻断存量）。
 if [ ! -f "$DOC_FILE" ]; then
   skip "B6 文档缺失，跳过 ### 子标题检查"
 else
   B6_KEYS="${NAME} $(map_keys_by_dir)"
   B6_HIT=""
+  B6_LEGACY=""
   for b6k in $B6_KEYS; do
-    if grep -qE "^###[[:space:]]+${b6k}[[:space:]]*$" "$DOC_FILE" 2>/dev/null; then B6_HIT="$b6k"; break; fi
+    if grep -qE "^###[[:space:]]+${b6k}[[:space:]]+Props[[:space:]]*$" "$DOC_FILE" 2>/dev/null; then B6_HIT="$b6k"; break; fi
   done
+  if [ -z "$B6_HIT" ]; then
+    for b6k in $B6_KEYS; do
+      if grep -qE "^###[[:space:]]+${b6k}[[:space:]]*$" "$DOC_FILE" 2>/dev/null; then B6_LEGACY="$b6k"; break; fi
+    done
+  fi
   if [ -n "$B6_HIT" ]; then
-    ok "B6 API 表 ### ${B6_HIT} 子标题命中（候选注册键：${B6_KEYS}）"
+    ok "B6 API 表 ### ${B6_HIT} Props 子标题命中（候选注册键：${B6_KEYS}）"
+  elif [ -n "$B6_LEGACY" ]; then
+    warn "B6 命中 ### ${B6_LEGACY}（缺 Props 后缀）：2026-10-23 起规范为 ### {组件名} Props，见 doc-tables-spec.md §1.1"
   else
-    warn "B6 未找到 '### {组件名}' 子标题（候选：${B6_KEYS}；项目单组件文档惯例为 \`## APIs\` 下分节，详见 checklists.md B6）"
+    warn "B6 未找到 '### {组件名} Props' 子标题（候选：${B6_KEYS}；项目单组件文档惯例为 \`## APIs\` 下分节，详见 checklists.md B6）"
   fi
 fi
 
@@ -715,6 +736,102 @@ else
     [ -n "${B8_BADHEAD}" ] && fail "B8 ## Slots 表列头应为「名称 | 说明 | 用法」（见 development/demo-doc-guide.md §约定），异常行：${B8_BADHEAD}"
     [ -n "${B8_BADROW}" ] && fail "B8 ## Slots 用法列（第 3 格）应写 v-slot:xxx（带作用域写 v-slot:xxx=\"{ a, b }\"），异常行：${B8_BADROW}"
   fi
+fi
+
+# B9 ⭐ docs 表格结构规范（2026-10-23 新增 · 全量盘点 73 文档 346 张表后制定）
+# 权威源：references/doc-tables-spec.md
+# 判定：
+#   B9a 首列列名：全部表格首列必须「名称」，出现 `| 参数 |` → FAIL（Props 表 84 张的历史写法）
+#   B9b 表头截断：末格恰为「默认」→ FAIL（应为「默认值」）
+#   B9c 类型标题名：`### Xxx Type` 与指向 `#xxx-type` 的链接文字不一致 → WARN（迁移期）
+#   B9d 组件标题补 ` Props` 后缀：APIs 区块内纯英文 `### Xxx` → WARN（迁移期）
+#   B9e 页内锚点可达：链接 `(#xxx-type)` 无对应 `### ... Type` → FAIL（改名未同步链接）
+# 说明：C 类为「存量不追溯」原则，B9c/B9d 用 WARN 兜住存量文档；B9a/B9b/B9e 属真错，直接 FAIL。
+if [ ! -f "$DOC_FILE" ]; then
+  skip "B9 文档缺失，跳过表格结构检查"
+else
+  # 表头同时兼容「带首尾管道」与「无首尾管道紧凑」两种历史写法；只判首列，不依赖第 2 列内容
+  B9A_HIT=$(grep -nE '^[[:space:]]*\|?[[:space:]]*参数[[:space:]]*\|' "$DOC_FILE" 2>/dev/null | head -3)
+  B9B_HIT=$(grep -nE '\|[[:space:]]*默认[[:space:]]*\|?[[:space:]]*$' "$DOC_FILE" 2>/dev/null | head -3)
+  B9C_RAW=$(awk '
+    /^#{2,4} /{
+      t=$0; sub(/^#{2,4}[[:space:]]+/,"",t); sub(/[[:space:]]+$/,"",t)
+      sub(/[[:space:]]*\{#[^}]*\}[[:space:]]*$/,"",t)
+      s=tolower(t); gsub(/[[:space:]]+/,"-",s); gsub(/[^a-z0-9_-]/,"",s)
+      if (s != "") slugs[s]=1
+      if (t ~ / Type$/) {
+        n=t; sub(/ Type$/,"",n)
+        a=tolower(n); gsub(/[[:space:]]+/,"-",a); a=a "-type"
+        head[a]=n
+      }
+    }
+    {
+      s=$0
+      while (match(s, /\[[^]]+\]\(#[A-Za-z0-9_-]+\)/)) {
+        m=substr(s,RSTART,RLENGTH)
+        t=m; sub(/^\[/,"",t); sub(/\].*/,"",t)
+        a=m; sub(/^[^(]*\(#/,"",a); sub(/\)$/,"",a)
+        if (a ~ /-type$/) { if (!(a in seen)) { order[++k]=a; seen[a]=1 }; texts[a]=texts[a] " " t }
+        if (!(a in anc)) { anc[a]=1; aorder[++ka]=a }
+        s=substr(s,RSTART+RLENGTH)
+      }
+    }
+    END{
+      for (i=1;i<=k;i++) {
+        a=order[i]
+        if (!(a in head)) { printf "DEAD:%s ", a; continue }
+        hit=0; c=split(texts[a], arr, " ")
+        for (j=1;j<=c;j++) if (arr[j]==head[a]) hit=1
+        if (!hit) printf "MISMATCH:%s!=%s ", a, head[a]
+      }
+      for (i=1;i<=ka;i++) {
+        a=aorder[i]
+        if (a ~ /-type$/) continue
+        if (!(a in slugs)) printf "DEADANC:%s ", a
+      }
+    }
+  ' "$DOC_FILE" 2>/dev/null)
+  B9_DEAD=$(printf '%s' "$B9C_RAW" | tr ' ' '\n' | grep -E '^DEAD:|^DEADANC:' | head -3 | tr '\n' ' ')
+  B9_MISMATCH=$(printf '%s' "$B9C_RAW" | tr ' ' '\n' | grep '^MISMATCH:' | head -3 | tr '\n' ' ')
+  B9D_HIT=$(awk '/^## APIs[[:space:]]*$/{f=1;next} f && /^## /{exit} f' "$DOC_FILE" 2>/dev/null \
+    | grep -nE '^###[[:space:]]+[A-Za-z][A-Za-z0-9]*[[:space:]]*$' | head -3)
+  # B9f 必填双标记：Props 表末格为 `—` 但名称列缺 required 标签（只扫带首尾管道的行，紧凑写法跳过不误报）
+  B9F_HIT=$(awk '
+    /^###[[:space:]]/ { inprops = ($0 ~ /[[:space:]]Props[[:space:]]*$/) ? 1 : 0; next }
+    inprops && /^[[:space:]]*\|/ {
+      line=$0
+      sub(/^[[:space:]]*\|/,"",line); sub(/\|[[:space:]]*$/,"",line)
+      if (line ~ /^[[:space:]]*:?-+/) next
+      n=split(line, c, "|")
+      if (n < 2) next
+      nm=c[1]; dv=c[n]
+      gsub(/^[[:space:]]+|[[:space:]]+$/,"",nm); gsub(/^[[:space:]]+|[[:space:]]+$/,"",dv)
+      if (dv == "—" && nm !~ /required/) print nm
+    }
+  ' "$DOC_FILE" 2>/dev/null | head -3 | tr '\n' ' ')
+  # B9g CSS 变量表首列（应为「名称」，生成器产物 docs/guide/parts/component-vars.md 除外）
+  B9G_HIT=$(awk '/^## CSS 变量/{f=1;next} f && /^## /{exit} f && /^[[:space:]]*\|/{print; exit}' "$DOC_FILE" 2>/dev/null \
+    | grep -E '\|[[:space:]]*变量[[:space:]]*\|' | head -1)
+  B9_FAILED=0
+  if [ -n "${B9A_HIT}" ]; then
+    fail "B9a 表格首列应为「名称」，❌ 出现「参数」（见 doc-tables-spec.md §0 列名总表）：${B9A_HIT}"; B9_FAILED=1
+  fi
+  if [ -n "${B9B_HIT}" ]; then
+    fail "B9b 表头截断（末格为「默认」，应为「默认值」）：${B9B_HIT}"; B9_FAILED=1
+  fi
+  if [ -n "${B9_DEAD}" ]; then
+    fail "B9e 页内锚点不可达（类型标题改名后未同步链接）：${B9_DEAD}"; B9_FAILED=1
+  fi
+  [ -n "${B9_MISMATCH}" ] && warn "B9c 类型标题名与链接文字不一致（规范=公开导出名，如 ### TabsItem Type）：${B9_MISMATCH}"
+  [ -n "${B9D_HIT}" ] && warn "B9d 组件标题缺 Props 后缀（规范=### {组件名} Props）：${B9D_HIT}"
+  [ -n "${B9F_HIT}" ] && warn "B9f 必填 prop 缺 required 标签（默认值列已写 —，名称列应补 <Tag color=\"red\">required</Tag>）：${B9F_HIT}"
+  [ -n "${B9G_HIT}" ] && warn "B9g ## CSS 变量表首列应为「名称」（见 doc-tables-spec.md §5）：${B9G_HIT}"
+  # B9h 工具函数文档 Params 表首列（不依赖当前组件文档，全量扫 docs/utils/functions）
+  B9H_HIT=$(grep -rnE '^[[:space:]]*\|?[[:space:]]*参数[[:space:]]*\|' "$ROOT/docs/utils/functions/" 2>/dev/null | head -3)
+  if [ -n "${B9H_HIT}" ]; then
+    fail "B9h 工具函数文档表首列应为「名称」，❌ 出现「参数」（见 doc-tables-spec.md §4）：${B9H_HIT}"; B9_FAILED=1
+  fi
+  [ "$B9_FAILED" = "0" ] && ok "B9 表格结构合规（首列=名称、无截断表头、类型锚点可达）"
 fi
 
 # ============================================================

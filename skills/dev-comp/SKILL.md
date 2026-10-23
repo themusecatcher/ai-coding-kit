@@ -46,7 +46,7 @@ description: 面向 vue-amazing-ui 组件库的单组件开发迭代工作流。
 |:--|:--|:--|
 | `development/component-design.md` | SFC 三段式 / `export interface Props` / **字段之间不留空行** / **`defineSlots` + `<组件名>Slots`** / 主题注入 / 样式与 CSS 变量 / **根类名 `{组件名}-wrap`** | 1-2 |
 | `development/import-export.md` | 三层导出模型 / 组件 `index.ts` 三件套 / **新增组件「三步接线」Checklist** / **`style-deps.ts` 四张表**（D 方案单一数据源） | 1 |
-| `development/demo-doc-guide.md` | 演示页结构 / 自动路由 / 组件文档模板 / 侧边栏维护 / **演示与文档必须一致** | 3-4 |
+| `development/demo-doc-guide.md` | 演示页结构 / 自动路由 / 组件文档模板 / 侧边栏维护 / **表格规范速查（列名 / 列数 / 必填 / 标题命名）** / **演示与文档必须一致** | 3-4 |
 | `development/project-structure.md` | 顶层目录职责 / 命名规范速查 | 1/3/4 |
 | `development/build-system.md` | 三产物构建（dist / es / lib）/ 别名与模块解析 | 5（发布） |
 | `types/global-components.d.ts` | **手工维护**的自有组件全局类型声明 → 新增组件**必登记**（⚠️ 漏登记不报错、`pnpm type-check` 仍 PASS，见 `linkage-map.md` §⑮） | 1 |
@@ -124,6 +124,7 @@ description: 面向 vue-amazing-ui 组件库的单组件开发迭代工作流。
 | **交付前精修与三方一致性**（品牌清除 / 注释精修 / **空行清理** / Props 排序 / 用例排序布局 / docs↔views↔源码对账） | `references/refine-spec.md` |
 | 新增组件联动配置地图（⭐易遗漏点全集，含 ⑮ 全局类型声明） | `references/linkage-map.md` |
 | 用例标题/简介描述规范（权威源 + 同步） | `references/demo-description.md` |
+| **docs 表格规范**（列名全站唯一「名称」/ 结构决定列数 4-3-2 / `required`+`v-model` 标签 / 类型标题=公开导出名 + 类型表位置 / `Props` 后缀 / CSS 变量表 / 书写格式） | `references/doc-tables-spec.md` |
 | changelog 编写规范（版本号升级 + 双处同步 + 章节唯一性） | `references/changelog-spec.md` |
 | 发布流程（合入 main + 构建发布 + 清理） | `references/release-flow.md` |
 | 如何软复用 dev-flow 能力 + 降级 | `references/capability-reuse.md` |
@@ -149,4 +150,5 @@ description: 面向 vue-amazing-ui 组件库的单组件开发迭代工作流。
 - ✅ **对齐维度 = API 四维 + 渲染分支 + Demo 用例**（三者缺一不可）：必须读参考库渲染实现**逐分支**核对（字符串/VNode/空值兜底/双源优先级/数组归一/falsy 边界），差异显式决策并登记（详见 `reference-sources.md` §渲染分支与兜底逻辑对齐）
 - ✅ **演示页红线**（脚本 F7/F8 拦截）：分区按已确认排序锚点**排列**（默认官网原序，锚点定义见 `refine-spec.md` §4.1），但标题与 script 注释**不带数字序号**；本项目组件**无需 import**（全局注册，直接写 `<Xxx>` 标签）
 - ✅ **changelog 红线**（脚本 F6 拦截）：版本章节**唯一**且严格递减；条目链接用**站内相对路径 + 实测目录名（kebab）**；`## future` 清单同步删除已落地组件；`package.json` 与 changelog 双处一致（`changelog-spec.md` §3.4）
-- ✅ **文档红线**（脚本 B5/B6/B7/B8 拦截）：`## APIs` 必有且含 `### {组件名}` 子标题；`## Events` / `## Methods` 按组件实际能力（有 emit / `defineExpose` 才写）；类型列写真实 TS 类型（❌ 禁 `string | slot`）；`## Slots` 表列头「名称 | 说明 | 用法」+ 用法列 `v-slot:xxx`
+- ✅ **文档红线**（脚本 B5/B6/B7/B8/B9 拦截）：`## APIs` 必有且含 `### {组件名} Props` 子标题；`## Events` / `## Methods` 按组件实际能力（有 emit / `defineExpose` 才写）；类型列写真实 TS 类型（❌ 禁 `string | slot`）；`## Slots` 表列头「名称 | 说明 | 用法」+ 用法列 `v-slot:xxx`
+- ✅ **docs 表格红线**（权威源 `references/doc-tables-spec.md`，脚本 B9 拦截）：全部表格首列统一「名称」（❌ 禁「参数 / 字段 / 属性名」）；组件 Props 表标题 `### {组件名} Props`（复合组件逐子组件）；类型章节标题 = 属性表引用的**公开导出名** + ` Type`（`### TabsItem Type`，❌ 不再用 SFC 内部名 `### Item Type`），改名须同步页内锚点；列数按结构分流——接口 4 列（名称/说明/类型/默认值）、组件产出回调 3 列（名称/说明/类型）、类型别名 2 列（名称/值）；必填标记：Props 表用 `<Tag color="red">required</Tag>` 标签（与 `v-model` 标签同款，并存时 `v-model` 在前）+ 默认值列 `—` 双标记，❌ 不用 `?`；类型表 4/3 列才用 `?`（与源码 `interface` 一致）；默认值列 `—`（em dash）表示必填/无缺省、`undefined` 表示可选未传，❌ 禁 ASCII `-`；联合类型统一 `&#124;`；表格带首尾管道（修订旧「紧凑写法」约定，存量不追溯）；类型表紧跟**唯一引用它的表格**所在章节（只被 Methods 引用的放 `## Methods` 下）；`## CSS 变量` 表固定 3 列「名称 / 说明 / 默认值」

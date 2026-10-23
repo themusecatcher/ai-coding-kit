@@ -128,8 +128,8 @@
    - **关键：复用演示页**——docs 与 `src/views/{组件名}/Index.vue` 的 script+template 高度同源，直接迁移并加 vitepress 说明块（何时使用/API 表格）
    - **简介描述同源**：读 `references/demo-description.md` §4 同步机制——docs 描述**从演示页逐字复制**（仅 `<code>` ↔ 反引号转换、docs 加 `<br/>`、演示页无 `<br/>`），段落数一致，禁止单边改写
    - ⚠️ **迁移时剔除对照内容**：docs 仅保留本项目 `<Xxx>` 用例，**剔除「antd 官网组件」分区及 `ant-design-vue` 真身 import**（对照仅验收期存在于演示页 `src/views`，阶段 5 收尾清除，不进文档）
-   - API 表格：Props/Events/Slots/暴露方法，参照 antdv 文档结构
-   - **API 章节标题按组件实际能力（2026-09-15 修正）**：`## APIs`（含 Props 表 + 类型定义子表）**必有**，且其下含 `### {组件名}` 子标题；`## Events` / `## Methods`（对外暴露方法）**仅当组件有 emit / defineExpose 时才要求**（❌ 无事件却凭空补章节）；⚠️ 内部术语「Expose」**禁止直接作标题**，落地为 `## Methods`
+   - API 表格：Props/Events/Slots/暴露方法，**列名 / 列数 / 必填标记 / 标题命名一律按 `references/doc-tables-spec.md`**（脚本 B9 校验），❌ 不按参考库文档结构照搬
+   - **API 章节标题按组件实际能力（2026-09-15 修正）**：`## APIs`（含 Props 表 + 类型定义子表）**必有**，且其下含 `### {组件名} Props` 子标题（2026-10-23 起带 ` Props` 后缀，与 `### {公开导出名} Type` 平行，见 `doc-tables-spec.md` §1.1；表头/列数/必填标记同规范 B9）；`## Events` / `## Methods`（对外暴露方法）**仅当组件有 emit / defineExpose 时才要求**（❌ 无事件却凭空补章节）；⚠️ 内部术语「Expose」**禁止直接作标题**，落地为 `## Methods`
 2. **周边文档联动**（读 `references/checklists.md` §周边文档 + `references/linkage-map.md` §⑩⑪⑫）：
    - vitepress 侧边栏配置（新增组件入口）
    - `docs/index.md`（若有组件清单）

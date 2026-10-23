@@ -232,12 +232,12 @@ bash ~/.codebuddy/skills/dev-comp/scripts/validate-component.sh {组件名} {PRO
 
 ### 3.3 硬约束（可校验）
 
-> **源码 `interface Props` 字段顺序 ≡ `docs/guide/components/{组件名}.md` 中 `## APIs` → `### {组件名}` 表的行顺序**（逐项同序）。
+> **源码 `interface Props` 字段顺序 ≡ `docs/guide/components/{组件名}.md` 中 `## APIs` → `### {组件名} Props` 表的行顺序**（逐项同序；2026-10-23 起子标题带 ` Props` 后缀，迁移期无后缀同样接受）。
 
 - 实测依据：项目既有 `tag.md` 的 API 表行序与 `Tag.vue` 的 `interface Props` 字段序**完全一致** → 该一致性本就是项目隐含惯例，本规范只是显式化 + 脚本化。
 - docs 表是**用户阅读界面**，两边必须同步；顺序不一致即 **FAIL**（脚本 `G2`）。
 - 重排必然**同时改两处**；`Slots` / `Events` / `Methods` 表顺序也需与源码 `defineSlots` / `defineEmits` / `defineExpose` 定义顺序一致（如有）。
-- **复合组件支持**（2026-09-22 自查补充）：`G2` 按 `.vue` 文件（含一层子目录）**逐一**与 docs 中同名 `### {子组件名}` API 表比对（如 `Dropdown.vue ↔ ### Dropdown`、`DropdownButton.vue ↔ ### DropdownButton`）；单文件组件用 `### {组件名}`。docs 中同名的 `### Xxx` 会在 Slots / Methods 区重复出现，脚本**限定在 `## APIs` 之后**取表，避免取错。⚠️ 2026-09-23 修正假阳性：单文件组件的子标题候选 = 输入名 + **目录派生注册键**（`qr-code` → 文档写 `### QRCode`）；复合组件 `grid` 在 docs 分 `### Row` / `### Col`（`B6` 已按同口径改）。
+- **复合组件支持**（2026-09-22 自查补充）：`G2` 按 `.vue` 文件（含一层子目录）**逐一**与 docs 中同名 `### {子组件名} Props` API 表比对（如 `Dropdown.vue ↔ ### Dropdown Props`、`DropdownButton.vue ↔ ### DropdownButton Props`；2026-10-23 起带 ` Props` 后缀，迁移期无后缀同样接受）；单文件组件用 `### {组件名} Props`。docs 中同名的 `### Xxx` 会在 Slots / Methods 区重复出现，脚本**限定在 `## APIs` 之后**取表，避免取错。⚠️ 2026-09-23 修正假阳性：单文件组件的子标题候选 = 输入名 + **目录派生注册键**（`qr-code` → 文档写 `### QRCode`）；复合组件 `grid` 在 docs 分 `### Row` / `### Col`（`B6` 已按同口径改）。
 - ⚠️ **脚本判定为启发式（半确定性）**，以下情况报 **SKIP/WARN 而非误判 FAIL**，属设计使然：① 声明写作 `export interface Props extends Xxx {`（不匹配 `Props {`）或跨行；② 子组件在 docs 中无独立 `### Xxx` 小节。**出现 SKIP/WARN 时必须人工比对**——脚本保「一致」，人工保「合理」。
   - **已修（2026-09-22 自查第二轮）**：㈠ **跨行对象类型的内层键不再被误当顶层 prop**（只取最小缩进层——原实现会把 `loadingBarStyle?: { loading?: …; finish?: … }` 的 `loading/finish/error` 计入）；㈡ 表首列**含徽标/类型后缀也能取到 prop 名**（`open <Tag>v-model</Tag>` → `open`；`v-model:value` → `value`；`size<'small'>` → `size`）。㈢ **首列整体为 markdown 链接**时先剥离链接保留文字（`[format](#anchor)` → `format`；原会被 `^[A-Za-z]` 过滤 → 假报「docs 未列出 format」）；㈣ **豁免 Vue 编译器注入的内部 prop** `valueModifiers` / `modelModifiers`（v-model 修饰符载体，非用户 API，docs 不列属合理）。
 - 补充约定：docs API 表**未列出**的源码 prop（多为 `v-model:value` 命名差异）只出 WARN 提示，**不影响顺序一致性的 PASS 结论**。
