@@ -831,6 +831,29 @@ else
   if [ -n "${B9H_HIT}" ]; then
     fail "B9h 工具函数文档表首列应为「名称」，❌ 出现「参数」（见 doc-tables-spec.md §4）：${B9H_HIT}"; B9_FAILED=1
   fi
+  # B9i 类型表列数（2026-10-23 修订二：类型表只有 2 列「名称|值」/ 3 列「名称|说明|类型」）
+  B9I_HIT=$(awk '
+    /^###[[:space:]].*[[:space:]]Type[[:space:]]*$/ { intype=1; hdr=0; next }
+    intype && /^#{1,4}[[:space:]]/ { intype=0; next }
+    intype && !hdr && /^[[:space:]]*\|/ && /名称/ {
+      line=$0
+      sub(/^[[:space:]]*\|/,"",line); sub(/\|[[:space:]]*$/,"",line)
+      n=split(line, c, "|")
+      if (n != 2 && n != 3) print n " 列: " $0
+      hdr=1
+    }
+  ' "$DOC_FILE" 2>/dev/null | head -3 | tr '\n' ' ')
+  # B9j 类型表 ? 与源码 interface 逐字段一致性（node 解析，含 extends 继承字段；无 node 则跳过）
+  B9J_HIT=""
+  B9J_SCRIPT="$(cd "$(dirname "$0")" 2>/dev/null && pwd)/check-type-question.js"
+  if command -v node >/dev/null 2>&1 && [ -f "$B9J_SCRIPT" ]; then
+    B9J_HIT=$(node "$B9J_SCRIPT" "$DOC_FILE" "$ROOT" 2>/dev/null | head -1)
+  fi
+  # B9i 2026-10-23 迁移完成后由 WARN 切为 FAIL（存量 46 张已全部迁移）
+  if [ -n "${B9I_HIT}" ]; then
+    fail "B9i 类型表列数应为 2 列（名称|值）或 3 列（名称|说明|类型），❌ 出现 4 列（见 doc-tables-spec.md §2.2）：${B9I_HIT}"; B9_FAILED=1
+  fi
+  [ -n "${B9J_HIT}" ] && warn "B9j 类型表 ? 与源码 interface 逐字段不一致（见 doc-tables-spec.md §2.3）：${B9J_HIT}"
   [ "$B9_FAILED" = "0" ] && ok "B9 表格结构合规（首列=名称、无截断表头、类型锚点可达）"
 fi
 
@@ -1365,9 +1388,12 @@ doc_props_of() {   # $1 = docs 中 ### 标题名 → 表首列（逐行，限定
   # ⚠️ 项目 docs 的 API 表为「无边框」写法（行首无 `|`，如 `color | 说明 | string`），
   #    故按「行内含 |」取行；表头与分隔行由末尾的标识符 grep 过滤掉。
   #    限定 `## APIs` 之后：同名 `### Xxx` 在 Slots / Methods 区会重复出现，只取 API 表那份。
+  #    ⚠️ 2026-10-23 修订：标题规范改为 `### {组件名} Props`（doc-tables-spec.md §1.1），
+  #       原精确匹配 `### Xxx$` 会漏掉带后缀的标题，导致 G2 对所有组件降级为 WARN；
+  #       此处允许可选的 ` Props` 后缀，兼容迁移期两种写法。
   awk -v name="$1" '
       /^## APIs/ { inapi = 1 }
-      inapi && $0 ~ "^###[[:space:]]+" name "[[:space:]]*$" { f = 1; next }
+      inapi && $0 ~ "^###[[:space:]]+" name "([[:space:]]+Props)?[[:space:]]*$" { f = 1; next }
       f && /^#{2,4}[[:space:]]/ { exit }
       f && /\|/ { print }
     ' "$DOC_FILE" 2>/dev/null \
