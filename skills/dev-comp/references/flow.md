@@ -253,7 +253,7 @@
 | E | 演示页 ↔ docs 描述同源 | | grep 双向一致 |
 | F | ⭐ 组件规范（defineSlots + 组件名Slots / 根类名 组件名-wrap / 注释无 slot 写法 / useSlotsExist 无冗余） | | 脚本 F1-F4 |
 | F | ⭐ types/global-components.d.ts 全局声明登记（差集为空） | | 脚本 F5 |
-| F | ⭐ changelog 三查（章节唯一 / 链接站内相对路径 / future 无残留） | | 脚本 F6 |
+| F | ⭐ changelog 五查（章节唯一 / 链接站内相对路径 / future 无残留 / 最新版本块非空且变更置顶 / 无禁用句式与冗余后缀） | | 脚本 F6 |
 | F | 演示页序号注释与组件库 import | | 脚本 F7-F8 |
 | G | ⭐ **G0 精修范围清单**（四来源：组件源码 / 演示页 / docs / git 已提交批次；取 `git diff --name-only <base>` + 未跟踪文件） | | 脚本 G0 输出的三载体文件清单 + **逐项核对结论** |
 | G | G1 组件源码注释精修（三层结构 / 无复述与过期注释 / 无品牌来源标注） | | 人工（refine-spec §2）——**须留逐文件核对证据（逐层确认），grep 抽检不算完成** |

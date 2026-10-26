@@ -12,7 +12,13 @@
 # 规则权威源（双向引用，规则变更必须同步改本脚本）：
 #   ← references/checklists.md §发布前配置项终检（ID 一一对应：A/B/C/E/F/G + S）
 #   ← references/linkage-map.md §④⑩⑪⑫⑬⑭⑮
-#   ← references/changelog-spec.md §3.2 §3.4 §4（F6）
+#   ← references/changelog-spec.md §3.1 §3.2 §3.4 §3.5 §4（F6）
+#
+# 2026-10-26（changelog 结构规范落地 · F6 三查扩为五查）变更：
+#   背景：全量盘点 170 个版本 / 610 条条目，发现 ① `3.3.2` 版本块只有标题没有条目；
+#   ② 条目平均 100.9 字、最长 670 字，「优化并更新 X 组件」句式占 41%（249 条）；
+#   ③ 组件链接后带「组件」二字 302 处；④ API 变更条目散落，升级成本无法一眼判断。
+#   现在 F6 追加 ④ 最新版本块非空 / 日期非未来，⑤ 最新版本块无禁用句式与冗余后缀。
 #   ← references/project-map.md §目录命名约定 / §项目规范权威源索引
 #   ← references/refine-spec.md §1 §3.3 §5（C5 品牌残留 / G2 Props 顺序 / G4 用例对齐）
 #   ← references/doc-tables-spec.md（B9 表格结构 / 列名统一 / 类型标题命名 / Props 后缀）
@@ -1187,9 +1193,10 @@ else
   fi
 fi
 
-# F6 changelog 三查：版本章节唯一 + 组件链接站内相对路径 + future 无本组件残留
+# F6 changelog 五查：版本章节唯一 + 组件链接站内相对路径 + future 无本组件残留
+#                + 最新版本块结构（非空 / 非未来日期）+ 禁用句式与冗余后缀
 if [ ! -f "$CHANGELOG" ]; then
-  skip "F6 changelog 不存在，跳过三查"
+  skip "F6 changelog 不存在，跳过五查"
 else
   F6_DUP=$(grep -oE '^## <VersionDateTag[^>]*>[0-9.]+' "$CHANGELOG" 2>/dev/null \
     | grep -oE '[0-9]+\.[0-9]+\.[0-9]+$' | sort | uniq -d | tr '\n' ' ')
@@ -1199,10 +1206,20 @@ else
   F6_FUTURE=$(sed -n '/^## future/,$p' "$CHANGELOG" 2>/dev/null \
     | awk 'BEGIN{c=0} { l=$0; while (length(l)>0) { if (c==0) { i=index(l,"<!--"); if (i==0) break; l=substr(l,1,i-1); c=1 } else { i=index(l,"-->"); if (i==0) { l=""; break } l=substr(l,i+3); c=0 } } print l }' \
     | grep -i "$NAME" | head -3)
-  if [ -z "$F6_DUP" ] && [ -z "$F6_BADLINK" ] && [ -z "$F6_FUTURE" ]; then
-    ok "F6 changelog 三查通过（版本章节唯一 / 组件链接站内相对路径 / future 无本组件残留）"
+  # ④⑤ 最新版本块结构（2026-10-26 新增）：非空 + date 非未来 + 无禁用句式/冗余后缀
+  F6_TOP=$(awk '/^## <VersionDateTag/{n++} n==1' "$CHANGELOG" 2>/dev/null)
+  F6_TOPVER=$(printf '%s\n' "${F6_TOP}" | head -1 | sed -n 's|.*>\([0-9][0-9.]*\)</VersionDateTag>.*|\1|p')
+  F6_TOPDATE=$(printf '%s\n' "${F6_TOP}" | head -1 | sed -n 's/.*date="\([0-9][0-9-]*\)".*/\1/p')
+  F6_TOPBODY=$(printf '%s\n' "${F6_TOP}" | grep -cE '^- ')
+  F6_EMPTY=""; F6_FUTUREDATE=""
+  if [ "${F6_TOPBODY:-0}" -eq 0 ]; then F6_EMPTY="${F6_TOPVER}"; fi
+  if [ -n "${F6_TOPDATE}" ] && [[ "${F6_TOPDATE}" > "$(date +%Y-%m-%d)" ]]; then F6_FUTUREDATE="${F6_TOPDATE}"; fi
+  F6_PHRASE=$(printf '%s\n' "${F6_TOP}" | grep -nE '优化并更新|\) 组件' | head -3)
+  if [ -z "$F6_DUP" ] && [ -z "$F6_BADLINK" ] && [ -z "$F6_FUTURE" ] \
+    && [ -z "$F6_EMPTY" ] && [ -z "$F6_FUTUREDATE" ] && [ -z "$F6_PHRASE" ]; then
+    ok "F6 changelog 五查通过（版本章节唯一 / 组件链接站内相对路径 / future 无本组件残留 / 最新版本块非空且日期合法 / 无禁用句式与冗余后缀）"
   else
-    fail "F6 changelog 未过：重复版本号=[${F6_DUP:-无}] 完整URL链接=[${F6_BADLINK:-无}] future残留=[${F6_FUTURE:-无}]（详见 changelog-spec.md §3.2 §3.4）"
+    fail "F6 changelog 未过：重复版本号=[${F6_DUP:-无}] 完整URL链接=[${F6_BADLINK:-无}] future残留=[${F6_FUTURE:-无}] 空版本块=[${F6_EMPTY:-无}] 未来日期=[${F6_FUTUREDATE:-无}] 禁用句式或冗余后缀=[${F6_PHRASE:-无}]（详见 changelog-spec.md §3.1 §3.2 §3.4 §3.5）"
   fi
 fi
 

@@ -93,8 +93,8 @@
 - [ ] docs 已剔除「antd 官网组件」分区与 `ant-design-vue` 真身 import（对照只在演示页）
 - [ ] **docs 用例顺序在迁移时即与演示页保持一致**（`## 用例标题` 序列 = 演示页 `<h2>` 序列，特有用例落点随 §4.1 锚点而定：A 归末尾区块 / B 就近插入主题块）——这是 G4 的前置保障，避免收尾返工；另：docs 用例标题/描述**不得残留品牌字样**（C5）
 - [ ] vitepress 侧边栏配置 `docs/.vitepress/config.ts` 新增组件入口（按字母序插入）
-- [ ] `docs/guide/changelog.md` 新增变更记录（**按 `references/changelog-spec.md`**：新增组件 → minor+1 patch 归 0；非新增 → patch+1；`package.json` version 与 changelog 双处一致；条目格式 + 插顶部；**链接用站内相对路径 + kebab 目录名**）
-- [ ] **F6 changelog 三查**：① 版本章节唯一（❌ 不重复，如出现两个 `2.6.0`）；② 严格递减无错序；③ `## future` 清单删除已落地组件行（详见 `changelog-spec.md` §3.4）；⚠️ 2026-09-22：被 `<!-- … -->` 整块搁置的条目在站点不可见，**不属残留**（脚本先剥离注释块再判定）
+- [ ] `docs/guide/changelog.md` 新增变更记录（**按 `references/changelog-spec.md`**：新增组件 → minor+1 patch 归 0；非新增 → patch+1；`package.json` version 与 changelog 双处一致；**条目直排 + 插顶部**（不设 `###` 分类小节，API 变更置顶）；单条 ≤120 字且同主题已合并；**禁止「优化并更新 X 组件」句式与「… 组件」后缀**；**链接用站内相对路径 + kebab 目录名**）
+- [ ] **F6 changelog 五查**：① 版本章节唯一（❌ 不重复，如出现两个 `2.6.0`）；② 严格递减无错序；③ `## future` 清单删除已落地组件行（详见 `changelog-spec.md` §3.4）；④ 最新版本块**非空** + `date` 非未来日期 + 变更条目置顶（`3.3.2` 曾为空块）；⑤ 最新版本块无「优化并更新」句式与「… 组件」后缀；⚠️ 2026-09-22：被 `<!-- … -->` 整块搁置的条目在站点不可见，**不属残留**（脚本先剥离注释块再判定）
 - [ ] `README.md` + `README.zh-CN.md` 组件清单更新（中英双份，按字母序）
 - [ ] `docs/index.md`（若有组件清单）
 - [ ] **⭐ 组件总数数字 +1（4 处）**：`docs/guide/features.md` §简要介绍 / `docs/index.md` hero `details` / `README.zh-CN.md` §特性 / `README.md` §Features，逐一 +1（详见 `linkage-map.md` §⑩⑪⑫，含 grep 自检命令）
@@ -152,7 +152,7 @@
 - [ ] **F3** Props/Slots 注释无 `string | slot` / `Array | slot` 残留（`grep -nE "//.*(string|Array) \| slot" components/{组件名}/*.vue`）
 - [ ] **F4** `useSlotsExist([...])` 数组内每个插槽名都有实际消费点（半确定性 → 脚本提示 + 人工确认，禁止冗余探测）。⚠️ 2026-09-23 修正假阴性：脚本由「只校验组件的**第一个**数组」改为**遍历全部数组**——复合组件（一个目录多个 `.vue`）或同文件多次调用时，其余数组原从未被校验（实测 `components/list/`：`ListItem.vue` 与 `List.vue` 各一个数组，原只查到前者；注入未消费名实测：旧实现漏检、新实现报 WARN）
 - [ ] **F5** ⭐ `types/global-components.d.ts` 已登记（差集校验：`style-deps.ts` 的 `componentsMap` keys − 该文件声明 = 空）。⚠️ 2026-09-22 修正：表源改为 `style-deps.ts`；**表源解析为空时脚本不得判 PASS**（假绿灯守护），改 WARN 提示人工核对
-- [ ] **F6** ⭐ changelog 三查：版本章节唯一（无重复版本号）/ 严格递减 / 组件链接为站内相对路径 + kebab 目录名 / `## future` 无已落地组件残留（`<!-- -->` 内搁置项不算）
+- [ ] **F6** ⭐ changelog 五查：版本章节唯一（无重复版本号）/ 严格递减 / 组件链接为站内相对路径 + kebab 目录名 / `## future` 无已落地组件残留（`<!-- -->` 内搁置项不算）/ 最新版本块非空、日期非未来、变更条目置顶且无「优化并更新」「… 组件」句式
 - [ ] **F7** 演示页与文档 script 注释、`<h2>` 标题无数字序号（`grep -nE "^// [0-9]\.|<h2[^>]*>[0-9]+\." src/views/{组件名}/ docs/guide/components/{组件名}.md`）
 - [ ] **F8** 演示页无本项目**组件值** import（默认导入整库、或具名导入中出现 PascalCase 组件名 → 违规）。⚠️ 2026-09-22 修正：**命令式 API / hook 允许 import**（`useLoadingBar` / `useMessage` / `createDiscreteApi`，规范依据 `development/demo-doc-guide.md`）；`import type` 允许；⚠️ 2026-09-22：**多行 import 同样在检**（脚本先拼接跨行语句再判定）
 - [ ] **F9 ⭐ 源码多余空行（2026-10-19 新增 · Radio/Checkbox 复盘）**：`components/{组件名}/**` 的 `.vue` / `.ts` 中 ① 无连续 ≥2 空行；② `interface` / `type` 对象类型 / `withDefaults` 默认值对象**内部无空行**。分组语义用**行尾注释**表达，❌ 不用空行分段。权威源 `refine-spec.md` §2.4 / §3.2.4；脚本 `F9` 拦截（实测可检出「Props 内单个空行」与「连续空行」两种形态）
