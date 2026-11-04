@@ -22,7 +22,7 @@
 | `types/global-components.d.ts` | **手工维护**的自有组件全局类型声明（覆盖全部组件），`tsconfig.app.json` 已 include `types/*.d.ts` → 新增组件**必须登记**（⭐ `linkage-map.md` §⑮，2026-09-15 事故点。⚠️ 漏登记不报错、type-check 仍 PASS） |
 | `types/env.d.ts` | 环境变量类型声明 |
 | `tests/*.spec.ts` | Vitest 单测（`tests/resolver.spec.ts` 已随 D 方案改查 **`style-deps.ts` 四张表**与无样式组件登记完整性；构建期生成器另有 `tests/generate-style-entries.spec.ts`；为含分支逻辑的新组件补 `tests/{组件名}.spec.ts` 见 `checklists.md` §F） |
-| `docs/guide/template.md` | 组件文档骨架（章节顺序：何时使用 → 基本使用 → APIs → Slots → Methods → Events） |
+| `docs/guide/template.md` | 组件文档骨架（**尾部章节顺序：APIs → Slots → Events → Methods → CSS 变量 → 在 setup 外使用**；章节可缺省、相对顺序不可变。权威源 `development/demo-doc-guide.md` §尾部章节顺序，`pnpm verify:docs-order` / 脚本 B10 校验） |
 | `components.d.ts` | unplugin-vue-components **自动生成**（勿手改；验收清理幽灵声明见 `linkage-map.md` §⑭） |
 | `components/style/global.less` | 全局默认样式（`--primary-color` 等 CSS 变量） |
 | `development/` | 上述贡献者设计规范目录（**项目规范权威源**） |

@@ -14,6 +14,19 @@
 #   ← references/linkage-map.md §④⑩⑪⑫⑬⑭⑮
 #   ← references/changelog-spec.md §3.1 §3.2 §3.4 §3.5 §4（F6）
 #
+# 2026-11-04（尾部章节顺序规范落地 · 新增 B10 + G4 白名单补词）变更：
+#   背景：项目 docs 全量盘点 73 个文档，旧顺序「APIs → Slots → Methods → Events」执行率仅 85%
+#   （11 处漂移、4 种形态：输入类把 Methods 写到 Events 之后、下拉/浮层类把 Events 提到 Slots 之前），
+#   而 B 类此前只校验章节存在性（B5）与表结构（B9），**章节顺序无任何校验**。
+#   ① 新增 B10：尾部章节必须是 `APIs → Slots → Events → Methods → CSS 变量 → 在 setup 外使用`
+#      的**子序列**（章节可缺省、相对顺序不可变）。优先复用项目 scripts/verify-doc-order.ts
+#      （pnpm verify:docs-order，与项目侧同口径、口径单点维护），脚本或 npm script 缺失时内置 awk 兜底。
+#   ② G4 白名单补 `CSS 变量`：`## CSS 变量` 是 docs 固定说明章节（layout 实测），原白名单只收了旧称
+#      「主题变量」→ layout 被计入用例类标题，产生「用例数 11 vs 12，多出=[CSS 变量]」假 WARN。
+#   同步：SKILL.md 文档红线（B5/B6/B7/B8/B9/B10）+ 权威源映射 + 按需加载索引、
+#        references/flow.md 阶段 4、references/checklists.md B5/B10、
+#        references/doc-tables-spec.md §3 §7、references/project-map.md 模板行。
+#
 # 2026-10-26（changelog 结构规范落地 · F6 三查扩为五查）变更：
 #   背景：全量盘点 170 个版本 / 610 条条目，发现 ① `3.3.2` 版本块只有标题没有条目；
 #   ② 条目平均 100.9 字、最长 670 字，「优化并更新 X 组件」句式占 41%（249 条）；
@@ -21,7 +34,8 @@
 #   现在 F6 追加 ④ 最新版本块非空 / 日期非未来，⑤ 最新版本块无禁用句式与冗余后缀。
 #   ← references/project-map.md §目录命名约定 / §项目规范权威源索引
 #   ← references/refine-spec.md §1 §3.3 §5（C5 品牌残留 / G2 Props 顺序 / G4 用例对齐）
-#   ← references/doc-tables-spec.md（B9 表格结构 / 列名统一 / 类型标题命名 / Props 后缀）
+#   ← references/doc-tables-spec.md（B9 表格结构 / 列名统一 / 类型标题命名 / Props 后缀；B10 尾部章节顺序）
+#   ← {PROJECT_ROOT}/development/demo-doc-guide.md §尾部章节顺序（B10）
 #   ← references/flow.md 阶段 5 第 1/4/5/6 步
 #   ← SKILL.md §能力复用索引
 #
@@ -591,7 +605,7 @@ else
 fi
 
 # ============================================================
-# B · 文档联动链路（对应 checklists.md B1-B8）
+# B · 文档联动链路（对应 checklists.md B1-B10）
 # ============================================================
 section "B 文档联动链路"
 
@@ -861,6 +875,48 @@ else
   fi
   [ -n "${B9J_HIT}" ] && warn "B9j 类型表 ? 与源码 interface 逐字段不一致（见 doc-tables-spec.md §2.3）：${B9J_HIT}"
   [ "$B9_FAILED" = "0" ] && ok "B9 表格结构合规（首列=名称、无截断表头、类型锚点可达）"
+fi
+
+# B10 ⭐ 尾部章节顺序（2026-11-04 新增 · 全量盘点 73 文档后制定）
+#   规范：APIs → Slots → Events → Methods → CSS 变量 → 在 setup 外使用（章节可缺省、相对顺序不可变）
+#   权威源：development/demo-doc-guide.md §尾部章节顺序；项目侧同口径 pnpm verify:docs-order
+#   判定：取代码围栏外的全部 `## ` 标题，按规范 rank 断言递增（= 规范序列的子序列）；
+#         表格内 / 代码块内的 `## ` 不参与（demo 代码块可能内嵌 markdown 示例）。
+if [ ! -f "$DOC_FILE" ]; then
+  skip "B10 文档缺失，跳过尾部章节顺序检查"
+elif [ -f "$ROOT/scripts/verify-doc-order.ts" ] && command -v pnpm >/dev/null 2>&1 \
+  && grep -q '"verify:docs-order"' "$ROOT/package.json" 2>/dev/null; then
+  if B10_OUT=$(cd "$ROOT" && pnpm --silent verify:docs-order 2>&1); then
+    ok "B10 尾部章节顺序合规（复用项目 verify:docs-order：APIs → Slots → Events → Methods → CSS 变量 → 在 setup 外使用）"
+  else
+    fail "B10 尾部章节顺序不合规（项目 verify-doc-order）：$(printf '%s' "$B10_OUT" | grep '✗' | head -3 | tr '\n' ' ')"
+  fi
+else
+  B10_HIT=$(awk '
+    function trim(s) { gsub(/^[ \t]+/, "", s); gsub(/[ \t]+$/, "", s); return s }
+    /^[ \t]*(```+|~~~+)/ { fence = !fence; next }
+    fence { next }
+    /^##[ \t]/ {
+      t = trim(substr($0, 4))
+      r = 0
+      if (t == "APIs") r = 1
+      else if (t == "Slots") r = 2
+      else if (t == "Events") r = 3
+      else if (t == "Methods") r = 4
+      else if (t == "CSS 变量") r = 5
+      else if (t == "在 setup 外使用") r = 6
+      if (r > 0) {
+        if (r < last) { bad = 1; seq = seq (seq == "" ? "" : " → ") t }
+        last = r
+      }
+    }
+    END { if (bad) printf "%s", seq }
+  ' "$DOC_FILE" 2>/dev/null)
+  if [ -n "$B10_HIT" ]; then
+    fail "B10 尾部章节顺序错误（现见 ${B10_HIT}）；规范=APIs → Slots → Events → Methods → CSS 变量 → 在 setup 外使用，Methods 恒在 Events 之后收尾"
+  else
+    ok "B10 尾部章节顺序合规（APIs → Slots → Events → Methods → CSS 变量 → 在 setup 外使用；内置兜底判定）"
+  fi
 fi
 
 # ============================================================
@@ -1346,13 +1402,13 @@ if [ -f "$DOC_FILE" ]; then
   grep -E '^## ' "$DOC_FILE" 2>/dev/null | sed -E 's/^##[[:space:]]+//; s/[[:space:]]*\{#[^}]*\}[[:space:]]*$//' | norm_title | grep -v '^$' > "$DT"
   # ⚠️ 2026-10-19：`与 .+ 组件的区别` 泛化（原仅特化 `与 Space 组件的区别`）——对齐 refine-spec.md §5.1
   #    的通用表述；任何「与 Xxx 组件的区别」docs 对比说明章节均属固定章节，演示页本无对应分区。
-  grep -vxE '何时使用|基本使用|使用方式|在 setup 外使用|APIs|Slots|Events|Methods|自定义样式|主题变量|设计指引|参考文档|与 .+ 组件的区别|FAQ' "$DT" > "$DTU"
+  grep -vxE '何时使用|基本使用|使用方式|在 setup 外使用|APIs|Slots|Events|Methods|CSS 变量|自定义样式|主题变量|设计指引|参考文档|与 .+ 组件的区别|FAQ' "$DT" > "$DTU"
   # 白名单章节若本身也是演示页的用例标题（自定义样式等），补回 DTU，避免数量误判
   # ⚠️ 2026-09-23：改按行读取（原 `for w in <裸词列表>` 无法承载含空格的章节名，如「与 Space 组件的区别」）
   # ⚠️ 2026-10-19：本列表是 grep -qxF **字面量**匹配（补回机制），泛化标题「与 Xxx 组件的区别」
   #    （Xxx≠Space）若同时也是演示页用例标题则不会被自动补回——理论边界（固定章节与用例同名，实测未出现），
   #    命中时 G4 计数 WARN 会提示人工核对，不误 PASS。
-  printf '%s\n' 何时使用 基本使用 使用方式 在 setup 外使用 APIs Slots Events Methods 自定义样式 主题变量 设计指引 参考文档 '与 Space 组件的区别' FAQ \
+  printf '%s\n' 何时使用 基本使用 使用方式 在 setup 外使用 APIs Slots Events Methods 'CSS 变量' 自定义样式 主题变量 设计指引 参考文档 '与 Space 组件的区别' FAQ \
     | while IFS= read -r w; do
         if [ -n "$w" ] && grep -qxF -- "$w" "$VT" 2>/dev/null && grep -qxF -- "$w" "$DT" 2>/dev/null; then
           echo "$w" >> "$DTU"

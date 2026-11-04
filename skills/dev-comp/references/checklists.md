@@ -86,7 +86,7 @@
 ## 周边文档（阶段 4）
 
 - [ ] `docs/guide/components/{组件名}.md`（复用演示页 script+template，加 API 表格）；结构参照 `development/demo-doc-guide.md` + `docs/guide/template.md`
-- [ ] **B5 API 章节标题按组件实际能力**：`## APIs` **必须**有；`## Events` / `## Methods` **仅当组件有 emit / `defineExpose` 时才要求**（❌ 无事件却凭空补 `## Events`）；命名统一 `## Methods`（对外暴露方法），❌ 禁止 `## Expose` 等内部术语作标题
+- [ ] **B5 API 章节标题按组件实际能力**：`## APIs` **必须**有；`## Events` / `## Methods` **仅当组件有 emit / `defineExpose` 时才要求**（❌ 无事件却凭空补 `## Events`）；命名统一 `## Methods`（对外暴露方法），❌ 禁止 `## Expose` 等内部术语作标题；**尾部章节顺序固定 `APIs → Slots → Events → Methods → CSS 变量 → 在 setup 外使用`**（相对顺序不可变，见 B10）
 - [ ] **B6 `## APIs` 下必须有 `### {组件名} Props` 子标题**（2026-10-23 修订：由 `### {组件名}` 改为带 ` Props` 后缀，与 `### {类型名} Type` 形成平行结构；复合组件逐子组件分节，如 `### Descriptions Props` / `### DescriptionsItem Props`）。⚠️ 2026-09-23 修正假阳性：脚本候选名 = 输入名 + **目录派生注册键**（实测 `qr-code` → 文档写 `### QRCode Props`；复合组件 `grid` → 文档分 `### Row Props` / `### Col Props`）；迁移期脚本同时接受无后缀写法（WARN 而非 FAIL），存量文档不追溯
 - [ ] **B7 API 表类型列写法**：prop 类型写真实 TS 类型（`string` / `Array<string | VNode>` / `VNode | (() => VNode)`）；❌ 禁止 `string | slot` / `Array | slot`（2026-09-15 实测全仓仅 Comment 残留，已清理）；VNode 类 prop 说明写法参照 `avatar.md`：`prop 支持 \`VNode\` / 渲染函数；插槽形态请用同名 \`#xxx\` 插槽`
 - [ ] **B9 docs 表格结构规范（阶段 4 写文档时即遵守，细则见终检区块 B9 + `doc-tables-spec.md`）**：首列「名称」、组件标题 `### {组件名} Props`、类型标题 = 公开导出名、列数按结构分流、必填用 `<Tag color="red">required</Tag>` 标签、表格带首尾管道
@@ -121,13 +121,14 @@
 - [ ] B2 vitepress 侧边栏入口（`grep -n "{组件名}" docs/.vitepress/config.ts` 命中）
 - [ ] B3 `docs/guide/changelog.md` 变更记录（`grep -n "{组件名}" docs/guide/changelog.md` 命中；⚠️ 2026-09-22 存量豁免：组件在**最早 git tag** 时已存在且 changelog 全无记录 → WARN「无版本可归属，需人工确认后补记」，不判 FAIL）+ **版本号规则校验**（`references/changelog-spec.md` §4：新增组件 → minor+1 patch 归 0；`package.json` version 与 changelog 顶部版本号逐字一致）
 - [ ] B4 ⭐ 组件总数 +1（4 处）：`docs/guide/features.md` §简要介绍 / `docs/index.md` hero `details` / `README.zh-CN.md` §特性 / `README.md` §Features 逐一 +1（详见 `linkage-map.md` §⑩⑪⑫）
-- [ ] B5 API 章节标题按实际能力：`## APIs` 必有；`## Events` / `## Methods` 有 emit / expose 才要求；无 `## Expose`
+- [ ] B5 API 章节标题按实际能力：`## APIs` 必有；`## Events` / `## Methods` 有 emit / expose 才要求；无 `## Expose`；尾部章节顺序符合 B10
 - [ ] B6 `## APIs` 下有 `### {组件名} Props` 子标题（2026-10-23 修订：带 ` Props` 后缀；候选名 = 输入名 + 目录派生注册键；⚠️ 2026-09-23 修假阳性：`qr-code` → `### QRCode Props`、`grid` → `### Row Props` / `### Col Props`；迁移期无后缀写法 WARN 不阻断）
 - [ ] B7 API 表类型列无 `string | slot` / `Array | slot`（VNode 类 prop 说明参照 `avatar.md`）
 - [ ] **B8 ⭐ `## Slots` 表结构与用法列写法**（2026-09-22 新增 · Dropdown 事故复盘；同日列头定名修订）：`## Slots` 区块内表头必须为「名称 | 说明 | **用法**」（权威源 `development/demo-doc-guide.md` §约定；全库 56 个文档 60 处已统一），用法列写 `v-slot:xxx`、带作用域写 `v-slot:xxx="{ a, b }"`。❌ 禁「参数」列头与 `-` / `{ option: T }` 取值（参考库官网形态）；❌ 亦禁「类型」列头——它与列内容（模板消费侧语法）不同义，且与 APIs / Events / Methods 表的「类型」（TS 类型 / 签名）同名异义。脚本 B8 拦截（两分支：① 列头必须为「名称 \| 说明 \| 用法」；② 数据行**第 3 格（用法列）**必须以 `v-slot:` 开头——2026-09-22 由「整行含 `v-slot:`」收紧，消除「说明列出现 `v-slot:` 而用法列写 `-`」的假阴性；两分支均已实测可 FAIL 且无误报）
 - [ ] **B9 ⭐ docs 表格结构规范**（2026-10-23 新增 · 全量盘点 73 文档 346 张表后制定；权威源 `references/doc-tables-spec.md`）：① 全部表格首列统一「名称」，❌ 禁「参数 / 字段 / 属性名 / 方法名 / 事件名」（脚本 FAIL）；② 表头不得截断（`默认` → `默认值`，脚本 FAIL）；③ 组件 Props 表标题 `### {组件名} Props`（脚本 WARN 兼容期）；④ 类型章节标题 = 属性表引用的**公开导出名** + ` Type`（`### TabsItem Type`，❌ `### Item Type`），改名须同步页内锚点（脚本 B9c WARN + B9e 判定所有纯 ASCII 页内锚点可达，含 `Props` 后缀改名后的 `#xxx-props`）；⑤ 列数按结构分流（2026-10-23 修订二：取消 4 列形态）：有字段（接口 / 回调 / 实例信息）3 列 / 无字段（别名 / 联合 / 枚举）2 列（`名称 \| 值`），❌ 类型表不用「默认值」列，缺省信息重要时入说明列（脚本 B9i 兜底）；⑥ 必填：Props 表名称列❌不标 `?`，改用 **`<Tag color="red">required</Tag>`** 标签（与 `<Tag color="cyan">v-model</Tag>` 同款，并存时 v-model 在前）+ 默认值列 `—` 双标记（脚本 B9f WARN 兜底）；类型表 3 列按源码 `interface` 的 `?` 逐字段标（脚本 B9j 兜底）；⑦ 默认值列（仅 Props / Params 表）`—` = 必填/无缺省、`undefined` = 可选未传，❌ 禁 ASCII `-`；⑧ 联合类型统一 `&#124;`；⑨ 表格带首尾管道（修订旧「紧凑写法」，存量不追溯）；⑩ 工具函数 `## Params` 首列同为「名称」，`## Return` 按语义分流——纯函数 2 列（类型/说明）、composable 3 列（名称/说明/类型）；⑪ 类型表位置：紧跟**唯一引用它的表格**所在章节（只被 Methods 引用的就放 `## Methods` 下，如 `scrollbar` 的 `ScrollBehavior`；被多处引用的下沉到 `## APIs` 末尾）；⑫ `## CSS 变量` 表固定 3 列「名称 / 说明 / 默认值」（脚本 B9g 兜底；主清单 `docs/guide/parts/component-vars.md` 由 `scripts/gen-component-vars-doc.js` 生成，改表头须改生成器）
 
 > 编号映射：本条 ①-⑫ 是人类可读的分项，脚本判定 ID 见 `doc-tables-spec.md` §7（B9a 首列 / B9b 截断 / B9c 类型标题名 / B9d Props 后缀 / B9e 锚点可达 / B9f required 双标记 / B9g CSS 变量首列 / B9h 工具函数 Params），两者需同步修改。
+- [ ] **B10 ⭐ 尾部章节顺序**（2026-11-04 新增 · 全量盘点 73 文档后制定；权威源 `development/demo-doc-guide.md` §尾部章节顺序）：尾部二级章节必须是 `APIs → Slots → Events → Methods → CSS 变量 → 在 setup 外使用` 的**子序列**——章节可缺省（无插槽 / 无事件 / 无 expose 时不写对应节），❌ **相对顺序不可变更**（历史漂移形态：`Methods` 写到 `Events` 前、`Events` 抢到 `Slots` 前，曾达 11/73 不合规）；❌ 不自造 `## API` / `## 属性` / `## 事件` / `## 实例方法` 等变体（锚点与校验同时失效）。脚本 B10 拦截：优先复用项目 `scripts/verify-doc-order.ts`（`pnpm verify:docs-order`），缺失时内置 awk 子序列兜底
 
 ### C · 残留清理（阶段 5 执行）
 

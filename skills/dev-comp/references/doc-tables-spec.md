@@ -6,6 +6,8 @@
 > **与项目权威源的关系**：项目内 `development/demo-doc-guide.md` 是贡献者向权威源，本文件是其 docs 表格部分的**细化实现 + 决策记录**。两者必须同源，改动一处立即回填另一处（见 SKILL.md §项目规范权威源）。
 >
 > **2026-10-23 修订（二）· 类型表取消 4 列形态**：类型表统一为「有字段 → 3 列（名称 / 说明 / 类型）」「无字段 → 2 列（名称 / 值）」，不再有 4 列（详见 §2.2）。同步新增列数校验 `B9i`、`?` 逐字段校验 `B9j`（§7）。
+>
+> **2026-11-04 增补 · 尾部章节顺序**：章节顺序不属表格列规范，但属同一「docs 结构」口径，故在此登记唯一顺序 `APIs → Slots → Events → Methods → CSS 变量 → 在 setup 外使用`（章节可缺省、相对顺序不可变；`Methods` 恒在 `Events` 之后收尾）。权威源为项目 `development/demo-doc-guide.md` §尾部章节顺序，本文件只引用不复述理由；脚本校验 `B10`，项目侧同口径 `pnpm verify:docs-order`。
 
 ---
 
@@ -167,13 +169,15 @@
 
 ---
 
-## 3. Slots / Methods / Events
+## 3. Slots / Events / Methods
+
+> **章节顺序（2026-11-04 起）**：尾部二级章节固定 `APIs → Slots → Events → Methods → CSS 变量 → 在 setup 外使用`，本章按此顺序排列。`Methods` 需 `ref` 调用 `defineExpose` 暴露的方法，属实例层 API，恒在 `Events` 之后收尾；章节可缺省（无插槽 / 无事件 / 无 expose 时不写对应节），相对顺序不可变。权威源 `development/demo-doc-guide.md` §尾部章节顺序，脚本 `B10` 拦截。
 
 | 表 | 列头 | 内容规范 |
 |:--|:--|:--|
 | `## Slots` | 名称 \| 说明 \| 用法 | 用法列写 `v-slot:default` / `v-slot:xxx` / `v-slot:xxx="{ a, b }"`；❌ 不写 `-` / `{ option: T }`（脚本 `B8` 拦截） |
+| `## Events` | 名称 \| 说明 \| 类型 | 写完整回调签名 `(key: string \| number) => void`；`update:xxx` **不进本表**（由 Props 表的 `v-model` 标记表达） |
 | `## Methods` | 名称 \| 说明 \| 类型 | 类型列写**完整签名**：`(index: number) => boolean`、`() => void`；❌ 不写 `Function` / `(...args: any) => void` / 只写返回类型 |
-| `## Events` | 名称 \| 说明 \| 类型 | 同上写完整回调签名 `(key: string \| number) => void`；`update:xxx` **不进本表**（由 Props 表的 `v-model` 标记表达） |
 
 三张表列名**均不调整**：「类型」在 Props / Methods / Events 三处同词同义，改成「签名」「回调参数」只在局部制造新词，与全站一致性原则冲突。「用法」列已优于参考库的「参数」列，保持。
 
@@ -218,7 +222,7 @@
 
 ---
 
-## 7. 自检（脚本 `B9` + 手工 grep）
+## 7. 自检（脚本 `B9` / `B10` + 手工 grep）
 
 | 检查 | 判定口径 | 命中处置 |
 |:--|:--|:--|
@@ -232,6 +236,7 @@
 | B9h 工具函数 Params 首列 | `docs/utils/functions/*.md` 表格首列为「参数」 | FAIL |
 | B9i 类型表列数 | `### Xxx Type` 区块内表头只能是 2 列（名称 \| 值）或 3 列（名称 \| 说明 \| 类型），出现 4 列 | FAIL（2026-10-23 存量 46 张迁移完成后已由 WARN 切换） |
 | B9j 类型表 `?` 一致性 | 解析组件源码 `interface`（含 `extends`）与表首列逐字段比对，`?` 不一致 | WARN（迁移期） |
+| B10 尾部章节顺序 | 尾部二级章节（`APIs` / `Slots` / `Events` / `Methods` / `CSS 变量` / `在 setup 外使用`）的相对顺序不是规范序列的子序列 | FAIL（优先复用项目 `scripts/verify-doc-order.ts`，缺失时内置 awk 兜底） |
 
 > 首列 / 末列的单元格判定由脚本 `awk` 按 `&#124;` 分隔实现（兼容带首尾管道与紧凑两种历史写法），无需手工 grep。
 
