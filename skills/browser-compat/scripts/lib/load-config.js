@@ -26,7 +26,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const { resolveBaselineLevel, BASELINE_DEFAULT } = require('./baseline-resolver');
+const { resolveBaselineLevel, resolveBaselineLevelFromProject, BASELINE_DEFAULT } = require('./baseline-resolver');
 
 const VALID_LEVELS = ['conservative', 'standard', 'aggressive'];
 
@@ -332,12 +332,12 @@ function loadConfig(projectRoot) {
       ? pkg.browserslist
       : (pkg.browserslist.production || pkg.browserslist.development || []);
     if (Array.isArray(list) && list.length > 0) {
-      const resolved = resolveBaselineLevel(list);
+      const resolved = resolveBaselineLevelFromProject(list, root);
+      // 标记「真实解析」与「字面推断兜底」，否则看不出基线是实测值还是默认兜底
+      const resolvedSuffix = resolved.source === 'browserslist (resolved)' ? ' (resolved)' : '';
       config.baseline = {
         level: resolved.level,
-        source: compatJson
-          ? 'package.json>browserslist (compat-json fallback)'
-          : 'package.json>browserslist',
+        source: `${compatJson ? 'package.json>browserslist (compat-json fallback)' : 'package.json>browserslist'}${resolvedSuffix}`,
         minVersions: resolved.minVersions,
       };
       return config;
@@ -348,10 +348,11 @@ function loadConfig(projectRoot) {
   const browserslistrcPath = path.join(root, '.browserslistrc');
   const lines = safeReadLines(browserslistrcPath);
   if (lines && lines.length > 0) {
-    const resolved = resolveBaselineLevel(lines);
+    const resolved = resolveBaselineLevelFromProject(lines, root);
+    const resolvedSuffix = resolved.source === 'browserslist (resolved)' ? ' (resolved)' : '';
     config.baseline = {
       level: resolved.level,
-      source: '.browserslistrc',
+      source: `.browserslistrc${resolvedSuffix}`,
       minVersions: resolved.minVersions,
     };
     return config;

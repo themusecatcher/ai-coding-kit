@@ -196,6 +196,11 @@ function isCssFile(file) {
   return /\.(css|scss|sass|less|module\.css|module\.scss)$/.test(file);
 }
 
+// .vue 单文件组件：样式写在 <style> 块、逻辑写在 <script> 块里，需分别用 CSS / JS 规则扫描
+function isVueFile(file) {
+  return /\.vue$/.test(file);
+}
+
 // 判断 match 位置是否落在块注释 /* ... */ 之内（跨行也支持）
 function isInsideBlockComment(content, matchIndex) {
   const before = content.slice(0, matchIndex);
@@ -285,8 +290,37 @@ function scanContent(content, filePath, rules) {
   return findings;
 }
 
+// `.vue`：分别扫描 <style> 块（CSS 规则）与 <script> 块（JS 规则），
+// 行号回填为 SFC 内的绝对行号，避免报告指向块内相对行
+function scanVueFile(filePath, ctx) {
+  const content = fs.readFileSync(filePath, 'utf-8');
+  const cssRules = ctx && ctx.activeRulesByType ? ctx.activeRulesByType.css : CSS_RULES;
+  const jsRules = ctx && ctx.activeRulesByType ? ctx.activeRulesByType.js : JS_RULES;
+  const findings = [];
+  const blockRegex = /<(style|script)([^>]*)>([\s\S]*?)<\/\1>/g;
+  let matched;
+  while ((matched = blockRegex.exec(content)) !== null) {
+    const tag = matched[1];
+    const blockContent = matched[3];
+    const blockStart = matched.index + matched[0].indexOf('>') + 1;
+    const lineOffset = content.slice(0, blockStart).split('\n').length - 1;
+    const blockFindings = scanContent(blockContent, filePath, tag === 'style' ? cssRules : jsRules);
+    for (const finding of blockFindings) {
+      findings.push({
+        ...finding,
+        type: tag === 'style' ? 'css' : 'js',
+        line: finding.line + lineOffset,
+      });
+    }
+  }
+  return findings;
+}
+
 function scanFile(filePath, ctx) {
   try {
+    if (isVueFile(filePath)) {
+      return scanVueFile(filePath, ctx);
+    }
     const content = fs.readFileSync(filePath, 'utf-8');
     let rules = isJsFile(filePath) ? JS_RULES : isCssFile(filePath) ? CSS_RULES : null;
     if (!rules) return [];
@@ -309,7 +343,7 @@ function scanDirectory(dir, ctx) {
       if (entry.isDirectory()) {
         if (['node_modules', '.git', 'dist', 'build', '.next'].includes(entry.name)) continue;
         walk(full);
-      } else if (isJsFile(full) || isCssFile(full)) {
+      } else if (isJsFile(full) || isCssFile(full) || isVueFile(full)) {
         if (ctx && shouldSkipPath(full, ctx.config.excludePaths, ctx.config.includePaths, ctx.projectRoot)) {
           continue;
         }
@@ -325,7 +359,7 @@ function scanGitDiff(staged, ctx) {
   const cmd = staged ? 'git diff --staged --name-only' : 'git diff --name-only';
   const files = execSync(cmd, { encoding: 'utf-8' })
     .split('\n')
-    .filter((f) => f && (isJsFile(f) || isCssFile(f)));
+    .filter((f) => f && (isJsFile(f) || isCssFile(f) || isVueFile(f)));
   const findings = [];
   for (const file of files) {
     if (fs.existsSync(file)) {

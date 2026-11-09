@@ -7,6 +7,9 @@
  * 判定规则与 references/browser-baseline.md §二「三档基线判定规则」对齐。
  */
 
+const fs = require('fs');
+const path = require('path');
+
 const BASELINE_DEFAULT = Object.freeze({
   level: 'conservative',
   source: 'fallback',
@@ -114,6 +117,104 @@ function decideLevel(minVersions, hasAggregate, queries) {
 }
 
 /**
+ * 聚合查询（`> 0.5%` / `last 2 versions` / `not dead`）无法从字面推断版本，
+ * 改为调用「项目自身」的 browserslist 包解析真实清单，再取每个浏览器的最低版本。
+ * 解析失败（未安装 / 查询非法）返回 null，调用方退回字面推断。
+ */
+/** 版本号数值比较（仅用于挑选 pnpm store 中的最高版本；预发布后缀按数值前缀参与比较） */
+function compareVersion(first, second) {
+  const parse = (value) =>
+    String(value)
+      .split('.')
+      .map((part) => parseFloat(part) || 0);
+  const left = parse(first);
+  const right = parse(second);
+  const length = Math.max(left.length, right.length);
+  for (let index = 0; index < length; index += 1) {
+    const diff = (left[index] || 0) - (right[index] || 0);
+    if (diff !== 0) return diff;
+  }
+  return 0;
+}
+
+function loadBrowserslist(projectRoot) {
+  // 1) 常规解析（npm / yarn / hoisted 布局）
+  try {
+    return require(require.resolve('browserslist', { paths: [projectRoot] }));
+  } catch (err) {
+    /* 继续尝试 */
+  }
+  // 2) 直接从项目 node_modules 解析
+  try {
+    return require(require.resolve('browserslist', { paths: [path.join(projectRoot, 'node_modules')] }));
+  } catch (err) {
+    /* 继续尝试 */
+  }
+  // 3) pnpm：依赖不提升，落在 node_modules/.pnpm/browserslist@x.y.z/node_modules/browserslist
+  try {
+    const pnpmDir = path.join(projectRoot, 'node_modules', '.pnpm');
+    const latest = fs
+      .readdirSync(pnpmDir)
+      .filter((name) => name.startsWith('browserslist@'))
+      // 按版本号数值排序：字典序会把 4.29.5 排在 4.9.5 之前，选到旧版数据
+      .sort((first, second) => compareVersion(first.slice('browserslist@'.length), second.slice('browserslist@'.length)))
+      .pop();
+    if (latest) return require(path.join(pnpmDir, latest, 'node_modules', 'browserslist'));
+  } catch (err) {
+    /* 无 pnpm 布局 */
+  }
+  return null;
+}
+
+function resolveByBrowserslist(queries, projectRoot) {
+  if (!projectRoot) return null;
+  const browserslist = loadBrowserslist(projectRoot);
+  if (!browserslist) return null;
+  let list;
+  try {
+    list = browserslist(queries);
+  } catch (err) {
+    return null;
+  }
+  const min = {};
+  for (const entry of list) {
+    const [browser, version] = String(entry).split(' ');
+    if (!SUPPORTED_BROWSERS.includes(browser)) continue;
+    const parsed = parseFloat(version);
+    if (Number.isNaN(parsed)) continue;
+    if (min[browser] === undefined || parsed < min[browser]) min[browser] = parsed;
+  }
+  return Object.keys(min).length > 0 ? min : null;
+}
+
+/**
+ * 带项目上下文的基线解析：优先用 browserslist 包解析聚合查询，
+ * 失败时退回 resolveBaselineLevel 的字面推断（旧行为）。
+ * @param {string[]|string} browserslistInput
+ * @param {string} [projectRoot] 用于定位项目内的 browserslist 包
+ */
+function resolveBaselineLevelFromProject(browserslistInput, projectRoot) {
+  const raw = Array.isArray(browserslistInput)
+    ? browserslistInput
+    : String(browserslistInput || '').split(/[,\n]/);
+  const queries = raw.map((query) => String(query).trim()).filter(Boolean);
+  const resolvedMin = resolveByBrowserslist(queries, projectRoot);
+  if (!resolvedMin) {
+    return resolveBaselineLevel(browserslistInput);
+  }
+  const filled = { ...BASELINE_DEFAULT.minVersions };
+  for (const browser of SUPPORTED_BROWSERS) {
+    if (resolvedMin[browser] !== undefined) filled[browser] = resolvedMin[browser];
+  }
+  return {
+    level: decideLevel(resolvedMin, false, []),
+    source: 'browserslist (resolved)',
+    minVersions: filled,
+    queries: queries.map((query) => ({ isAggregate: true, raw: query })),
+  };
+}
+
+/**
  * 主入口
  * @param {string[]|string} browserslistInput
  * @returns {{ level: string, source: string, minVersions: object, queries: object[] }}
@@ -154,7 +255,8 @@ function resolveBaselineLevel(browserslistInput) {
 
 module.exports = {
   resolveBaselineLevel,
+  resolveBaselineLevelFromProject,
   BASELINE_DEFAULT,
   // 仅供测试导出
-  _internal: { parseQuery, mergeMinVersions, decideLevel },
+  _internal: { parseQuery, mergeMinVersions, decideLevel, resolveByBrowserslist },
 };

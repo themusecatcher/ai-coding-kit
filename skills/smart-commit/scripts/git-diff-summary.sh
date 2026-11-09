@@ -4,10 +4,13 @@
 #   - 默认查 staged diff
 #   - 若行数超过 full_diff_max_lines 阈值（默认 200，从 YAML 读取）→ 自动降级为 --stat
 #   - 若 staged 为空，自动 fallback 到工作区 diff
+#   - --staged-only：只读暂存区，不回退工作区（分批提交批次内生成 message 用）
+#   - 无 diff 但存在未跟踪文件时，输出 mode=untracked-only 并列出文件
+#     （git diff 看不到新文件，这是"新建文件被漏掉"的根因）
 # 输出：
-#   先输出元信息（mode、line_count）写到 stderr，便于上层 LLM 感知
+#   先输出元信息（mode、line_count、untracked_count）写到 stderr，便于上层 LLM 感知
 #   diff 内容写到 stdout
-# 退出码：0 = 成功；1 = 不是 git 仓库
+# 退出码：0 = 成功；1 = 不是 git 仓库；2 = 未知参数
 #
 # 设计哲学：体量判断是确定性规则（行数与阈值比较），不应让 LLM 心算。
 
@@ -34,6 +37,26 @@ if [ -f "$CONFIG_FILE" ]; then
   fi
 fi
 
+# ---------- 参数解析 ----------
+# --staged-only：分批提交模式使用。只读暂存区，绝不 fallback 到工作区，
+#                保证生成 message 的 diff 与「本批实际要提交的内容」严格一致。
+STAGED_ONLY=0
+for arg in "$@"; do
+  case "$arg" in
+    --staged-only) STAGED_ONLY=1 ;;
+    -h|--help)
+      echo "用法: git-diff-summary.sh [--staged-only]" >&2
+      echo "  --staged-only  只分析暂存区（分批提交时使用，不回退到工作区）" >&2
+      exit 0
+      ;;
+    *) echo "ERROR: 未知参数 $arg" >&2; exit 2 ;;
+  esac
+done
+
+# ---------- 未跟踪文件（git diff 的天然盲区） ----------
+UNTRACKED_CMD="git ls-files --others --exclude-standard"
+UNTRACKED_COUNT=$($UNTRACKED_CMD | wc -l | tr -d ' ')
+
 # ---------- 决定查询源（staged 优先，工作区兜底） ----------
 STAGED_FILES=$(git diff --staged --name-only | wc -l | tr -d ' ')
 
@@ -43,10 +66,32 @@ if [ "$STAGED_FILES" -gt 0 ]; then
   STAT_CMD="git diff --staged --stat"
   NAMES_CMD="git diff --staged --name-only"
 else
+  if [ "$STAGED_ONLY" -eq 1 ]; then
+    if [ "$UNTRACKED_COUNT" -gt 0 ]; then
+      echo "INFO: 暂存区为空，存在 $UNTRACKED_COUNT 个未跟踪文件（分批模式需先按批 add）" >&2
+      echo "{\"mode\":\"untracked-only\",\"line_count\":0,\"source\":\"staged\",\"untracked_count\":$UNTRACKED_COUNT}" >&2
+      echo "===== untracked (not staged) ====="
+      $UNTRACKED_CMD
+      exit 0
+    fi
+    echo "INFO: 暂存区为空（--staged-only 模式不回退到工作区）" >&2
+    echo "{\"mode\":\"empty\",\"line_count\":0,\"source\":\"staged\",\"untracked_count\":0}" >&2
+    exit 0
+  fi
+
   WT_FILES=$(git diff --name-only | wc -l | tr -d ' ')
   if [ "$WT_FILES" -eq 0 ]; then
+    if [ "$UNTRACKED_COUNT" -gt 0 ]; then
+      echo "INFO: 无已跟踪改动，但存在 $UNTRACKED_COUNT 个未跟踪文件" >&2
+      echo "{\"mode\":\"untracked-only\",\"line_count\":0,\"source\":\"none\",\"untracked_count\":$UNTRACKED_COUNT}" >&2
+      echo "===== untracked (not tracked yet) ====="
+      $UNTRACKED_CMD
+      echo ""
+      echo "提示: git diff 看不到未跟踪文件，需先 git add 才能生成完整 message"
+      exit 0
+    fi
     echo "INFO: 既无暂存改动也无工作区改动" >&2
-    echo "{\"mode\":\"empty\",\"line_count\":0,\"source\":\"none\"}" >&2
+    echo "{\"mode\":\"empty\",\"line_count\":0,\"source\":\"none\",\"untracked_count\":0}" >&2
     exit 0
   fi
   SOURCE="working-tree"
@@ -66,7 +111,7 @@ else
 fi
 
 # ---------- 输出元信息到 stderr（不污染 stdout 主输出） ----------
-echo "{\"mode\":\"$MODE\",\"line_count\":$LINE_COUNT,\"threshold\":$THRESHOLD,\"source\":\"$SOURCE\"}" >&2
+echo "{\"mode\":\"$MODE\",\"line_count\":$LINE_COUNT,\"threshold\":$THRESHOLD,\"source\":\"$SOURCE\",\"untracked_count\":$UNTRACKED_COUNT}" >&2
 
 # ---------- 输出主 diff ----------
 echo "===== file list ($SOURCE) ====="

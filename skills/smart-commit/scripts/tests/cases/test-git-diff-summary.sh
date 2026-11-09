@@ -9,6 +9,9 @@
 # - full diff 模式（行数 ≤ 阈值）
 # - stat 模式（行数 > 阈值，注入低阈值复现）
 # - 输出包含 file list / diff stat / 主 diff 段落标题
+# - --staged-only：无暂存时不回退工作区（mode=empty / source=staged）
+# - --staged-only：有暂存时正常输出
+# - untracked-only：无 tracked 改动但有未跟踪文件时列出文件
 
 # 准备临时 git 仓库的辅助函数
 _setup_temp_repo() {
@@ -88,6 +91,40 @@ run_tests() {
     assert_contains "$stderr" '"mode":"stat"' "超阈值 → mode=stat 自动降级"
   fi
   rm -rf "$big_repo"
+
+  # ---------- 6. --staged-only：无暂存时不回退工作区 ----------
+  local so_repo="$TMP_BASE/staged-only"
+  if _setup_temp_repo "$so_repo"; then
+    (cd "$so_repo" && echo "only working tree" >> README.md)
+    local so_out so_err
+    so_out=$(cd "$so_repo" && bash "$script" --staged-only 2>/dev/null)
+    so_err=$(cd "$so_repo" && bash "$script" --staged-only 2>&1 1>/dev/null)
+    assert_contains "$so_err" '"mode":"empty"' "--staged-only 无暂存 → mode=empty"
+    assert_contains "$so_err" '"source":"staged"' "--staged-only 固定 source=staged"
+    local wt_leak
+    wt_leak=$(printf '%s' "$so_out" | grep -c "full diff" || true)
+    assert_eq "$wt_leak" "0" "--staged-only 不输出工作区 diff"
+
+    # ---------- 7. --staged-only：有暂存时正常输出 ----------
+    (cd "$so_repo" && git add README.md)
+    so_out=$(cd "$so_repo" && bash "$script" --staged-only 2>/dev/null)
+    assert_contains "$so_out" "===== full diff" "--staged-only 有暂存 → 输出 full diff"
+    assert_contains "$so_out" "README.md" "--staged-only 输出含改动文件"
+  fi
+  rm -rf "$so_repo"
+
+  # ---------- 8. untracked-only：只有未跟踪文件 ----------
+  local ut_repo="$TMP_BASE/untracked"
+  if _setup_temp_repo "$ut_repo"; then
+    (cd "$ut_repo" && echo "brand new" > brand-new.txt)
+    local ut_out ut_err
+    ut_out=$(cd "$ut_repo" && bash "$script" 2>/dev/null)
+    ut_err=$(cd "$ut_repo" && bash "$script" 2>&1 1>/dev/null)
+    assert_contains "$ut_err" '"mode":"untracked-only"' "只有 untracked → mode=untracked-only"
+    assert_contains "$ut_err" '"untracked_count":1' "untracked_count 为 1"
+    assert_contains "$ut_out" "brand-new.txt" "列出未跟踪文件"
+  fi
+  rm -rf "$ut_repo"
 
   # 清理 base 目录
   rm -rf "$TMP_BASE"
