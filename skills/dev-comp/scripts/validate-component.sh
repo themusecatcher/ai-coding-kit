@@ -920,7 +920,7 @@ else
 fi
 
 # ============================================================
-# C · 残留清理（对应 checklists.md C1-C4）
+# C · 残留清理（对应 checklists.md C1-C6）
 # ============================================================
 section "C 残留清理"
 
@@ -1116,6 +1116,30 @@ elif [ "${C5_HEAD_HITS:-0}" != "0" ]; then
   warn "$C5_REVIVE"
 else
   ok "C5 品牌信息 0 残留（扫描 ${C5_FILES} 个文件：本分支净改动新增行[base=${BASE}] + 新增文件全文）"
+fi
+
+# ------------------------------------------------------------
+# C6 验收提示残留（2026-11-24 新增 · 权威源 acceptance-verification.md §4）
+# 阶段 3 为每个演示用例生成的「操作 + 观察」提示块属验收手段，阶段 5 必须清除：
+# 带着它提交会把「给验收者看的操作清单」当成交付内容，且清理依赖逐字标记，
+# 一旦标记被改写就只能人工逐块找。故按字面量判定 0 残留。
+# ------------------------------------------------------------
+if [ -n "$VIEW_DIR" ] && [ -f "$ROOT/src/views/$VIEW_DIR/Index.vue" ]; then
+  C6_DEMO="$ROOT/src/views/$VIEW_DIR/Index.vue"
+  C6_MARK=$(grep -c "验收提示（阶段 5 清除）" "$C6_DEMO" 2>/dev/null || true)
+  C6_CLASS=$(grep -c "demo-acceptance" "$C6_DEMO" 2>/dev/null || true)
+  C6_BLOCKS=$(grep -c '<div class="demo-acceptance">' "$C6_DEMO" 2>/dev/null || true)
+  C6_CASES=$(grep -c '<h2 class="mt30 mb10">' "$C6_DEMO" 2>/dev/null || true)
+  if [ "${C6_MARK:-0}" = "0" ] && [ "${C6_CLASS:-0}" = "0" ]; then
+    ok "C6 验收提示 0 残留（演示页无「操作 + 观察」提示块）"
+  else
+    fail "C6 演示页残留验收提示（标记 ${C6_MARK:-0} 处 / 提示块 ${C6_BLOCKS:-0} 个）：阶段 5 必须清除，见 acceptance-verification.md §4"
+  fi
+  if [ "${C6_CASES:-0}" != "${C6_BLOCKS:-0}" ]; then
+    warn "C6 用例数与验收提示块数不一致（用例 ${C6_CASES:-0} / 提示块 ${C6_BLOCKS:-0}）：阶段 3 应为每个用例各写一块"
+  fi
+else
+  skip "C6 演示页不存在（src/views/ 解析：${VIEW_DIR:-未找到}）"
 fi
 
 # ============================================================

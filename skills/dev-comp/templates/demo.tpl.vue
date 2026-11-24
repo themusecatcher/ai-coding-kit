@@ -50,6 +50,25 @@ function handleClick(info: unknown) {
     <!-- 简介描述（可选）：仅信息增量时添加；代码标记原生 <code>；演示页 <p> 自带间距，【无需 <br/>】；
          class 落地到项目时替换为目标项目既有间距 class（vue-amazing-ui 为 mb10，.demo-desc 仅骨架占位） -->
     <p class="demo-desc">通过 <code>xxx</code> 控制 xxx（隐藏行为/区分点的必要说明）</p>
+    <!-- 验收提示（阶段 5 清除）：每个用例【必须】一块，供人工目测验收；标记逐字固定，
+         脚本 C6 与清除命令按字面量匹配，❌ 不改写；内容必须同时有「操作」与「观察」，
+         观察点要可判定（文本/次数/颜色/间距/控制台逐字输出），❌ 禁止「显示正常」这类表述；
+         权威源 references/acceptance-verification.md。样式集中为一个被同标记包裹的 <style> 块。 -->
+    <!-- 验收提示（阶段 5 清除） -->
+    <div class="demo-acceptance">
+      <div class="demo-acceptance-row">
+        <span class="demo-acceptance-key">操作</span>
+        <span>点击 xxx / 等待 10 秒 / 切换右上角主题</span>
+      </div>
+      <div class="demo-acceptance-row">
+        <span class="demo-acceptance-key">观察</span>
+        <ul class="demo-acceptance-list">
+          <li>可判定的具体结果（形如 <code>00:10</code>）</li>
+          <li>控制台逐字输出 <code>xxx</code> 恰好一次</li>
+        </ul>
+      </div>
+    </div>
+    <!-- /验收提示 -->
     <div class="demo-row">
       <div class="demo-col">
         <h3>本项目组件</h3>
